@@ -192,8 +192,8 @@ func TestGetGrpcServer(t *testing.T) {
 		t.Errorf("expected server reflection to be registered, got %v", server.GetServiceInfo())
 	}
 
-	if _, ok := server.GetServiceInfo()["todo.TodoService"]; !ok {
-		t.Errorf("expected the todo service to be registered, got %v", server.GetServiceInfo())
+	if _, ok := server.GetServiceInfo()["item.ItemService"]; !ok {
+		t.Errorf("expected the item service to be registered, got %v", server.GetServiceInfo())
 	}
 }
 

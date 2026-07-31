@@ -1,29 +1,29 @@
 syntax = "proto3";
 
-package todo;
+package item;
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/alexhokl/todo-cli/proto";
 
-// TodoService is the gRPC API served by `todo serve`. RPCs are added here and
+// ItemService is the gRPC API served by `todo serve`. RPCs are added here and
 // registered in cmd/serve.go.
-service TodoService {
-  // ListTodos returns the active todos in their manual order along with the
-  // completed todos ordered by how recently they were updated.
-  rpc ListTodos(ListTodosRequest) returns (ListTodosResponse);
-  // CreateTodo appends a new todo to the end of the manual order.
-  rpc CreateTodo(CreateTodoRequest) returns (Todo);
-  // MoveTodo places a todo immediately before or after another todo and
+service ItemService {
+  // ListItems returns the active items in their manual order along with the
+  // completed items ordered by how recently they were updated.
+  rpc ListItems(ListItemsRequest) returns (ListItemsResponse);
+  // CreateItem appends a new item to the end of the manual order.
+  rpc CreateItem(CreateItemRequest) returns (Item);
+  // MoveItem places an item immediately before or after another item and
   // optionally reassigns its list in the same operation.
-  rpc MoveTodo(MoveTodoRequest) returns (Todo);
-  // SetTodoDone completes or reopens a todo. Completing removes it from the
+  rpc MoveItem(MoveItemRequest) returns (Item);
+  // SetItemDone completes or reopens an item. Completing removes it from the
   // manual order; reopening appends it to the end.
-  rpc SetTodoDone(SetTodoDoneRequest) returns (Todo);
-  // UpdateTodoLabels attaches and detaches labels on a todo. Labels being
+  rpc SetItemDone(SetItemDoneRequest) returns (Item);
+  // UpdateItemLabels attaches and detaches labels on an item. Labels being
   // added are created on the fly when they do not exist yet.
-  rpc UpdateTodoLabels(UpdateTodoLabelsRequest) returns (Todo);
+  rpc UpdateItemLabels(UpdateItemLabelsRequest) returns (Item);
 
   // ListLabels returns every known label ordered by name.
   rpc ListLabels(ListLabelsRequest) returns (ListLabelsResponse);
@@ -32,19 +32,19 @@ service TodoService {
   rpc CreateLabel(CreateLabelRequest) returns (Label);
   // RenameLabel changes the name of an existing label.
   rpc RenameLabel(RenameLabelRequest) returns (Label);
-  // DeleteLabel removes a label that is no longer attached to any todo.
+  // DeleteLabel removes a label that is no longer attached to any item.
   rpc DeleteLabel(DeleteLabelRequest) returns (google.protobuf.Empty);
 }
 
-// Label is a tag that can be attached to any number of todos. Names are
+// Label is a tag that can be attached to any number of items. Names are
 // normalised to lower case with surrounding whitespace removed.
 message Label {
   uint32 id = 1;
   string name = 2;
 }
 
-// Todo is a single todo item.
-message Todo {
+// Item is a single todo item.
+message Item {
   uint32 id = 1;
   string title = 2;
   string description = 3;
@@ -56,20 +56,20 @@ message Todo {
   repeated Label labels = 8;
 }
 
-message ListTodosRequest {
-  // labels restricts the result to todos carrying every one of these labels.
+message ListItemsRequest {
+  // labels restricts the result to items carrying every one of these labels.
   // An unknown name therefore yields no results.
   repeated string labels = 1;
 }
 
-message ListTodosResponse {
-  // active holds the todos that are not yet done, in manual order.
-  repeated Todo active = 1;
-  // completed holds the done todos, most recently updated first.
-  repeated Todo completed = 2;
+message ListItemsResponse {
+  // active holds the items that are not yet done, in manual order.
+  repeated Item active = 1;
+  // completed holds the done items, most recently updated first.
+  repeated Item completed = 2;
 }
 
-message CreateTodoRequest {
+message CreateItemRequest {
   string title = 1;
   string description = 2;
   optional google.protobuf.Timestamp due_date = 3;
@@ -78,29 +78,29 @@ message CreateTodoRequest {
   repeated string labels = 5;
 }
 
-message MoveTodoRequest {
+message MoveItemRequest {
   uint32 id = 1;
   // Exactly one anchor must be supplied.
   oneof anchor {
-    // before_id places the todo immediately before the identified todo.
+    // before_id places the item immediately before the identified item.
     uint32 before_id = 2;
-    // after_id places the todo immediately after the identified todo.
+    // after_id places the item immediately after the identified item.
     uint32 after_id = 3;
   }
   // change_list reports whether list_id should be applied. It distinguishes
   // leaving the list untouched from clearing it.
   bool change_list = 4;
   // list_id is applied only when change_list is true. Leaving it unset while
-  // change_list is true detaches the todo from its list.
+  // change_list is true detaches the item from its list.
   optional uint32 list_id = 5;
 }
 
-message SetTodoDoneRequest {
+message SetItemDoneRequest {
   uint32 id = 1;
   bool done = 2;
 }
 
-message UpdateTodoLabelsRequest {
+message UpdateItemLabelsRequest {
   uint32 id = 1;
   // add names labels to attach, creating any that do not exist yet.
   repeated string add = 2;

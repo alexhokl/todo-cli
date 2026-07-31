@@ -8,7 +8,7 @@ import (
 
 // User is an authenticated Tailscale user. It is created on first sight by
 // the Tailscale authentication interceptor and referenced by TailscaleAddress
-// and the per-user records (List, Label, Todo).
+// and the per-user records (List, Label, Item).
 type User struct {
 	gorm.Model
 	Username string `gorm:"not null;unique"`
@@ -31,7 +31,7 @@ type List struct {
 	User   User   `gorm:"foreignKey:UserID"`
 }
 
-// Label is a tag that can be attached to any number of todos.
+// Label is a tag that can be attached to any number of items.
 type Label struct {
 	gorm.Model
 	// Name is stored in its normalised form: trimmed and lower cased, so that
@@ -42,25 +42,25 @@ type Label struct {
 	User   User   `gorm:"foreignKey:UserID"`
 }
 
-// Todo is a single todo item, optionally belonging to a List.
-type Todo struct {
+// Item is a single todo item, optionally belonging to a List.
+type Item struct {
 	gorm.Model
 	Title       string `gorm:"not null"`
 	Description string `gorm:""`
-	Done        bool   `gorm:"not null;default:false;index:idx_todos_order,priority:1"`
+	Done        bool   `gorm:"not null;default:false;index:idx_items_order,priority:1"`
 	DueDate     *time.Time
 	// Position is the sparse fractional rank used for manual ordering of
-	// active todos. It is non-nil exactly when Done is false. Larger values
+	// active items. It is non-nil exactly when Done is false. Larger values
 	// sort later. Gaps between adjacent values are intentional: inserting
 	// between two neighbours takes their midpoint, so a move rewrites a
 	// single row.
-	Position *float64 `gorm:"index:idx_todos_order,priority:2"`
+	Position *float64 `gorm:"index:idx_items_order,priority:2"`
 	ListID   *uint
 	List     *List `gorm:"foreignKey:ListID"`
 	UserID   uint  `gorm:"not null;index"`
 	User     User  `gorm:"foreignKey:UserID"`
-	// Labels are the tags attached to this todo. The join table carries no
-	// soft delete column, so rows survive a soft deleted todo; DeleteLabel
+	// Labels are the tags attached to this item. The join table carries no
+	// soft delete column, so rows survive a soft deleted item; DeleteLabel
 	// sweeps any that are left behind.
-	Labels []Label `gorm:"many2many:todo_labels;"`
+	Labels []Label `gorm:"many2many:item_labels;"`
 }

@@ -14,8 +14,8 @@ var (
 	// ErrLabelExists is returned when a label name is already taken.
 	ErrLabelExists = errors.New("label already exists")
 	// ErrLabelInUse is returned when deleting a label that is still attached
-	// to at least one todo.
-	ErrLabelInUse = errors.New("label is still attached to todos")
+	// to at least one item.
+	ErrLabelInUse = errors.New("label is still attached to items")
 	// ErrLabelNameEmpty is returned when a label name normalises to nothing.
 	ErrLabelNameEmpty = errors.New("label name must not be empty")
 )
@@ -128,9 +128,9 @@ func RenameLabel(db *gorm.DB, userID uint, id uint, name string) (*Label, error)
 	return &label, nil
 }
 
-// DeleteLabel removes a label that is no longer attached to any todo. Labels in
+// DeleteLabel removes a label that is no longer attached to any item. Labels in
 // use are reported rather than silently detached, so that deleting a label can
-// never quietly change the tagging of a todo.
+// never quietly change the tagging of an item.
 func DeleteLabel(db *gorm.DB, userID uint, id uint) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		var label Label
@@ -140,22 +140,22 @@ func DeleteLabel(db *gorm.DB, userID uint, id uint) error {
 
 		var count int64
 		if err := tx.
-			Table("todo_labels").
-			Joins("JOIN todos ON todos.id = todo_labels.todo_id").
-			Where("todo_labels.label_id = ?", id).
-			Where("todos.user_id = ?", userID).
-			Where("todos.deleted_at IS NULL").
+			Table("item_labels").
+			Joins("JOIN items ON items.id = item_labels.item_id").
+			Where("item_labels.label_id = ?", id).
+			Where("items.user_id = ?", userID).
+			Where("items.deleted_at IS NULL").
 			Count(&count).Error; err != nil {
-			return fmt.Errorf("failed to count the todos using the label: %w", err)
+			return fmt.Errorf("failed to count the items using the label: %w", err)
 		}
 		if count > 0 {
-			return fmt.Errorf("%w: %s is attached to %d todo(s)", ErrLabelInUse, label.Name, count)
+			return fmt.Errorf("%w: %s is attached to %d item(s)", ErrLabelInUse, label.Name, count)
 		}
 
-		// Any remaining join rows belong to soft deleted todos. The join table
+		// Any remaining join rows belong to soft deleted items. The join table
 		// has no soft delete column of its own, so they are removed here to
 		// avoid leaving rows pointing at a label that no longer exists.
-		if err := tx.Exec("DELETE FROM todo_labels WHERE label_id = ?", id).Error; err != nil {
+		if err := tx.Exec("DELETE FROM item_labels WHERE label_id = ?", id).Error; err != nil {
 			return fmt.Errorf("failed to detach the label: %w", err)
 		}
 
@@ -220,14 +220,14 @@ func findLabelsByName(db *gorm.DB, userID uint, names []string) ([]Label, error)
 	return labels, nil
 }
 
-// UpdateTodoLabels attaches and detaches labels on a todo. Labels being added
+// UpdateItemLabels attaches and detaches labels on an item. Labels being added
 // are created on the fly when they do not exist; labels being removed are
-// matched against existing labels only. Adding a label a todo already carries
+// matched against existing labels only. Adding a label an item already carries
 // and removing one it does not are both no-ops.
-func UpdateTodoLabels(db *gorm.DB, userID uint, todoID uint, add, remove []string) (*Todo, error) {
-	var todo Todo
+func UpdateItemLabels(db *gorm.DB, userID uint, itemID uint, add, remove []string) (*Item, error) {
+	var item Item
 	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := findTodo(tx, userID, todoID, &todo); err != nil {
+		if err := findItem(tx, userID, itemID, &item); err != nil {
 			return err
 		}
 
@@ -239,7 +239,7 @@ func UpdateTodoLabels(db *gorm.DB, userID uint, todoID uint, add, remove []strin
 				return err
 			}
 			if len(labels) > 0 {
-				if err := tx.Model(&todo).Association("Labels").Delete(labels); err != nil {
+				if err := tx.Model(&item).Association("Labels").Delete(labels); err != nil {
 					return fmt.Errorf("failed to remove the labels: %w", err)
 				}
 			}
@@ -251,19 +251,19 @@ func UpdateTodoLabels(db *gorm.DB, userID uint, todoID uint, add, remove []strin
 				return err
 			}
 			if len(labels) > 0 {
-				if err := tx.Model(&todo).Association("Labels").Append(labels); err != nil {
+				if err := tx.Model(&item).Association("Labels").Append(labels); err != nil {
 					return fmt.Errorf("failed to add the labels: %w", err)
 				}
 			}
 		}
 
-		return findTodo(tx, userID, todoID, &todo)
+		return findItem(tx, userID, itemID, &item)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &todo, nil
+	return &item, nil
 }
 
 // findLabel loads a label by identifier, translating a missing row into

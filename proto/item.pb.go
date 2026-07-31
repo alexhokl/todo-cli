@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.35.1
-// source: proto/todo.proto
+// source: proto/item.proto
 
 package proto
 
@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Label is a tag that can be attached to any number of todos. Names are
+// Label is a tag that can be attached to any number of items. Names are
 // normalised to lower case with surrounding whitespace removed.
 type Label struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -35,7 +35,7 @@ type Label struct {
 
 func (x *Label) Reset() {
 	*x = Label{}
-	mi := &file_proto_todo_proto_msgTypes[0]
+	mi := &file_proto_item_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -47,7 +47,7 @@ func (x *Label) String() string {
 func (*Label) ProtoMessage() {}
 
 func (x *Label) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[0]
+	mi := &file_proto_item_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -60,7 +60,7 @@ func (x *Label) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Label.ProtoReflect.Descriptor instead.
 func (*Label) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{0}
+	return file_proto_item_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Label) GetId() uint32 {
@@ -77,8 +77,8 @@ func (x *Label) GetName() string {
 	return ""
 }
 
-// Todo is a single todo item.
-type Todo struct {
+// Item is a single todo item.
+type Item struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Id          uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Title       string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
@@ -93,21 +93,21 @@ type Todo struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Todo) Reset() {
-	*x = Todo{}
-	mi := &file_proto_todo_proto_msgTypes[1]
+func (x *Item) Reset() {
+	*x = Item{}
+	mi := &file_proto_item_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Todo) String() string {
+func (x *Item) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Todo) ProtoMessage() {}
+func (*Item) ProtoMessage() {}
 
-func (x *Todo) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[1]
+func (x *Item) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_item_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -118,91 +118,91 @@ func (x *Todo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Todo.ProtoReflect.Descriptor instead.
-func (*Todo) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use Item.ProtoReflect.Descriptor instead.
+func (*Item) Descriptor() ([]byte, []int) {
+	return file_proto_item_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Todo) GetId() uint32 {
+func (x *Item) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *Todo) GetTitle() string {
+func (x *Item) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *Todo) GetDescription() string {
+func (x *Item) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
 	return ""
 }
 
-func (x *Todo) GetDone() bool {
+func (x *Item) GetDone() bool {
 	if x != nil {
 		return x.Done
 	}
 	return false
 }
 
-func (x *Todo) GetDueDate() *timestamppb.Timestamp {
+func (x *Item) GetDueDate() *timestamppb.Timestamp {
 	if x != nil {
 		return x.DueDate
 	}
 	return nil
 }
 
-func (x *Todo) GetListId() uint32 {
+func (x *Item) GetListId() uint32 {
 	if x != nil && x.ListId != nil {
 		return *x.ListId
 	}
 	return 0
 }
 
-func (x *Todo) GetPosition() float64 {
+func (x *Item) GetPosition() float64 {
 	if x != nil && x.Position != nil {
 		return *x.Position
 	}
 	return 0
 }
 
-func (x *Todo) GetLabels() []*Label {
+func (x *Item) GetLabels() []*Label {
 	if x != nil {
 		return x.Labels
 	}
 	return nil
 }
 
-type ListTodosRequest struct {
+type ListItemsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// labels restricts the result to todos carrying every one of these labels.
+	// labels restricts the result to items carrying every one of these labels.
 	// An unknown name therefore yields no results.
 	Labels        []string `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListTodosRequest) Reset() {
-	*x = ListTodosRequest{}
-	mi := &file_proto_todo_proto_msgTypes[2]
+func (x *ListItemsRequest) Reset() {
+	*x = ListItemsRequest{}
+	mi := &file_proto_item_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListTodosRequest) String() string {
+func (x *ListItemsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListTodosRequest) ProtoMessage() {}
+func (*ListItemsRequest) ProtoMessage() {}
 
-func (x *ListTodosRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[2]
+func (x *ListItemsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_item_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -213,43 +213,43 @@ func (x *ListTodosRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListTodosRequest.ProtoReflect.Descriptor instead.
-func (*ListTodosRequest) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use ListItemsRequest.ProtoReflect.Descriptor instead.
+func (*ListItemsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_item_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListTodosRequest) GetLabels() []string {
+func (x *ListItemsRequest) GetLabels() []string {
 	if x != nil {
 		return x.Labels
 	}
 	return nil
 }
 
-type ListTodosResponse struct {
+type ListItemsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// active holds the todos that are not yet done, in manual order.
-	Active []*Todo `protobuf:"bytes,1,rep,name=active,proto3" json:"active,omitempty"`
-	// completed holds the done todos, most recently updated first.
-	Completed     []*Todo `protobuf:"bytes,2,rep,name=completed,proto3" json:"completed,omitempty"`
+	// active holds the items that are not yet done, in manual order.
+	Active []*Item `protobuf:"bytes,1,rep,name=active,proto3" json:"active,omitempty"`
+	// completed holds the done items, most recently updated first.
+	Completed     []*Item `protobuf:"bytes,2,rep,name=completed,proto3" json:"completed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListTodosResponse) Reset() {
-	*x = ListTodosResponse{}
-	mi := &file_proto_todo_proto_msgTypes[3]
+func (x *ListItemsResponse) Reset() {
+	*x = ListItemsResponse{}
+	mi := &file_proto_item_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListTodosResponse) String() string {
+func (x *ListItemsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListTodosResponse) ProtoMessage() {}
+func (*ListItemsResponse) ProtoMessage() {}
 
-func (x *ListTodosResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[3]
+func (x *ListItemsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_item_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -260,26 +260,26 @@ func (x *ListTodosResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListTodosResponse.ProtoReflect.Descriptor instead.
-func (*ListTodosResponse) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use ListItemsResponse.ProtoReflect.Descriptor instead.
+func (*ListItemsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_item_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ListTodosResponse) GetActive() []*Todo {
+func (x *ListItemsResponse) GetActive() []*Item {
 	if x != nil {
 		return x.Active
 	}
 	return nil
 }
 
-func (x *ListTodosResponse) GetCompleted() []*Todo {
+func (x *ListItemsResponse) GetCompleted() []*Item {
 	if x != nil {
 		return x.Completed
 	}
 	return nil
 }
 
-type CreateTodoRequest struct {
+type CreateItemRequest struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Title       string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	Description string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
@@ -291,21 +291,21 @@ type CreateTodoRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CreateTodoRequest) Reset() {
-	*x = CreateTodoRequest{}
-	mi := &file_proto_todo_proto_msgTypes[4]
+func (x *CreateItemRequest) Reset() {
+	*x = CreateItemRequest{}
+	mi := &file_proto_item_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CreateTodoRequest) String() string {
+func (x *CreateItemRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CreateTodoRequest) ProtoMessage() {}
+func (*CreateItemRequest) ProtoMessage() {}
 
-func (x *CreateTodoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[4]
+func (x *CreateItemRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_item_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -316,81 +316,81 @@ func (x *CreateTodoRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CreateTodoRequest.ProtoReflect.Descriptor instead.
-func (*CreateTodoRequest) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use CreateItemRequest.ProtoReflect.Descriptor instead.
+func (*CreateItemRequest) Descriptor() ([]byte, []int) {
+	return file_proto_item_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *CreateTodoRequest) GetTitle() string {
+func (x *CreateItemRequest) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *CreateTodoRequest) GetDescription() string {
+func (x *CreateItemRequest) GetDescription() string {
 	if x != nil {
 		return x.Description
 	}
 	return ""
 }
 
-func (x *CreateTodoRequest) GetDueDate() *timestamppb.Timestamp {
+func (x *CreateItemRequest) GetDueDate() *timestamppb.Timestamp {
 	if x != nil {
 		return x.DueDate
 	}
 	return nil
 }
 
-func (x *CreateTodoRequest) GetListId() uint32 {
+func (x *CreateItemRequest) GetListId() uint32 {
 	if x != nil && x.ListId != nil {
 		return *x.ListId
 	}
 	return 0
 }
 
-func (x *CreateTodoRequest) GetLabels() []string {
+func (x *CreateItemRequest) GetLabels() []string {
 	if x != nil {
 		return x.Labels
 	}
 	return nil
 }
 
-type MoveTodoRequest struct {
+type MoveItemRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Exactly one anchor must be supplied.
 	//
 	// Types that are valid to be assigned to Anchor:
 	//
-	//	*MoveTodoRequest_BeforeId
-	//	*MoveTodoRequest_AfterId
-	Anchor isMoveTodoRequest_Anchor `protobuf_oneof:"anchor"`
+	//	*MoveItemRequest_BeforeId
+	//	*MoveItemRequest_AfterId
+	Anchor isMoveItemRequest_Anchor `protobuf_oneof:"anchor"`
 	// change_list reports whether list_id should be applied. It distinguishes
 	// leaving the list untouched from clearing it.
 	ChangeList bool `protobuf:"varint,4,opt,name=change_list,json=changeList,proto3" json:"change_list,omitempty"`
 	// list_id is applied only when change_list is true. Leaving it unset while
-	// change_list is true detaches the todo from its list.
+	// change_list is true detaches the item from its list.
 	ListId        *uint32 `protobuf:"varint,5,opt,name=list_id,json=listId,proto3,oneof" json:"list_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *MoveTodoRequest) Reset() {
-	*x = MoveTodoRequest{}
-	mi := &file_proto_todo_proto_msgTypes[5]
+func (x *MoveItemRequest) Reset() {
+	*x = MoveItemRequest{}
+	mi := &file_proto_item_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *MoveTodoRequest) String() string {
+func (x *MoveItemRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MoveTodoRequest) ProtoMessage() {}
+func (*MoveItemRequest) ProtoMessage() {}
 
-func (x *MoveTodoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[5]
+func (x *MoveItemRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_item_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -401,76 +401,76 @@ func (x *MoveTodoRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use MoveTodoRequest.ProtoReflect.Descriptor instead.
-func (*MoveTodoRequest) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{5}
+// Deprecated: Use MoveItemRequest.ProtoReflect.Descriptor instead.
+func (*MoveItemRequest) Descriptor() ([]byte, []int) {
+	return file_proto_item_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *MoveTodoRequest) GetId() uint32 {
+func (x *MoveItemRequest) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *MoveTodoRequest) GetAnchor() isMoveTodoRequest_Anchor {
+func (x *MoveItemRequest) GetAnchor() isMoveItemRequest_Anchor {
 	if x != nil {
 		return x.Anchor
 	}
 	return nil
 }
 
-func (x *MoveTodoRequest) GetBeforeId() uint32 {
+func (x *MoveItemRequest) GetBeforeId() uint32 {
 	if x != nil {
-		if x, ok := x.Anchor.(*MoveTodoRequest_BeforeId); ok {
+		if x, ok := x.Anchor.(*MoveItemRequest_BeforeId); ok {
 			return x.BeforeId
 		}
 	}
 	return 0
 }
 
-func (x *MoveTodoRequest) GetAfterId() uint32 {
+func (x *MoveItemRequest) GetAfterId() uint32 {
 	if x != nil {
-		if x, ok := x.Anchor.(*MoveTodoRequest_AfterId); ok {
+		if x, ok := x.Anchor.(*MoveItemRequest_AfterId); ok {
 			return x.AfterId
 		}
 	}
 	return 0
 }
 
-func (x *MoveTodoRequest) GetChangeList() bool {
+func (x *MoveItemRequest) GetChangeList() bool {
 	if x != nil {
 		return x.ChangeList
 	}
 	return false
 }
 
-func (x *MoveTodoRequest) GetListId() uint32 {
+func (x *MoveItemRequest) GetListId() uint32 {
 	if x != nil && x.ListId != nil {
 		return *x.ListId
 	}
 	return 0
 }
 
-type isMoveTodoRequest_Anchor interface {
-	isMoveTodoRequest_Anchor()
+type isMoveItemRequest_Anchor interface {
+	isMoveItemRequest_Anchor()
 }
 
-type MoveTodoRequest_BeforeId struct {
-	// before_id places the todo immediately before the identified todo.
+type MoveItemRequest_BeforeId struct {
+	// before_id places the item immediately before the identified item.
 	BeforeId uint32 `protobuf:"varint,2,opt,name=before_id,json=beforeId,proto3,oneof"`
 }
 
-type MoveTodoRequest_AfterId struct {
-	// after_id places the todo immediately after the identified todo.
+type MoveItemRequest_AfterId struct {
+	// after_id places the item immediately after the identified item.
 	AfterId uint32 `protobuf:"varint,3,opt,name=after_id,json=afterId,proto3,oneof"`
 }
 
-func (*MoveTodoRequest_BeforeId) isMoveTodoRequest_Anchor() {}
+func (*MoveItemRequest_BeforeId) isMoveItemRequest_Anchor() {}
 
-func (*MoveTodoRequest_AfterId) isMoveTodoRequest_Anchor() {}
+func (*MoveItemRequest_AfterId) isMoveItemRequest_Anchor() {}
 
-type SetTodoDoneRequest struct {
+type SetItemDoneRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Done          bool                   `protobuf:"varint,2,opt,name=done,proto3" json:"done,omitempty"`
@@ -478,21 +478,21 @@ type SetTodoDoneRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SetTodoDoneRequest) Reset() {
-	*x = SetTodoDoneRequest{}
-	mi := &file_proto_todo_proto_msgTypes[6]
+func (x *SetItemDoneRequest) Reset() {
+	*x = SetItemDoneRequest{}
+	mi := &file_proto_item_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SetTodoDoneRequest) String() string {
+func (x *SetItemDoneRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SetTodoDoneRequest) ProtoMessage() {}
+func (*SetItemDoneRequest) ProtoMessage() {}
 
-func (x *SetTodoDoneRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[6]
+func (x *SetItemDoneRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_item_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -503,26 +503,26 @@ func (x *SetTodoDoneRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SetTodoDoneRequest.ProtoReflect.Descriptor instead.
-func (*SetTodoDoneRequest) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use SetItemDoneRequest.ProtoReflect.Descriptor instead.
+func (*SetItemDoneRequest) Descriptor() ([]byte, []int) {
+	return file_proto_item_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *SetTodoDoneRequest) GetId() uint32 {
+func (x *SetItemDoneRequest) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *SetTodoDoneRequest) GetDone() bool {
+func (x *SetItemDoneRequest) GetDone() bool {
 	if x != nil {
 		return x.Done
 	}
 	return false
 }
 
-type UpdateTodoLabelsRequest struct {
+type UpdateItemLabelsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// add names labels to attach, creating any that do not exist yet.
@@ -534,21 +534,21 @@ type UpdateTodoLabelsRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UpdateTodoLabelsRequest) Reset() {
-	*x = UpdateTodoLabelsRequest{}
-	mi := &file_proto_todo_proto_msgTypes[7]
+func (x *UpdateItemLabelsRequest) Reset() {
+	*x = UpdateItemLabelsRequest{}
+	mi := &file_proto_item_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateTodoLabelsRequest) String() string {
+func (x *UpdateItemLabelsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateTodoLabelsRequest) ProtoMessage() {}
+func (*UpdateItemLabelsRequest) ProtoMessage() {}
 
-func (x *UpdateTodoLabelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[7]
+func (x *UpdateItemLabelsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_item_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -559,26 +559,26 @@ func (x *UpdateTodoLabelsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateTodoLabelsRequest.ProtoReflect.Descriptor instead.
-func (*UpdateTodoLabelsRequest) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{7}
+// Deprecated: Use UpdateItemLabelsRequest.ProtoReflect.Descriptor instead.
+func (*UpdateItemLabelsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_item_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *UpdateTodoLabelsRequest) GetId() uint32 {
+func (x *UpdateItemLabelsRequest) GetId() uint32 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *UpdateTodoLabelsRequest) GetAdd() []string {
+func (x *UpdateItemLabelsRequest) GetAdd() []string {
 	if x != nil {
 		return x.Add
 	}
 	return nil
 }
 
-func (x *UpdateTodoLabelsRequest) GetRemove() []string {
+func (x *UpdateItemLabelsRequest) GetRemove() []string {
 	if x != nil {
 		return x.Remove
 	}
@@ -593,7 +593,7 @@ type ListLabelsRequest struct {
 
 func (x *ListLabelsRequest) Reset() {
 	*x = ListLabelsRequest{}
-	mi := &file_proto_todo_proto_msgTypes[8]
+	mi := &file_proto_item_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -605,7 +605,7 @@ func (x *ListLabelsRequest) String() string {
 func (*ListLabelsRequest) ProtoMessage() {}
 
 func (x *ListLabelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[8]
+	mi := &file_proto_item_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -618,7 +618,7 @@ func (x *ListLabelsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLabelsRequest.ProtoReflect.Descriptor instead.
 func (*ListLabelsRequest) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{8}
+	return file_proto_item_proto_rawDescGZIP(), []int{8}
 }
 
 type ListLabelsResponse struct {
@@ -630,7 +630,7 @@ type ListLabelsResponse struct {
 
 func (x *ListLabelsResponse) Reset() {
 	*x = ListLabelsResponse{}
-	mi := &file_proto_todo_proto_msgTypes[9]
+	mi := &file_proto_item_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -642,7 +642,7 @@ func (x *ListLabelsResponse) String() string {
 func (*ListLabelsResponse) ProtoMessage() {}
 
 func (x *ListLabelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[9]
+	mi := &file_proto_item_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -655,7 +655,7 @@ func (x *ListLabelsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLabelsResponse.ProtoReflect.Descriptor instead.
 func (*ListLabelsResponse) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{9}
+	return file_proto_item_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListLabelsResponse) GetLabels() []*Label {
@@ -674,7 +674,7 @@ type CreateLabelRequest struct {
 
 func (x *CreateLabelRequest) Reset() {
 	*x = CreateLabelRequest{}
-	mi := &file_proto_todo_proto_msgTypes[10]
+	mi := &file_proto_item_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -686,7 +686,7 @@ func (x *CreateLabelRequest) String() string {
 func (*CreateLabelRequest) ProtoMessage() {}
 
 func (x *CreateLabelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[10]
+	mi := &file_proto_item_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -699,7 +699,7 @@ func (x *CreateLabelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateLabelRequest.ProtoReflect.Descriptor instead.
 func (*CreateLabelRequest) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{10}
+	return file_proto_item_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CreateLabelRequest) GetName() string {
@@ -719,7 +719,7 @@ type RenameLabelRequest struct {
 
 func (x *RenameLabelRequest) Reset() {
 	*x = RenameLabelRequest{}
-	mi := &file_proto_todo_proto_msgTypes[11]
+	mi := &file_proto_item_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -731,7 +731,7 @@ func (x *RenameLabelRequest) String() string {
 func (*RenameLabelRequest) ProtoMessage() {}
 
 func (x *RenameLabelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[11]
+	mi := &file_proto_item_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -744,7 +744,7 @@ func (x *RenameLabelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameLabelRequest.ProtoReflect.Descriptor instead.
 func (*RenameLabelRequest) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{11}
+	return file_proto_item_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *RenameLabelRequest) GetId() uint32 {
@@ -770,7 +770,7 @@ type DeleteLabelRequest struct {
 
 func (x *DeleteLabelRequest) Reset() {
 	*x = DeleteLabelRequest{}
-	mi := &file_proto_todo_proto_msgTypes[12]
+	mi := &file_proto_item_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -782,7 +782,7 @@ func (x *DeleteLabelRequest) String() string {
 func (*DeleteLabelRequest) ProtoMessage() {}
 
 func (x *DeleteLabelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_todo_proto_msgTypes[12]
+	mi := &file_proto_item_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -795,7 +795,7 @@ func (x *DeleteLabelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteLabelRequest.ProtoReflect.Descriptor instead.
 func (*DeleteLabelRequest) Descriptor() ([]byte, []int) {
-	return file_proto_todo_proto_rawDescGZIP(), []int{12}
+	return file_proto_item_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *DeleteLabelRequest) GetId() uint32 {
@@ -805,15 +805,15 @@ func (x *DeleteLabelRequest) GetId() uint32 {
 	return 0
 }
 
-var File_proto_todo_proto protoreflect.FileDescriptor
+var File_proto_item_proto protoreflect.FileDescriptor
 
-const file_proto_todo_proto_rawDesc = "" +
+const file_proto_item_proto_rawDesc = "" +
 	"\n" +
-	"\x10proto/todo.proto\x12\x04todo\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"+\n" +
+	"\x10proto/item.proto\x12\x04item\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"+\n" +
 	"\x05Label\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"\xa8\x02\n" +
-	"\x04Todo\x12\x0e\n" +
+	"\x04Item\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x12\n" +
@@ -821,19 +821,19 @@ const file_proto_todo_proto_rawDesc = "" +
 	"\bdue_date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\adueDate\x88\x01\x01\x12\x1c\n" +
 	"\alist_id\x18\x06 \x01(\rH\x01R\x06listId\x88\x01\x01\x12\x1f\n" +
 	"\bposition\x18\a \x01(\x01H\x02R\bposition\x88\x01\x01\x12#\n" +
-	"\x06labels\x18\b \x03(\v2\v.todo.LabelR\x06labelsB\v\n" +
+	"\x06labels\x18\b \x03(\v2\v.item.LabelR\x06labelsB\v\n" +
 	"\t_due_dateB\n" +
 	"\n" +
 	"\b_list_idB\v\n" +
 	"\t_position\"*\n" +
-	"\x10ListTodosRequest\x12\x16\n" +
+	"\x10ListItemsRequest\x12\x16\n" +
 	"\x06labels\x18\x01 \x03(\tR\x06labels\"a\n" +
-	"\x11ListTodosResponse\x12\"\n" +
+	"\x11ListItemsResponse\x12\"\n" +
 	"\x06active\x18\x01 \x03(\v2\n" +
-	".todo.TodoR\x06active\x12(\n" +
+	".item.ItemR\x06active\x12(\n" +
 	"\tcompleted\x18\x02 \x03(\v2\n" +
-	".todo.TodoR\tcompleted\"\xd6\x01\n" +
-	"\x11CreateTodoRequest\x12\x14\n" +
+	".item.ItemR\tcompleted\"\xd6\x01\n" +
+	"\x11CreateItemRequest\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12:\n" +
 	"\bdue_date\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\adueDate\x88\x01\x01\x12\x1c\n" +
@@ -842,7 +842,7 @@ const file_proto_todo_proto_rawDesc = "" +
 	"\t_due_dateB\n" +
 	"\n" +
 	"\b_list_id\"\xb2\x01\n" +
-	"\x0fMoveTodoRequest\x12\x0e\n" +
+	"\x0fMoveItemRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x1d\n" +
 	"\tbefore_id\x18\x02 \x01(\rH\x00R\bbeforeId\x12\x1b\n" +
 	"\bafter_id\x18\x03 \x01(\rH\x00R\aafterId\x12\x1f\n" +
@@ -852,16 +852,16 @@ const file_proto_todo_proto_rawDesc = "" +
 	"\x06anchorB\n" +
 	"\n" +
 	"\b_list_id\"8\n" +
-	"\x12SetTodoDoneRequest\x12\x0e\n" +
+	"\x12SetItemDoneRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
 	"\x04done\x18\x02 \x01(\bR\x04done\"S\n" +
-	"\x17UpdateTodoLabelsRequest\x12\x0e\n" +
+	"\x17UpdateItemLabelsRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x10\n" +
 	"\x03add\x18\x02 \x03(\tR\x03add\x12\x16\n" +
 	"\x06remove\x18\x03 \x03(\tR\x06remove\"\x13\n" +
 	"\x11ListLabelsRequest\"9\n" +
 	"\x12ListLabelsResponse\x12#\n" +
-	"\x06labels\x18\x01 \x03(\v2\v.todo.LabelR\x06labels\"(\n" +
+	"\x06labels\x18\x01 \x03(\v2\v.item.LabelR\x06labels\"(\n" +
 	"\x12CreateLabelRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"8\n" +
 	"\x12RenameLabelRequest\x12\x0e\n" +
@@ -869,78 +869,78 @@ const file_proto_todo_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"$\n" +
 	"\x12DeleteLabelRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id2\x8f\x04\n" +
-	"\vTodoService\x12<\n" +
-	"\tListTodos\x12\x16.todo.ListTodosRequest\x1a\x17.todo.ListTodosResponse\x121\n" +
+	"\vItemService\x12<\n" +
+	"\tListItems\x12\x16.item.ListItemsRequest\x1a\x17.item.ListItemsResponse\x121\n" +
 	"\n" +
-	"CreateTodo\x12\x17.todo.CreateTodoRequest\x1a\n" +
-	".todo.Todo\x12-\n" +
-	"\bMoveTodo\x12\x15.todo.MoveTodoRequest\x1a\n" +
-	".todo.Todo\x123\n" +
-	"\vSetTodoDone\x12\x18.todo.SetTodoDoneRequest\x1a\n" +
-	".todo.Todo\x12=\n" +
-	"\x10UpdateTodoLabels\x12\x1d.todo.UpdateTodoLabelsRequest\x1a\n" +
-	".todo.Todo\x12?\n" +
+	"CreateItem\x12\x17.item.CreateItemRequest\x1a\n" +
+	".item.Item\x12-\n" +
+	"\bMoveItem\x12\x15.item.MoveItemRequest\x1a\n" +
+	".item.Item\x123\n" +
+	"\vSetItemDone\x12\x18.item.SetItemDoneRequest\x1a\n" +
+	".item.Item\x12=\n" +
+	"\x10UpdateItemLabels\x12\x1d.item.UpdateItemLabelsRequest\x1a\n" +
+	".item.Item\x12?\n" +
 	"\n" +
-	"ListLabels\x12\x17.todo.ListLabelsRequest\x1a\x18.todo.ListLabelsResponse\x124\n" +
-	"\vCreateLabel\x12\x18.todo.CreateLabelRequest\x1a\v.todo.Label\x124\n" +
-	"\vRenameLabel\x12\x18.todo.RenameLabelRequest\x1a\v.todo.Label\x12?\n" +
-	"\vDeleteLabel\x12\x18.todo.DeleteLabelRequest\x1a\x16.google.protobuf.EmptyB$Z\"github.com/alexhokl/todo-cli/protob\x06proto3"
+	"ListLabels\x12\x17.item.ListLabelsRequest\x1a\x18.item.ListLabelsResponse\x124\n" +
+	"\vCreateLabel\x12\x18.item.CreateLabelRequest\x1a\v.item.Label\x124\n" +
+	"\vRenameLabel\x12\x18.item.RenameLabelRequest\x1a\v.item.Label\x12?\n" +
+	"\vDeleteLabel\x12\x18.item.DeleteLabelRequest\x1a\x16.google.protobuf.EmptyB$Z\"github.com/alexhokl/todo-cli/protob\x06proto3"
 
 var (
-	file_proto_todo_proto_rawDescOnce sync.Once
-	file_proto_todo_proto_rawDescData []byte
+	file_proto_item_proto_rawDescOnce sync.Once
+	file_proto_item_proto_rawDescData []byte
 )
 
-func file_proto_todo_proto_rawDescGZIP() []byte {
-	file_proto_todo_proto_rawDescOnce.Do(func() {
-		file_proto_todo_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_todo_proto_rawDesc), len(file_proto_todo_proto_rawDesc)))
+func file_proto_item_proto_rawDescGZIP() []byte {
+	file_proto_item_proto_rawDescOnce.Do(func() {
+		file_proto_item_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_item_proto_rawDesc), len(file_proto_item_proto_rawDesc)))
 	})
-	return file_proto_todo_proto_rawDescData
+	return file_proto_item_proto_rawDescData
 }
 
-var file_proto_todo_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
-var file_proto_todo_proto_goTypes = []any{
-	(*Label)(nil),                   // 0: todo.Label
-	(*Todo)(nil),                    // 1: todo.Todo
-	(*ListTodosRequest)(nil),        // 2: todo.ListTodosRequest
-	(*ListTodosResponse)(nil),       // 3: todo.ListTodosResponse
-	(*CreateTodoRequest)(nil),       // 4: todo.CreateTodoRequest
-	(*MoveTodoRequest)(nil),         // 5: todo.MoveTodoRequest
-	(*SetTodoDoneRequest)(nil),      // 6: todo.SetTodoDoneRequest
-	(*UpdateTodoLabelsRequest)(nil), // 7: todo.UpdateTodoLabelsRequest
-	(*ListLabelsRequest)(nil),       // 8: todo.ListLabelsRequest
-	(*ListLabelsResponse)(nil),      // 9: todo.ListLabelsResponse
-	(*CreateLabelRequest)(nil),      // 10: todo.CreateLabelRequest
-	(*RenameLabelRequest)(nil),      // 11: todo.RenameLabelRequest
-	(*DeleteLabelRequest)(nil),      // 12: todo.DeleteLabelRequest
+var file_proto_item_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_proto_item_proto_goTypes = []any{
+	(*Label)(nil),                   // 0: item.Label
+	(*Item)(nil),                    // 1: item.Item
+	(*ListItemsRequest)(nil),        // 2: item.ListItemsRequest
+	(*ListItemsResponse)(nil),       // 3: item.ListItemsResponse
+	(*CreateItemRequest)(nil),       // 4: item.CreateItemRequest
+	(*MoveItemRequest)(nil),         // 5: item.MoveItemRequest
+	(*SetItemDoneRequest)(nil),      // 6: item.SetItemDoneRequest
+	(*UpdateItemLabelsRequest)(nil), // 7: item.UpdateItemLabelsRequest
+	(*ListLabelsRequest)(nil),       // 8: item.ListLabelsRequest
+	(*ListLabelsResponse)(nil),      // 9: item.ListLabelsResponse
+	(*CreateLabelRequest)(nil),      // 10: item.CreateLabelRequest
+	(*RenameLabelRequest)(nil),      // 11: item.RenameLabelRequest
+	(*DeleteLabelRequest)(nil),      // 12: item.DeleteLabelRequest
 	(*timestamppb.Timestamp)(nil),   // 13: google.protobuf.Timestamp
 	(*emptypb.Empty)(nil),           // 14: google.protobuf.Empty
 }
-var file_proto_todo_proto_depIdxs = []int32{
-	13, // 0: todo.Todo.due_date:type_name -> google.protobuf.Timestamp
-	0,  // 1: todo.Todo.labels:type_name -> todo.Label
-	1,  // 2: todo.ListTodosResponse.active:type_name -> todo.Todo
-	1,  // 3: todo.ListTodosResponse.completed:type_name -> todo.Todo
-	13, // 4: todo.CreateTodoRequest.due_date:type_name -> google.protobuf.Timestamp
-	0,  // 5: todo.ListLabelsResponse.labels:type_name -> todo.Label
-	2,  // 6: todo.TodoService.ListTodos:input_type -> todo.ListTodosRequest
-	4,  // 7: todo.TodoService.CreateTodo:input_type -> todo.CreateTodoRequest
-	5,  // 8: todo.TodoService.MoveTodo:input_type -> todo.MoveTodoRequest
-	6,  // 9: todo.TodoService.SetTodoDone:input_type -> todo.SetTodoDoneRequest
-	7,  // 10: todo.TodoService.UpdateTodoLabels:input_type -> todo.UpdateTodoLabelsRequest
-	8,  // 11: todo.TodoService.ListLabels:input_type -> todo.ListLabelsRequest
-	10, // 12: todo.TodoService.CreateLabel:input_type -> todo.CreateLabelRequest
-	11, // 13: todo.TodoService.RenameLabel:input_type -> todo.RenameLabelRequest
-	12, // 14: todo.TodoService.DeleteLabel:input_type -> todo.DeleteLabelRequest
-	3,  // 15: todo.TodoService.ListTodos:output_type -> todo.ListTodosResponse
-	1,  // 16: todo.TodoService.CreateTodo:output_type -> todo.Todo
-	1,  // 17: todo.TodoService.MoveTodo:output_type -> todo.Todo
-	1,  // 18: todo.TodoService.SetTodoDone:output_type -> todo.Todo
-	1,  // 19: todo.TodoService.UpdateTodoLabels:output_type -> todo.Todo
-	9,  // 20: todo.TodoService.ListLabels:output_type -> todo.ListLabelsResponse
-	0,  // 21: todo.TodoService.CreateLabel:output_type -> todo.Label
-	0,  // 22: todo.TodoService.RenameLabel:output_type -> todo.Label
-	14, // 23: todo.TodoService.DeleteLabel:output_type -> google.protobuf.Empty
+var file_proto_item_proto_depIdxs = []int32{
+	13, // 0: item.Item.due_date:type_name -> google.protobuf.Timestamp
+	0,  // 1: item.Item.labels:type_name -> item.Label
+	1,  // 2: item.ListItemsResponse.active:type_name -> item.Item
+	1,  // 3: item.ListItemsResponse.completed:type_name -> item.Item
+	13, // 4: item.CreateItemRequest.due_date:type_name -> google.protobuf.Timestamp
+	0,  // 5: item.ListLabelsResponse.labels:type_name -> item.Label
+	2,  // 6: item.ItemService.ListItems:input_type -> item.ListItemsRequest
+	4,  // 7: item.ItemService.CreateItem:input_type -> item.CreateItemRequest
+	5,  // 8: item.ItemService.MoveItem:input_type -> item.MoveItemRequest
+	6,  // 9: item.ItemService.SetItemDone:input_type -> item.SetItemDoneRequest
+	7,  // 10: item.ItemService.UpdateItemLabels:input_type -> item.UpdateItemLabelsRequest
+	8,  // 11: item.ItemService.ListLabels:input_type -> item.ListLabelsRequest
+	10, // 12: item.ItemService.CreateLabel:input_type -> item.CreateLabelRequest
+	11, // 13: item.ItemService.RenameLabel:input_type -> item.RenameLabelRequest
+	12, // 14: item.ItemService.DeleteLabel:input_type -> item.DeleteLabelRequest
+	3,  // 15: item.ItemService.ListItems:output_type -> item.ListItemsResponse
+	1,  // 16: item.ItemService.CreateItem:output_type -> item.Item
+	1,  // 17: item.ItemService.MoveItem:output_type -> item.Item
+	1,  // 18: item.ItemService.SetItemDone:output_type -> item.Item
+	1,  // 19: item.ItemService.UpdateItemLabels:output_type -> item.Item
+	9,  // 20: item.ItemService.ListLabels:output_type -> item.ListLabelsResponse
+	0,  // 21: item.ItemService.CreateLabel:output_type -> item.Label
+	0,  // 22: item.ItemService.RenameLabel:output_type -> item.Label
+	14, // 23: item.ItemService.DeleteLabel:output_type -> google.protobuf.Empty
 	15, // [15:24] is the sub-list for method output_type
 	6,  // [6:15] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
@@ -948,32 +948,32 @@ var file_proto_todo_proto_depIdxs = []int32{
 	0,  // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_proto_todo_proto_init() }
-func file_proto_todo_proto_init() {
-	if File_proto_todo_proto != nil {
+func init() { file_proto_item_proto_init() }
+func file_proto_item_proto_init() {
+	if File_proto_item_proto != nil {
 		return
 	}
-	file_proto_todo_proto_msgTypes[1].OneofWrappers = []any{}
-	file_proto_todo_proto_msgTypes[4].OneofWrappers = []any{}
-	file_proto_todo_proto_msgTypes[5].OneofWrappers = []any{
-		(*MoveTodoRequest_BeforeId)(nil),
-		(*MoveTodoRequest_AfterId)(nil),
+	file_proto_item_proto_msgTypes[1].OneofWrappers = []any{}
+	file_proto_item_proto_msgTypes[4].OneofWrappers = []any{}
+	file_proto_item_proto_msgTypes[5].OneofWrappers = []any{
+		(*MoveItemRequest_BeforeId)(nil),
+		(*MoveItemRequest_AfterId)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_todo_proto_rawDesc), len(file_proto_todo_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_item_proto_rawDesc), len(file_proto_item_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_proto_todo_proto_goTypes,
-		DependencyIndexes: file_proto_todo_proto_depIdxs,
-		MessageInfos:      file_proto_todo_proto_msgTypes,
+		GoTypes:           file_proto_item_proto_goTypes,
+		DependencyIndexes: file_proto_item_proto_depIdxs,
+		MessageInfos:      file_proto_item_proto_msgTypes,
 	}.Build()
-	File_proto_todo_proto = out.File
-	file_proto_todo_proto_goTypes = nil
-	file_proto_todo_proto_depIdxs = nil
+	File_proto_item_proto = out.File
+	file_proto_item_proto_goTypes = nil
+	file_proto_item_proto_depIdxs = nil
 }

@@ -7,17 +7,17 @@ import (
 	"gorm.io/gorm"
 )
 
-// labelNames returns the names of the labels attached to a todo.
+// labelNames returns the names of the labels attached to an item.
 func labelNames(t *testing.T, db *gorm.DB, id uint) []string {
 	t.Helper()
 
-	var todo Todo
-	if err := findTodo(db, testUserID, id, &todo); err != nil {
-		t.Fatalf("failed to load the todo: %v", err)
+	var item Item
+	if err := findItem(db, testUserID, id, &item); err != nil {
+		t.Fatalf("failed to load the item: %v", err)
 	}
 
-	names := make([]string, 0, len(todo.Labels))
-	for _, label := range todo.Labels {
+	names := make([]string, 0, len(item.Labels))
+	for _, label := range item.Labels {
 		names = append(names, label.Name)
 	}
 
@@ -186,13 +186,13 @@ func TestRenameLabel(t *testing.T) {
 
 func TestDeleteLabel(t *testing.T) {
 	db := setupTestDB(t)
-	ids := seedTodos(t, db, "a")
+	ids := seedItems(t, db, "a")
 	label, err := CreateLabel(db, testUserID, "work")
 	if err != nil {
 		t.Fatalf("failed to create the label: %v", err)
 	}
 
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
 		t.Fatalf("failed to attach the label: %v", err)
 	}
 
@@ -201,7 +201,7 @@ func TestDeleteLabel(t *testing.T) {
 		t.Errorf("expected %v but got %v", ErrLabelInUse, err)
 	}
 
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], nil, []string{"work"}); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], nil, []string{"work"}); err != nil {
 		t.Fatalf("failed to detach the label: %v", err)
 	}
 	if err := DeleteLabel(db, testUserID, label.ID); err != nil {
@@ -213,20 +213,20 @@ func TestDeleteLabel(t *testing.T) {
 	}
 }
 
-func TestDeleteLabelSweepsSoftDeletedTodoJoinRows(t *testing.T) {
+func TestDeleteLabelSweepsSoftDeletedItemJoinRows(t *testing.T) {
 	db := setupTestDB(t)
-	ids := seedTodos(t, db, "a")
+	ids := seedItems(t, db, "a")
 	label, err := CreateLabel(db, testUserID, "work")
 	if err != nil {
 		t.Fatalf("failed to create the label: %v", err)
 	}
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
 		t.Fatalf("failed to attach the label: %v", err)
 	}
 
-	// The join table has no soft delete column, so the row outlives the todo.
-	if err := db.Delete(&Todo{}, ids["a"]).Error; err != nil {
-		t.Fatalf("failed to delete the todo: %v", err)
+	// The join table has no soft delete column, so the row outlives the item.
+	if err := db.Delete(&Item{}, ids["a"]).Error; err != nil {
+		t.Fatalf("failed to delete the item: %v", err)
 	}
 
 	if err := DeleteLabel(db, testUserID, label.ID); err != nil {
@@ -234,7 +234,7 @@ func TestDeleteLabelSweepsSoftDeletedTodoJoinRows(t *testing.T) {
 	}
 
 	var remaining int64
-	if err := db.Table("todo_labels").Where("label_id = ?", label.ID).Count(&remaining).Error; err != nil {
+	if err := db.Table("item_labels").Where("label_id = ?", label.ID).Count(&remaining).Error; err != nil {
 		t.Fatalf("failed to count the join rows: %v", err)
 	}
 	if remaining != 0 {
@@ -270,19 +270,19 @@ func TestFindOrCreateLabels(t *testing.T) {
 	}
 }
 
-func TestUpdateTodoLabels(t *testing.T) {
+func TestUpdateItemLabels(t *testing.T) {
 	db := setupTestDB(t)
-	ids := seedTodos(t, db, "a")
+	ids := seedItems(t, db, "a")
 
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], []string{"Work", "urgent"}, nil); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"Work", "urgent"}, nil); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 	if names := labelNames(t, db, ids["a"]); !containsAll(names, "work", "urgent") {
 		t.Errorf("expected [work urgent] but got %v", names)
 	}
 
-	// Adding a label the todo already carries must not duplicate it.
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
+	// Adding a label the item already carries must not duplicate it.
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 	if names := labelNames(t, db, ids["a"]); !containsAll(names, "work", "urgent") {
@@ -291,7 +291,7 @@ func TestUpdateTodoLabels(t *testing.T) {
 
 	// Removing a name that is not a known label is a no-op rather than an
 	// error, and must not create the label just to detach it.
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], nil, []string{"nonexistent"}); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], nil, []string{"nonexistent"}); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 	labels, err := ListLabels(db, testUserID)
@@ -302,25 +302,25 @@ func TestUpdateTodoLabels(t *testing.T) {
 		t.Errorf("expected removal not to create labels but got %d", len(labels))
 	}
 
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], nil, []string{"URGENT"}); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], nil, []string{"URGENT"}); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 	if names := labelNames(t, db, ids["a"]); !containsAll(names, "work") {
 		t.Errorf("expected [work] but got %v", names)
 	}
 
-	if _, err := UpdateTodoLabels(db, testUserID, 404, []string{"work"}, nil); !errors.Is(err, ErrTodoNotFound) {
-		t.Errorf("expected %v but got %v", ErrTodoNotFound, err)
+	if _, err := UpdateItemLabels(db, testUserID, 404, []string{"work"}, nil); !errors.Is(err, ErrItemNotFound) {
+		t.Errorf("expected %v but got %v", ErrItemNotFound, err)
 	}
 }
 
-func TestUpdateTodoLabelsAddAndRemoveSameName(t *testing.T) {
+func TestUpdateItemLabelsAddAndRemoveSameName(t *testing.T) {
 	db := setupTestDB(t)
-	ids := seedTodos(t, db, "a")
+	ids := seedItems(t, db, "a")
 
 	// Removal is applied first, so passing the same name to both leaves the
 	// label attached regardless of statement ordering.
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], []string{"work"}, []string{"work"}); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"work"}, []string{"work"}); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 	if names := labelNames(t, db, ids["a"]); !containsAll(names, "work") {
@@ -328,14 +328,14 @@ func TestUpdateTodoLabelsAddAndRemoveSameName(t *testing.T) {
 	}
 }
 
-func TestTodoFilterByLabel(t *testing.T) {
+func TestItemFilterByLabel(t *testing.T) {
 	db := setupTestDB(t)
-	ids := seedTodos(t, db, "a", "b", "c")
+	ids := seedItems(t, db, "a", "b", "c")
 
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], []string{"work", "urgent"}, nil); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"work", "urgent"}, nil); err != nil {
 		t.Fatalf("failed to tag: %v", err)
 	}
-	if _, err := UpdateTodoLabels(db, testUserID, ids["b"], []string{"work"}, nil); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["b"], []string{"work"}, nil); err != nil {
 		t.Fatalf("failed to tag: %v", err)
 	}
 
@@ -355,14 +355,14 @@ func TestTodoFilterByLabel(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			todos, err := ListActive(db, testUserID, TodoFilter{Labels: test.labels})
+			items, err := ListActive(db, testUserID, ItemFilter{Labels: test.labels})
 			if err != nil {
 				t.Fatalf("expected no error but got %v", err)
 			}
 
-			titles := make([]string, 0, len(todos))
-			for _, todo := range todos {
-				titles = append(titles, todo.Title)
+			titles := make([]string, 0, len(items))
+			for _, item := range items {
+				titles = append(titles, item.Title)
 			}
 			if !equalStrings(titles, test.expected) {
 				t.Errorf("expected %v but got %v", test.expected, titles)
@@ -373,25 +373,25 @@ func TestTodoFilterByLabel(t *testing.T) {
 
 func TestListActivePreloadsLabels(t *testing.T) {
 	db := setupTestDB(t)
-	ids := seedTodos(t, db, "a")
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
+	ids := seedItems(t, db, "a")
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
 		t.Fatalf("failed to tag: %v", err)
 	}
 
-	todos, err := ListActive(db, testUserID, TodoFilter{})
+	items, err := ListActive(db, testUserID, ItemFilter{})
 	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
-	if len(todos) != 1 || len(todos[0].Labels) != 1 || todos[0].Labels[0].Name != "work" {
-		t.Errorf("expected the labels to be preloaded but got %v", todos)
+	if len(items) != 1 || len(items[0].Labels) != 1 || items[0].Labels[0].Name != "work" {
+		t.Errorf("expected the labels to be preloaded but got %v", items)
 	}
 }
 
 func TestListCompletedFilterByLabel(t *testing.T) {
 	db := setupTestDB(t)
-	ids := seedTodos(t, db, "a", "b")
+	ids := seedItems(t, db, "a", "b")
 
-	if _, err := UpdateTodoLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
 		t.Fatalf("failed to tag: %v", err)
 	}
 	for _, title := range []string{"a", "b"} {
@@ -400,12 +400,12 @@ func TestListCompletedFilterByLabel(t *testing.T) {
 		}
 	}
 
-	todos, err := ListCompleted(db, testUserID, TodoFilter{Labels: []string{"work"}})
+	items, err := ListCompleted(db, testUserID, ItemFilter{Labels: []string{"work"}})
 	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
-	if len(todos) != 1 || todos[0].Title != "a" {
-		t.Errorf("expected only [a] but got %v", todos)
+	if len(items) != 1 || items[0].Title != "a" {
+		t.Errorf("expected only [a] but got %v", items)
 	}
 }
 

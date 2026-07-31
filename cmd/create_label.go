@@ -34,7 +34,7 @@ func runCreateLabel(cmd *cobra.Command, args []string) error {
 	}
 	defer func() { _ = conn.Close() }()
 
-	label, err := proto.NewTodoServiceClient(conn).CreateLabel(
+	label, err := proto.NewItemServiceClient(conn).CreateLabel(
 		cmd.Context(),
 		&proto.CreateLabelRequest{Name: args[0]},
 	)

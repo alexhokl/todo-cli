@@ -6,7 +6,7 @@ This file provides guidance for AI coding agents working in this repository.
 
 A todo management application written in Go, providing a single binary that acts
 as both a gRPC server (`todo serve`) and a CLI client. The server uses GORM with
-SQLite for persistence and is instrumented with OpenTelemetry. Records (todos,
+SQLite for persistence and is instrumented with OpenTelemetry. Records (items,
 lists, labels) are scoped per user; authentication is pluggable via a gRPC
 interceptor (dummy by default, Tailscale when `--hostname` is set).
 
@@ -19,7 +19,7 @@ interceptor (dummy by default, Tailscale when `--hostname` is set).
 
 ### Current State
 
-`TodoService` is implemented in `internal/todo_server.go` (todos, moves,
+`ItemService` is implemented in `internal/item_server.go` (items, moves,
 completion) and `internal/label_server.go` (labels, tagging) and registered in
 `getGrpcServer` in `cmd/serve.go`. `todo serve` starts a working gRPC server
 with OpenTelemetry instrumentation, the authentication interceptor, the
@@ -83,9 +83,9 @@ injects the resolved `userID` into the context under `contextKeyUser{}`.
 the `tsnet` state across restarts.
 
 Every `database.*` function takes a `userID uint` parameter and scopes queries
-with `Where("user_id = ?", userID)`. `findTodo` and `findLabel` are scoped the
+with `Where("user_id = ?", userID)`. `findItem` and `findLabel` are scoped the
 same way, so cross-user access is reported as `ErrNotFound` rather than leaking
-existence. `List`, `Label`, and `Todo` each carry a `UserID` foreign key; `List`
+existence. `List`, `Label`, and `Item` each carry a `UserID` foreign key; `List`
 and `Label` use per-user composite unique indexes (`idx_list_user`,
 `idx_label_user`), so two users can each own a label named "work".
 
@@ -121,10 +121,10 @@ import (
 
 ### Naming Conventions
 
-- **Files:** `snake_case.go` (e.g., `error_logging.go`, `list_todos.go`)
+- **Files:** `snake_case.go` (e.g., `error_logging.go`, `list_items.go`)
 - **Test files:** `*_internal_test.go` for white-box tests in the same package
 - **Packages:** lowercase single words (`cmd`, `internal`, `database`)
-- **Exported types/functions:** `PascalCase` (`TodoServer`, `AutoMigrate`)
+- **Exported types/functions:** `PascalCase` (`ItemServer`, `AutoMigrate`)
 - **Unexported types/functions:** `camelCase` (`rootOptions`, `runServe`)
 - **Constants (exported):** `PascalCase` (`AppName`, `DefaultPort`)
 - **Constants (unexported):** `camelCase` (`maxMessageSize`)
@@ -152,7 +152,7 @@ return fmt.Errorf("failed to read file: %w", err)
 **gRPC server handlers** -- return gRPC status errors with appropriate codes:
 
 ```go
-return nil, status.Errorf(codes.NotFound, "todo not found: %d", id)
+return nil, status.Errorf(codes.NotFound, "item not found: %d", id)
 return nil, status.Errorf(codes.Internal, "failed to query: %v", err)
 return nil, status.Errorf(codes.InvalidArgument, "title is required")
 ```

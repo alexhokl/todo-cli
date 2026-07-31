@@ -9,10 +9,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// todoLabelNames returns the label names carried by a todo.
-func todoLabelNames(todo *proto.Todo) []string {
-	names := make([]string, 0, len(todo.GetLabels()))
-	for _, label := range todo.GetLabels() {
+// itemLabelNames returns the label names carried by an item.
+func itemLabelNames(item *proto.Item) []string {
+	names := make([]string, 0, len(item.GetLabels()))
+	for _, label := range item.GetLabels() {
 		names = append(names, label.GetName())
 	}
 
@@ -37,7 +37,7 @@ func containsAll(names []string, expected ...string) bool {
 }
 
 func TestCreateLabelNormalisesAndRejectsDuplicates(t *testing.T) {
-	server := setupTodoServer(t)
+	server := setupItemServer(t)
 
 	label, err := server.CreateLabel(authenticatedContext(), &proto.CreateLabelRequest{Name: "  Work  "})
 	if err != nil {
@@ -59,7 +59,7 @@ func TestCreateLabelNormalisesAndRejectsDuplicates(t *testing.T) {
 }
 
 func TestListLabels(t *testing.T) {
-	server := setupTodoServer(t)
+	server := setupItemServer(t)
 	for _, name := range []string{"work", "admin"} {
 		if _, err := server.CreateLabel(authenticatedContext(), &proto.CreateLabelRequest{Name: name}); err != nil {
 			t.Fatalf("failed to create the label %q: %v", name, err)
@@ -79,7 +79,7 @@ func TestListLabels(t *testing.T) {
 }
 
 func TestRenameLabelErrorCodes(t *testing.T) {
-	server := setupTodoServer(t)
+	server := setupItemServer(t)
 	work, err := server.CreateLabel(authenticatedContext(), &proto.CreateLabelRequest{Name: "work"})
 	if err != nil {
 		t.Fatalf("failed to create the label: %v", err)
@@ -113,22 +113,22 @@ func TestRenameLabelErrorCodes(t *testing.T) {
 }
 
 func TestDeleteLabelRefusesWhileInUse(t *testing.T) {
-	server := setupTodoServer(t)
-	ids := createTodos(t, server, "a")
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
 	label, err := server.CreateLabel(authenticatedContext(), &proto.CreateLabelRequest{Name: "work"})
 	if err != nil {
 		t.Fatalf("failed to create the label: %v", err)
 	}
 
-	tagged, err := server.UpdateTodoLabels(authenticatedContext(), &proto.UpdateTodoLabelsRequest{
+	tagged, err := server.UpdateItemLabels(authenticatedContext(), &proto.UpdateItemLabelsRequest{
 		Id:  ids["a"],
 		Add: []string{"work"},
 	})
 	if err != nil {
-		t.Fatalf("failed to tag the todo: %v", err)
+		t.Fatalf("failed to tag the item: %v", err)
 	}
-	if !containsAll(todoLabelNames(tagged), "work") {
-		t.Errorf("expected [work] but got %v", todoLabelNames(tagged))
+	if !containsAll(itemLabelNames(tagged), "work") {
+		t.Errorf("expected [work] but got %v", itemLabelNames(tagged))
 	}
 
 	_, err = server.DeleteLabel(authenticatedContext(), &proto.DeleteLabelRequest{Id: label.GetId()})
@@ -136,11 +136,11 @@ func TestDeleteLabelRefusesWhileInUse(t *testing.T) {
 		t.Errorf("expected %v but got %v (%v)", codes.FailedPrecondition, got, err)
 	}
 
-	if _, err := server.UpdateTodoLabels(authenticatedContext(), &proto.UpdateTodoLabelsRequest{
+	if _, err := server.UpdateItemLabels(authenticatedContext(), &proto.UpdateItemLabelsRequest{
 		Id:     ids["a"],
 		Remove: []string{"work"},
 	}); err != nil {
-		t.Fatalf("failed to untag the todo: %v", err)
+		t.Fatalf("failed to untag the item: %v", err)
 	}
 
 	if _, err := server.DeleteLabel(authenticatedContext(), &proto.DeleteLabelRequest{Id: label.GetId()}); err != nil {
@@ -160,7 +160,7 @@ func TestDeleteLabelErrorCodes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			server := setupTodoServer(t)
+			server := setupItemServer(t)
 			_, err := server.DeleteLabel(authenticatedContext(), &proto.DeleteLabelRequest{Id: test.id})
 			if got := status.Code(err); got != test.expected {
 				t.Errorf("expected %v but got %v (%v)", test.expected, got, err)
@@ -169,30 +169,30 @@ func TestDeleteLabelErrorCodes(t *testing.T) {
 	}
 }
 
-func TestUpdateTodoLabelsErrorCodes(t *testing.T) {
+func TestUpdateItemLabelsErrorCodes(t *testing.T) {
 	tests := []struct {
 		name     string
-		request  func(ids map[string]uint32) *proto.UpdateTodoLabelsRequest
+		request  func(ids map[string]uint32) *proto.UpdateItemLabelsRequest
 		expected codes.Code
 	}{
 		{
 			name: "missing id",
-			request: func(_ map[string]uint32) *proto.UpdateTodoLabelsRequest {
-				return &proto.UpdateTodoLabelsRequest{Add: []string{"work"}}
+			request: func(_ map[string]uint32) *proto.UpdateItemLabelsRequest {
+				return &proto.UpdateItemLabelsRequest{Add: []string{"work"}}
 			},
 			expected: codes.InvalidArgument,
 		},
 		{
 			name: "neither add nor remove",
-			request: func(ids map[string]uint32) *proto.UpdateTodoLabelsRequest {
-				return &proto.UpdateTodoLabelsRequest{Id: ids["a"]}
+			request: func(ids map[string]uint32) *proto.UpdateItemLabelsRequest {
+				return &proto.UpdateItemLabelsRequest{Id: ids["a"]}
 			},
 			expected: codes.InvalidArgument,
 		},
 		{
-			name: "unknown todo",
-			request: func(_ map[string]uint32) *proto.UpdateTodoLabelsRequest {
-				return &proto.UpdateTodoLabelsRequest{Id: 404, Add: []string{"work"}}
+			name: "unknown item",
+			request: func(_ map[string]uint32) *proto.UpdateItemLabelsRequest {
+				return &proto.UpdateItemLabelsRequest{Id: 404, Add: []string{"work"}}
 			},
 			expected: codes.NotFound,
 		},
@@ -200,9 +200,9 @@ func TestUpdateTodoLabelsErrorCodes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			server := setupTodoServer(t)
-			ids := createTodos(t, server, "a")
-			_, err := server.UpdateTodoLabels(authenticatedContext(), test.request(ids))
+			server := setupItemServer(t)
+			ids := createItems(t, server, "a")
+			_, err := server.UpdateItemLabels(authenticatedContext(), test.request(ids))
 			if got := status.Code(err); got != test.expected {
 				t.Errorf("expected %v but got %v (%v)", test.expected, got, err)
 			}
@@ -210,18 +210,18 @@ func TestUpdateTodoLabelsErrorCodes(t *testing.T) {
 	}
 }
 
-func TestCreateTodoWithLabels(t *testing.T) {
-	server := setupTodoServer(t)
+func TestCreateItemWithLabels(t *testing.T) {
+	server := setupItemServer(t)
 
-	todo, err := server.CreateTodo(authenticatedContext(), &proto.CreateTodoRequest{
+	item, err := server.CreateItem(authenticatedContext(), &proto.CreateItemRequest{
 		Title:  "ship it",
 		Labels: []string{"Urgent", "  urgent ", "work"},
 	})
 	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
-	if !containsAll(todoLabelNames(todo), "urgent", "work") {
-		t.Errorf("expected [urgent work] but got %v", todoLabelNames(todo))
+	if !containsAll(itemLabelNames(item), "urgent", "work") {
+		t.Errorf("expected [urgent work] but got %v", itemLabelNames(item))
 	}
 
 	// The labels must have been created on the fly.
@@ -234,19 +234,19 @@ func TestCreateTodoWithLabels(t *testing.T) {
 	}
 }
 
-func TestListTodosFiltersByLabel(t *testing.T) {
-	server := setupTodoServer(t)
-	if _, err := server.CreateTodo(authenticatedContext(), &proto.CreateTodoRequest{
+func TestListItemsFiltersByLabel(t *testing.T) {
+	server := setupItemServer(t)
+	if _, err := server.CreateItem(authenticatedContext(), &proto.CreateItemRequest{
 		Title:  "a",
 		Labels: []string{"work", "urgent"},
 	}); err != nil {
-		t.Fatalf("failed to create the todo: %v", err)
+		t.Fatalf("failed to create the item: %v", err)
 	}
-	if _, err := server.CreateTodo(authenticatedContext(), &proto.CreateTodoRequest{
+	if _, err := server.CreateItem(authenticatedContext(), &proto.CreateItemRequest{
 		Title:  "b",
 		Labels: []string{"work"},
 	}); err != nil {
-		t.Fatalf("failed to create the todo: %v", err)
+		t.Fatalf("failed to create the item: %v", err)
 	}
 
 	tests := []struct {
@@ -262,14 +262,14 @@ func TestListTodosFiltersByLabel(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			response, err := server.ListTodos(authenticatedContext(), &proto.ListTodosRequest{Labels: test.labels})
+			response, err := server.ListItems(authenticatedContext(), &proto.ListItemsRequest{Labels: test.labels})
 			if err != nil {
 				t.Fatalf("expected no error but got %v", err)
 			}
 
 			titles := make([]string, 0, len(response.GetActive()))
-			for _, todo := range response.GetActive() {
-				titles = append(titles, todo.GetTitle())
+			for _, item := range response.GetActive() {
+				titles = append(titles, item.GetTitle())
 			}
 			if !equalStrings(titles, test.expected) {
 				t.Errorf("expected %v but got %v", test.expected, titles)
@@ -279,7 +279,7 @@ func TestListTodosFiltersByLabel(t *testing.T) {
 }
 
 func TestListLabelsRejectsUnauthenticated(t *testing.T) {
-	server := setupTodoServer(t)
+	server := setupItemServer(t)
 	_, err := server.ListLabels(context.Background(), &proto.ListLabelsRequest{})
 	if got := status.Code(err); got != codes.Unauthenticated {
 		t.Errorf("expected %v but got %v (%v)", codes.Unauthenticated, got, err)
@@ -287,17 +287,17 @@ func TestListLabelsRejectsUnauthenticated(t *testing.T) {
 }
 
 func TestCreateLabelRejectsUnauthenticated(t *testing.T) {
-	server := setupTodoServer(t)
+	server := setupItemServer(t)
 	_, err := server.CreateLabel(context.Background(), &proto.CreateLabelRequest{Name: "work"})
 	if got := status.Code(err); got != codes.Unauthenticated {
 		t.Errorf("expected %v but got %v (%v)", codes.Unauthenticated, got, err)
 	}
 }
 
-func TestUpdateTodoLabelsRejectsUnauthenticated(t *testing.T) {
-	server := setupTodoServer(t)
+func TestUpdateItemLabelsRejectsUnauthenticated(t *testing.T) {
+	server := setupItemServer(t)
 	// The id and add/remove checks run before the auth check.
-	_, err := server.UpdateTodoLabels(context.Background(), &proto.UpdateTodoLabelsRequest{
+	_, err := server.UpdateItemLabels(context.Background(), &proto.UpdateItemLabelsRequest{
 		Id:  1,
 		Add: []string{"work"},
 	})
@@ -306,20 +306,20 @@ func TestUpdateTodoLabelsRejectsUnauthenticated(t *testing.T) {
 	}
 }
 
-func TestUpdateTodoLabelsAddsAndRemoves(t *testing.T) {
-	server := setupTodoServer(t)
-	ids := createTodos(t, server, "a")
+func TestUpdateItemLabelsAddsAndRemoves(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
 
 	// Attach two labels, then in a second call add one and remove the other so
 	// both branches run in the same transaction.
-	if _, err := server.UpdateTodoLabels(authenticatedContext(), &proto.UpdateTodoLabelsRequest{
+	if _, err := server.UpdateItemLabels(authenticatedContext(), &proto.UpdateItemLabelsRequest{
 		Id:  ids["a"],
 		Add: []string{"work", "urgent"},
 	}); err != nil {
 		t.Fatalf("failed to attach the labels: %v", err)
 	}
 
-	updated, err := server.UpdateTodoLabels(authenticatedContext(), &proto.UpdateTodoLabelsRequest{
+	updated, err := server.UpdateItemLabels(authenticatedContext(), &proto.UpdateItemLabelsRequest{
 		Id:     ids["a"],
 		Add:    []string{"home"},
 		Remove: []string{"urgent"},
@@ -327,10 +327,10 @@ func TestUpdateTodoLabelsAddsAndRemoves(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
-	if !containsAll(todoLabelNames(updated), "work", "home") {
-		t.Errorf("expected [work home] but got %v", todoLabelNames(updated))
+	if !containsAll(itemLabelNames(updated), "work", "home") {
+		t.Errorf("expected [work home] but got %v", itemLabelNames(updated))
 	}
-	if containsAll(todoLabelNames(updated), "urgent") {
-		t.Errorf("expected urgent to have been removed but got %v", todoLabelNames(updated))
+	if containsAll(itemLabelNames(updated), "urgent") {
+		t.Errorf("expected urgent to have been removed but got %v", itemLabelNames(updated))
 	}
 }

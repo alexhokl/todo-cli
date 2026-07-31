@@ -28,7 +28,7 @@ func runListLabels(cmd *cobra.Command, _ []string) error {
 	}
 	defer func() { _ = conn.Close() }()
 
-	response, err := proto.NewTodoServiceClient(conn).ListLabels(cmd.Context(), &proto.ListLabelsRequest{})
+	response, err := proto.NewItemServiceClient(conn).ListLabels(cmd.Context(), &proto.ListLabelsRequest{})
 	if err != nil {
 		return fmt.Errorf("failed to list the labels: %w", err)
 	}

@@ -19,7 +19,7 @@ func TestDummyAuthenticationInterceptorInjectsUserID(t *testing.T) {
 	resp, err := DummyAuthenticationInterceptor(
 		context.Background(),
 		nil,
-		&grpc.UnaryServerInfo{FullMethod: "/todo.TodoService/ListTodos"},
+		&grpc.UnaryServerInfo{FullMethod: "/item.ItemService/ListItems"},
 		handler,
 	)
 	if err != nil {

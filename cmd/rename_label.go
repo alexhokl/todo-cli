@@ -43,7 +43,7 @@ func runRenameLabel(cmd *cobra.Command, args []string) error {
 	}
 	defer func() { _ = conn.Close() }()
 
-	label, err := proto.NewTodoServiceClient(conn).RenameLabel(
+	label, err := proto.NewItemServiceClient(conn).RenameLabel(
 		cmd.Context(),
 		&proto.RenameLabelRequest{Id: id, Name: renameLabelOpts.Name},
 	)

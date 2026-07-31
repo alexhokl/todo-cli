@@ -7,9 +7,9 @@ import (
 	"github.com/alexhokl/todo-cli/proto"
 )
 
-func TestBuildCreateTodoRequest(t *testing.T) {
+func TestBuildCreateItemRequest(t *testing.T) {
 	t.Run("title only", func(t *testing.T) {
-		req, err := buildCreateTodoRequest([]string{"buy milk"}, createTodoOptions{}, false)
+		req, err := buildCreateItemRequest([]string{"buy milk"}, createItemOptions{}, false)
 		if err != nil {
 			t.Fatalf("expected no error but got %v", err)
 		}
@@ -25,9 +25,9 @@ func TestBuildCreateTodoRequest(t *testing.T) {
 	})
 
 	t.Run("with description and labels", func(t *testing.T) {
-		req, err := buildCreateTodoRequest(
+		req, err := buildCreateItemRequest(
 			[]string{"ship it"},
-			createTodoOptions{Description: "before friday", Labels: []string{"urgent", "work"}},
+			createItemOptions{Description: "before friday", Labels: []string{"urgent", "work"}},
 			false,
 		)
 		if err != nil {
@@ -42,9 +42,9 @@ func TestBuildCreateTodoRequest(t *testing.T) {
 	})
 
 	t.Run("with valid due date", func(t *testing.T) {
-		req, err := buildCreateTodoRequest(
+		req, err := buildCreateItemRequest(
 			[]string{"a"},
-			createTodoOptions{DueDate: "2026-08-15"},
+			createItemOptions{DueDate: "2026-08-15"},
 			false,
 		)
 		if err != nil {
@@ -60,9 +60,9 @@ func TestBuildCreateTodoRequest(t *testing.T) {
 	})
 
 	t.Run("with invalid due date", func(t *testing.T) {
-		_, err := buildCreateTodoRequest(
+		_, err := buildCreateItemRequest(
 			[]string{"a"},
-			createTodoOptions{DueDate: "15-08-2026"},
+			createItemOptions{DueDate: "15-08-2026"},
 			false,
 		)
 		if err == nil {
@@ -71,9 +71,9 @@ func TestBuildCreateTodoRequest(t *testing.T) {
 	})
 
 	t.Run("list set explicitly", func(t *testing.T) {
-		req, err := buildCreateTodoRequest(
+		req, err := buildCreateItemRequest(
 			[]string{"a"},
-			createTodoOptions{ListID: 5},
+			createItemOptions{ListID: 5},
 			true,
 		)
 		if err != nil {
@@ -85,9 +85,9 @@ func TestBuildCreateTodoRequest(t *testing.T) {
 	})
 
 	t.Run("list flag unchanged leaves list absent", func(t *testing.T) {
-		req, err := buildCreateTodoRequest(
+		req, err := buildCreateItemRequest(
 			[]string{"a"},
-			createTodoOptions{ListID: 5},
+			createItemOptions{ListID: 5},
 			false,
 		)
 		if err != nil {
@@ -99,20 +99,20 @@ func TestBuildCreateTodoRequest(t *testing.T) {
 	})
 }
 
-func TestBuildMoveTodoRequest(t *testing.T) {
+func TestBuildMoveItemRequest(t *testing.T) {
 	tests := []struct {
 		name        string
 		id          uint32
-		opts        moveTodoOptions
+		opts        moveItemOptions
 		listChanged bool
-		check       func(*testing.T, *proto.MoveTodoRequest)
+		check       func(*testing.T, *proto.MoveItemRequest)
 	}{
 		{
 			name: "before anchor",
 			id:   7,
-			opts: moveTodoOptions{BeforeID: 3},
-			check: func(t *testing.T, r *proto.MoveTodoRequest) {
-				before, ok := r.GetAnchor().(*proto.MoveTodoRequest_BeforeId)
+			opts: moveItemOptions{BeforeID: 3},
+			check: func(t *testing.T, r *proto.MoveItemRequest) {
+				before, ok := r.GetAnchor().(*proto.MoveItemRequest_BeforeId)
 				if !ok {
 					t.Fatalf("expected a BeforeId anchor but got %T", r.GetAnchor())
 				}
@@ -124,9 +124,9 @@ func TestBuildMoveTodoRequest(t *testing.T) {
 		{
 			name: "after anchor",
 			id:   7,
-			opts: moveTodoOptions{AfterID: 4},
-			check: func(t *testing.T, r *proto.MoveTodoRequest) {
-				after, ok := r.GetAnchor().(*proto.MoveTodoRequest_AfterId)
+			opts: moveItemOptions{AfterID: 4},
+			check: func(t *testing.T, r *proto.MoveItemRequest) {
+				after, ok := r.GetAnchor().(*proto.MoveItemRequest_AfterId)
 				if !ok {
 					t.Fatalf("expected an AfterId anchor but got %T", r.GetAnchor())
 				}
@@ -138,8 +138,8 @@ func TestBuildMoveTodoRequest(t *testing.T) {
 		{
 			name: "clear list",
 			id:   7,
-			opts: moveTodoOptions{BeforeID: 3, ClearList: true},
-			check: func(t *testing.T, r *proto.MoveTodoRequest) {
+			opts: moveItemOptions{BeforeID: 3, ClearList: true},
+			check: func(t *testing.T, r *proto.MoveItemRequest) {
 				if !r.GetChangeList() {
 					t.Errorf("expected change_list to be set")
 				}
@@ -151,9 +151,9 @@ func TestBuildMoveTodoRequest(t *testing.T) {
 		{
 			name:        "set list",
 			id:          7,
-			opts:        moveTodoOptions{BeforeID: 3, ListID: 2},
+			opts:        moveItemOptions{BeforeID: 3, ListID: 2},
 			listChanged: true,
-			check: func(t *testing.T, r *proto.MoveTodoRequest) {
+			check: func(t *testing.T, r *proto.MoveItemRequest) {
 				if !r.GetChangeList() {
 					t.Errorf("expected change_list to be set")
 				}
@@ -165,9 +165,9 @@ func TestBuildMoveTodoRequest(t *testing.T) {
 		{
 			name:        "neither clear nor list leaves list untouched",
 			id:          7,
-			opts:        moveTodoOptions{BeforeID: 3, ListID: 2},
+			opts:        moveItemOptions{BeforeID: 3, ListID: 2},
 			listChanged: false,
-			check: func(t *testing.T, r *proto.MoveTodoRequest) {
+			check: func(t *testing.T, r *proto.MoveItemRequest) {
 				if r.GetChangeList() {
 					t.Errorf("expected change_list to be unset")
 				}
@@ -179,10 +179,10 @@ func TestBuildMoveTodoRequest(t *testing.T) {
 		{
 			name: "clear list takes precedence over list flag",
 			id:   7,
-			opts: moveTodoOptions{BeforeID: 3, ClearList: true, ListID: 2},
+			opts: moveItemOptions{BeforeID: 3, ClearList: true, ListID: 2},
 			// listChanged is true but ClearList wins, so no identifier is sent.
 			listChanged: true,
-			check: func(t *testing.T, r *proto.MoveTodoRequest) {
+			check: func(t *testing.T, r *proto.MoveItemRequest) {
 				if !r.GetChangeList() {
 					t.Errorf("expected change_list to be set")
 				}
@@ -195,7 +195,7 @@ func TestBuildMoveTodoRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req := buildMoveTodoRequest(test.id, test.opts, test.listChanged)
+			req := buildMoveItemRequest(test.id, test.opts, test.listChanged)
 			if req.GetId() != test.id {
 				t.Errorf("expected id %d but got %d", test.id, req.GetId())
 			}
@@ -204,9 +204,9 @@ func TestBuildMoveTodoRequest(t *testing.T) {
 	}
 }
 
-func TestBuildSetTodoDoneRequest(t *testing.T) {
+func TestBuildSetItemDoneRequest(t *testing.T) {
 	t.Run("complete", func(t *testing.T) {
-		req := buildSetTodoDoneRequest(7, false)
+		req := buildSetItemDoneRequest(7, false)
 		if req.GetId() != 7 {
 			t.Errorf("expected id 7 but got %d", req.GetId())
 		}
@@ -216,15 +216,15 @@ func TestBuildSetTodoDoneRequest(t *testing.T) {
 	})
 
 	t.Run("undo", func(t *testing.T) {
-		req := buildSetTodoDoneRequest(7, true)
+		req := buildSetItemDoneRequest(7, true)
 		if req.GetDone() {
 			t.Errorf("expected done to be false")
 		}
 	})
 }
 
-func TestBuildUpdateTodoLabelsRequest(t *testing.T) {
-	req := buildUpdateTodoLabelsRequest(7, updateTodoOptions{
+func TestBuildUpdateItemLabelsRequest(t *testing.T) {
+	req := buildUpdateItemLabelsRequest(7, updateItemOptions{
 		AddLabels:    []string{"urgent", "work"},
 		RemoveLabels: []string{"later"},
 	})

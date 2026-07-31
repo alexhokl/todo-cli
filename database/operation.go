@@ -11,7 +11,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&TailscaleAddress{},
 		&List{},
 		&Label{},
-		&Todo{},
+		&Item{},
 	); err != nil {
 		return err
 	}

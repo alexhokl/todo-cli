@@ -18,7 +18,7 @@ func TestErrorLoggingInterceptor(t *testing.T) {
 		{"failure", nil, errors.New("something went wrong")},
 	}
 
-	info := &grpc.UnaryServerInfo{FullMethod: "/todo.TodoService/ListTodos"}
+	info := &grpc.UnaryServerInfo{FullMethod: "/item.ItemService/ListItems"}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

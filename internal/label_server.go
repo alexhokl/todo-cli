@@ -11,7 +11,7 @@ import (
 )
 
 // ListLabels returns every known label owned by the caller, ordered by name.
-func (s *TodoServer) ListLabels(ctx context.Context, _ *proto.ListLabelsRequest) (*proto.ListLabelsResponse, error) {
+func (s *ItemServer) ListLabels(ctx context.Context, _ *proto.ListLabelsRequest) (*proto.ListLabelsResponse, error) {
 	ctx, span := startSpan(ctx, "ListLabels")
 	defer span.End()
 
@@ -36,7 +36,7 @@ func (s *TodoServer) ListLabels(ctx context.Context, _ *proto.ListLabelsRequest)
 }
 
 // CreateLabel creates a label explicitly.
-func (s *TodoServer) CreateLabel(ctx context.Context, req *proto.CreateLabelRequest) (*proto.Label, error) {
+func (s *ItemServer) CreateLabel(ctx context.Context, req *proto.CreateLabelRequest) (*proto.Label, error) {
 	ctx, span := startSpan(ctx, "CreateLabel")
 	defer span.End()
 
@@ -61,7 +61,7 @@ func (s *TodoServer) CreateLabel(ctx context.Context, req *proto.CreateLabelRequ
 }
 
 // RenameLabel changes the name of an existing label.
-func (s *TodoServer) RenameLabel(ctx context.Context, req *proto.RenameLabelRequest) (*proto.Label, error) {
+func (s *ItemServer) RenameLabel(ctx context.Context, req *proto.RenameLabelRequest) (*proto.Label, error) {
 	ctx, span := startSpan(ctx, "RenameLabel")
 	defer span.End()
 
@@ -89,8 +89,8 @@ func (s *TodoServer) RenameLabel(ctx context.Context, req *proto.RenameLabelRequ
 	return result, nil
 }
 
-// DeleteLabel removes a label that is no longer attached to any todo.
-func (s *TodoServer) DeleteLabel(ctx context.Context, req *proto.DeleteLabelRequest) (*emptypb.Empty, error) {
+// DeleteLabel removes a label that is no longer attached to any item.
+func (s *ItemServer) DeleteLabel(ctx context.Context, req *proto.DeleteLabelRequest) (*emptypb.Empty, error) {
 	ctx, span := startSpan(ctx, "DeleteLabel")
 	defer span.End()
 
@@ -112,9 +112,9 @@ func (s *TodoServer) DeleteLabel(ctx context.Context, req *proto.DeleteLabelRequ
 	return &emptypb.Empty{}, nil
 }
 
-// UpdateTodoLabels attaches and detaches labels on a todo.
-func (s *TodoServer) UpdateTodoLabels(ctx context.Context, req *proto.UpdateTodoLabelsRequest) (*proto.Todo, error) {
-	ctx, span := startSpan(ctx, "UpdateTodoLabels")
+// UpdateItemLabels attaches and detaches labels on an item.
+func (s *ItemServer) UpdateItemLabels(ctx context.Context, req *proto.UpdateItemLabelsRequest) (*proto.Item, error) {
+	ctx, span := startSpan(ctx, "UpdateItemLabels")
 	defer span.End()
 
 	if req.GetId() == 0 {
@@ -129,7 +129,7 @@ func (s *TodoServer) UpdateTodoLabels(ctx context.Context, req *proto.UpdateTodo
 		return nil, err
 	}
 
-	todo, err := database.UpdateTodoLabels(
+	item, err := database.UpdateItemLabels(
 		s.DB.WithContext(ctx),
 		userID,
 		uint(req.GetId()),
@@ -140,7 +140,7 @@ func (s *TodoServer) UpdateTodoLabels(ctx context.Context, req *proto.UpdateTodo
 		return nil, mapDatabaseError(err)
 	}
 
-	result, err := toProtoTodo(*todo)
+	result, err := toProtoItem(*item)
 	if err != nil {
 		return nil, err
 	}

@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestUpdateTodoFlagValidation(t *testing.T) {
+func TestUpdateItemFlagValidation(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        []string
@@ -30,7 +30,7 @@ func TestUpdateTodoFlagValidation(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// The flag rules are validated before RunE is reached, so a stub
 			// run function keeps the assertion off the network.
-			cmd := newUpdateTodoCmd()
+			cmd := newUpdateItemCmd()
 			cmd.RunE = func(_ *cobra.Command, _ []string) error { return nil }
 			cmd.SetArgs(test.args)
 			cmd.SetOut(io.Discard)
@@ -60,7 +60,7 @@ func TestJoinLabelNames(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := joinLabelNames(&proto.Todo{Labels: test.labels})
+			result := joinLabelNames(&proto.Item{Labels: test.labels})
 			if result != test.expected {
 				t.Errorf("expected %q but got %q", test.expected, result)
 			}
@@ -68,14 +68,14 @@ func TestJoinLabelNames(t *testing.T) {
 	}
 }
 
-func TestWriteTodoTableIncludesLabels(t *testing.T) {
+func TestWriteItemTableIncludesLabels(t *testing.T) {
 	var buffer strings.Builder
-	todos := []*proto.Todo{
+	items := []*proto.Item{
 		{Id: 1, Title: "a", Labels: []*proto.Label{{Name: "work"}}},
 		{Id: 2, Title: "b"},
 	}
 
-	if err := writeTodoTable(&buffer, todos, true); err != nil {
+	if err := writeItemTable(&buffer, items, true); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 
@@ -88,11 +88,11 @@ func TestWriteTodoTableIncludesLabels(t *testing.T) {
 	}
 }
 
-func TestWriteTodoLineIncludesLabels(t *testing.T) {
+func TestWriteItemLineIncludesLabels(t *testing.T) {
 	var buffer strings.Builder
-	todo := &proto.Todo{Id: 7, Title: "a", Labels: []*proto.Label{{Name: "work"}, {Name: "urgent"}}}
+	item := &proto.Item{Id: 7, Title: "a", Labels: []*proto.Label{{Name: "work"}, {Name: "urgent"}}}
 
-	if err := writeTodoLine(&buffer, todo); err != nil {
+	if err := writeItemLine(&buffer, item); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 	if !strings.Contains(buffer.String(), "labels work,urgent") {
@@ -100,9 +100,9 @@ func TestWriteTodoLineIncludesLabels(t *testing.T) {
 	}
 }
 
-func TestWriteTodoTableEmpty(t *testing.T) {
+func TestWriteItemTableEmpty(t *testing.T) {
 	var buffer strings.Builder
-	if err := writeTodoTable(&buffer, nil, true); err != nil {
+	if err := writeItemTable(&buffer, nil, true); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 	if buffer.String() != "  (none)\n" {
@@ -110,15 +110,15 @@ func TestWriteTodoTableEmpty(t *testing.T) {
 	}
 }
 
-func TestWriteTodoTableRendersDueDateAndList(t *testing.T) {
+func TestWriteItemTableRendersDueDateAndList(t *testing.T) {
 	var buffer strings.Builder
 	due := timestamppb.New(time.Date(2026, time.August, 15, 0, 0, 0, 0, time.UTC))
 	listID := uint32(3)
-	todos := []*proto.Todo{
+	items := []*proto.Item{
 		{Id: 1, Title: "a", DueDate: due, ListId: &listID},
 	}
 
-	if err := writeTodoTable(&buffer, todos, true); err != nil {
+	if err := writeItemTable(&buffer, items, true); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 
@@ -133,11 +133,11 @@ func TestWriteTodoTableRendersDueDateAndList(t *testing.T) {
 	}
 }
 
-func TestWriteTodoTableUnnumberedShowsDash(t *testing.T) {
+func TestWriteItemTableUnnumberedShowsDash(t *testing.T) {
 	var buffer strings.Builder
-	todos := []*proto.Todo{{Id: 1, Title: "a"}}
+	items := []*proto.Item{{Id: 1, Title: "a"}}
 
-	if err := writeTodoTable(&buffer, todos, false); err != nil {
+	if err := writeItemTable(&buffer, items, false); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 
@@ -155,12 +155,12 @@ func TestWriteTodoTableUnnumberedShowsDash(t *testing.T) {
 	}
 }
 
-func TestWriteTodoLineWithDoneAndList(t *testing.T) {
+func TestWriteItemLineWithDoneAndList(t *testing.T) {
 	var buffer strings.Builder
 	listID := uint32(2)
-	todo := &proto.Todo{Id: 7, Title: "a", Done: true, ListId: &listID}
+	item := &proto.Item{Id: 7, Title: "a", Done: true, ListId: &listID}
 
-	if err := writeTodoLine(&buffer, todo); err != nil {
+	if err := writeItemLine(&buffer, item); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 

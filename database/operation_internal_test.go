@@ -36,7 +36,7 @@ func TestAutoMigrate(t *testing.T) {
 		model any
 	}{
 		{"List", &List{}},
-		{"Todo", &Todo{}},
+		{"Item", &Item{}},
 		{"User", &User{}},
 		{"TailscaleAddress", &TailscaleAddress{}},
 	}
@@ -50,18 +50,18 @@ func TestAutoMigrate(t *testing.T) {
 	}
 }
 
-func TestCreateTodo(t *testing.T) {
+func TestCreateItem(t *testing.T) {
 	db := setupTestDB(t)
 
-	todo := Todo{Title: "write tests", UserID: testUserID}
-	if err := db.Create(&todo).Error; err != nil {
+	item := Item{Title: "write tests", UserID: testUserID}
+	if err := db.Create(&item).Error; err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if todo.ID == 0 {
-		t.Errorf("expected an assigned ID, got %d", todo.ID)
+	if item.ID == 0 {
+		t.Errorf("expected an assigned ID, got %d", item.ID)
 	}
-	if todo.Done {
-		t.Errorf("expected new todo to not be done")
+	if item.Done {
+		t.Errorf("expected new item to not be done")
 	}
 }
 
@@ -87,9 +87,9 @@ func TestOpen(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected no error, got %v", err)
 			}
-			if !db.Migrator().HasTable(&Todo{}) {
-				t.Errorf("expected Todo table to exist after Open")
-			}
+		if !db.Migrator().HasTable(&Item{}) {
+			t.Errorf("expected Item table to exist after Open")
+		}
 		})
 	}
 }

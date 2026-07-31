@@ -25,7 +25,7 @@ func TestParseID(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			id, err := parseID(test.input, "todo")
+			id, err := parseID(test.input, "item")
 			if test.expectError {
 				if err == nil {
 					t.Errorf("expected an error but got none")
@@ -42,13 +42,13 @@ func TestParseID(t *testing.T) {
 	}
 }
 
-func TestTodoCommandsRequireService(t *testing.T) {
+func TestItemCommandsRequireService(t *testing.T) {
 	commands := map[string]bool{
-		"update position": requiresService(moveTodoCmd),
-		"list todos":      requiresService(listTodosCmd),
-		"create todo":     requiresService(createTodoCmd),
-		"update done":     requiresService(completeTodoCmd),
-		"update todo":     requiresService(updateTodoCmd),
+		"update position": requiresService(moveItemCmd),
+		"list items":      requiresService(listItemsCmd),
+		"create item":     requiresService(createItemCmd),
+		"update done":     requiresService(completeItemCmd),
+		"update item":     requiresService(updateItemCmd),
 		"list labels":     requiresService(listLabelsCmd),
 		"create label":    requiresService(createLabelCmd),
 		"update label":    requiresService(renameLabelCmd),
@@ -64,7 +64,7 @@ func TestTodoCommandsRequireService(t *testing.T) {
 	}
 }
 
-func TestMoveTodoFlagValidation(t *testing.T) {
+func TestMoveItemFlagValidation(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        []string
@@ -85,7 +85,7 @@ func TestMoveTodoFlagValidation(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// The flag rules are validated before RunE is reached, so a stub
 			// run function keeps the assertion off the network.
-			cmd := newMoveTodoCmd()
+			cmd := newMoveItemCmd()
 			cmd.RunE = func(_ *cobra.Command, _ []string) error { return nil }
 			cmd.SetArgs(test.args)
 			cmd.SetOut(io.Discard)

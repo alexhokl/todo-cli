@@ -13,16 +13,16 @@ import (
 	"gorm.io/gorm"
 )
 
-// TodoServer implements the todo gRPC service on top of a GORM database.
-type TodoServer struct {
-	proto.UnimplementedTodoServiceServer
+// ItemServer implements the item gRPC service on top of a GORM database.
+type ItemServer struct {
+	proto.UnimplementedItemServiceServer
 	DB *gorm.DB
 }
 
-// NewTodoServer creates a todo service implementation backed by the given
+// NewItemServer creates an item service implementation backed by the given
 // database connection.
-func NewTodoServer(db *gorm.DB) *TodoServer {
-	return &TodoServer{DB: db}
+func NewItemServer(db *gorm.DB) *ItemServer {
+	return &ItemServer{DB: db}
 }
 
 // userIDFromContext extracts the authenticated user identifier placed in the
@@ -37,10 +37,10 @@ func userIDFromContext(ctx context.Context) (uint, error) {
 	return userID, nil
 }
 
-// ListTodos returns the active todos in manual order and the completed todos
+// ListItems returns the active items in manual order and the completed items
 // ordered by how recently they were updated.
-func (s *TodoServer) ListTodos(ctx context.Context, req *proto.ListTodosRequest) (*proto.ListTodosResponse, error) {
-	ctx, span := startSpan(ctx, "ListTodos")
+func (s *ItemServer) ListItems(ctx context.Context, req *proto.ListItemsRequest) (*proto.ListItemsResponse, error) {
+	ctx, span := startSpan(ctx, "ListItems")
 	defer span.End()
 
 	userID, err := userIDFromContext(ctx)
@@ -48,7 +48,7 @@ func (s *TodoServer) ListTodos(ctx context.Context, req *proto.ListTodosRequest)
 		return nil, err
 	}
 
-	filter := database.TodoFilter{Labels: req.GetLabels()}
+	filter := database.ItemFilter{Labels: req.GetLabels()}
 
 	active, err := database.ListActive(s.DB.WithContext(ctx), userID, filter)
 	if err != nil {
@@ -59,26 +59,26 @@ func (s *TodoServer) ListTodos(ctx context.Context, req *proto.ListTodosRequest)
 		return nil, mapDatabaseError(err)
 	}
 
-	activeTodos, err := toProtoTodos(active)
+	activeItems, err := toProtoItems(active)
 	if err != nil {
 		return nil, err
 	}
-	completedTodos, err := toProtoTodos(completed)
+	completedItems, err := toProtoItems(completed)
 	if err != nil {
 		return nil, err
 	}
 
 	endSpanOk(span)
 
-	return &proto.ListTodosResponse{
-		Active:    activeTodos,
-		Completed: completedTodos,
+	return &proto.ListItemsResponse{
+		Active:    activeItems,
+		Completed: completedItems,
 	}, nil
 }
 
-// CreateTodo appends a new todo to the end of the manual order.
-func (s *TodoServer) CreateTodo(ctx context.Context, req *proto.CreateTodoRequest) (*proto.Todo, error) {
-	ctx, span := startSpan(ctx, "CreateTodo")
+// CreateItem appends a new item to the end of the manual order.
+func (s *ItemServer) CreateItem(ctx context.Context, req *proto.CreateItemRequest) (*proto.Item, error) {
+	ctx, span := startSpan(ctx, "CreateItem")
 	defer span.End()
 
 	if req.GetTitle() == "" {
@@ -90,36 +90,36 @@ func (s *TodoServer) CreateTodo(ctx context.Context, req *proto.CreateTodoReques
 		return nil, err
 	}
 
-	todo := database.Todo{
+	item := database.Item{
 		Title:       req.GetTitle(),
 		Description: req.GetDescription(),
 		ListID:      optionalID(req.ListId),
 	}
 	if req.DueDate != nil {
 		dueDate := req.GetDueDate().AsTime()
-		todo.DueDate = &dueDate
+		item.DueDate = &dueDate
 	}
 
 	db := s.DB.WithContext(ctx)
 	err = db.Transaction(func(tx *gorm.DB) error {
-		if err := database.AssignInitialPosition(tx, &todo, userID); err != nil {
+		if err := database.AssignInitialPosition(tx, &item, userID); err != nil {
 			return err
 		}
-		// Labels are resolved before the insert so that the todo is created
+		// Labels are resolved before the insert so that the item is created
 		// with its join rows already in place.
 		labels, err := database.FindOrCreateLabels(tx, userID, req.GetLabels())
 		if err != nil {
 			return err
 		}
-		todo.Labels = labels
+		item.Labels = labels
 
-		return tx.Create(&todo).Error
+		return tx.Create(&item).Error
 	})
 	if err != nil {
 		return nil, mapDatabaseError(err)
 	}
 
-	result, err := toProtoTodo(todo)
+	result, err := toProtoItem(item)
 	if err != nil {
 		return nil, err
 	}
@@ -129,10 +129,10 @@ func (s *TodoServer) CreateTodo(ctx context.Context, req *proto.CreateTodoReques
 	return result, nil
 }
 
-// MoveTodo places a todo immediately before or after another todo, optionally
+// MoveItem places an item immediately before or after another item, optionally
 // reassigning its list in the same operation.
-func (s *TodoServer) MoveTodo(ctx context.Context, req *proto.MoveTodoRequest) (*proto.Todo, error) {
-	ctx, span := startSpan(ctx, "MoveTodo")
+func (s *ItemServer) MoveItem(ctx context.Context, req *proto.MoveItemRequest) (*proto.Item, error) {
+	ctx, span := startSpan(ctx, "MoveItem")
 	defer span.End()
 
 	if req.GetId() == 0 {
@@ -159,12 +159,12 @@ func (s *TodoServer) MoveTodo(ctx context.Context, req *proto.MoveTodoRequest) (
 		opts.ListID = optionalID(req.ListId)
 	}
 
-	todo, err := database.MoveTodo(s.DB.WithContext(ctx), userID, uint(req.GetId()), anchor, opts)
+	item, err := database.MoveItem(s.DB.WithContext(ctx), userID, uint(req.GetId()), anchor, opts)
 	if err != nil {
 		return nil, mapDatabaseError(err)
 	}
 
-	result, err := toProtoTodo(*todo)
+	result, err := toProtoItem(*item)
 	if err != nil {
 		return nil, err
 	}
@@ -174,9 +174,9 @@ func (s *TodoServer) MoveTodo(ctx context.Context, req *proto.MoveTodoRequest) (
 	return result, nil
 }
 
-// SetTodoDone completes or reopens a todo.
-func (s *TodoServer) SetTodoDone(ctx context.Context, req *proto.SetTodoDoneRequest) (*proto.Todo, error) {
-	ctx, span := startSpan(ctx, "SetTodoDone")
+// SetItemDone completes or reopens an item.
+func (s *ItemServer) SetItemDone(ctx context.Context, req *proto.SetItemDoneRequest) (*proto.Item, error) {
+	ctx, span := startSpan(ctx, "SetItemDone")
 	defer span.End()
 
 	if req.GetId() == 0 {
@@ -188,12 +188,12 @@ func (s *TodoServer) SetTodoDone(ctx context.Context, req *proto.SetTodoDoneRequ
 		return nil, err
 	}
 
-	todo, err := database.SetDone(s.DB.WithContext(ctx), userID, uint(req.GetId()), req.GetDone())
+	item, err := database.SetDone(s.DB.WithContext(ctx), userID, uint(req.GetId()), req.GetDone())
 	if err != nil {
 		return nil, mapDatabaseError(err)
 	}
 
-	result, err := toProtoTodo(*todo)
+	result, err := toProtoItem(*item)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func mapDatabaseError(err error) error {
 	switch {
 	case err == nil:
 		return nil
-	case errors.Is(err, database.ErrTodoNotFound):
+	case errors.Is(err, database.ErrItemNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	case errors.Is(err, database.ErrLabelNotFound):
 		return status.Error(codes.NotFound, err.Error())
@@ -218,7 +218,7 @@ func mapDatabaseError(err error) error {
 		return status.Error(codes.AlreadyExists, err.Error())
 	case errors.Is(err, database.ErrLabelNameEmpty):
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, database.ErrTodoCompleted),
+	case errors.Is(err, database.ErrItemCompleted),
 		errors.Is(err, database.ErrAnchorCompleted),
 		errors.Is(err, database.ErrLabelInUse):
 		return status.Error(codes.FailedPrecondition, err.Error())
@@ -227,10 +227,10 @@ func mapDatabaseError(err error) error {
 	}
 }
 
-func toProtoTodos(todos []database.Todo) ([]*proto.Todo, error) {
-	result := make([]*proto.Todo, 0, len(todos))
-	for _, todo := range todos {
-		converted, err := toProtoTodo(todo)
+func toProtoItems(items []database.Item) ([]*proto.Item, error) {
+	result := make([]*proto.Item, 0, len(items))
+	for _, item := range items {
+		converted, err := toProtoItem(item)
 		if err != nil {
 			return nil, err
 		}
@@ -240,31 +240,31 @@ func toProtoTodos(todos []database.Todo) ([]*proto.Todo, error) {
 	return result, nil
 }
 
-func toProtoTodo(todo database.Todo) (*proto.Todo, error) {
-	id, err := toProtoID(todo.ID)
+func toProtoItem(item database.Item) (*proto.Item, error) {
+	id, err := toProtoID(item.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	result := &proto.Todo{
+	result := &proto.Item{
 		Id:          id,
-		Title:       todo.Title,
-		Description: todo.Description,
-		Done:        todo.Done,
-		Position:    todo.Position,
+		Title:       item.Title,
+		Description: item.Description,
+		Done:        item.Done,
+		Position:    item.Position,
 	}
-	if todo.DueDate != nil {
-		result.DueDate = timestamppb.New(*todo.DueDate)
+	if item.DueDate != nil {
+		result.DueDate = timestamppb.New(*item.DueDate)
 	}
-	if todo.ListID != nil {
-		listID, listErr := toProtoID(*todo.ListID)
+	if item.ListID != nil {
+		listID, listErr := toProtoID(*item.ListID)
 		if listErr != nil {
 			return nil, listErr
 		}
 		result.ListId = &listID
 	}
 
-	labels, err := toProtoLabels(todo.Labels)
+	labels, err := toProtoLabels(item.Labels)
 	if err != nil {
 		return nil, err
 	}

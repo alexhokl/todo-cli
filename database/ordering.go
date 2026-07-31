@@ -9,7 +9,7 @@ import (
 
 const (
 	// positionStep is the gap between adjacent ranks after a rebalance and the
-	// increment used when appending a todo to the tail of the manual order.
+	// increment used when appending an item to the tail of the manual order.
 	positionStep = 1024.0
 	// positionEpsilon is the smallest gap between two neighbours that can still
 	// be split by a midpoint. Below this, float64 mantissa precision is close
@@ -18,17 +18,17 @@ const (
 )
 
 var (
-	// ErrTodoNotFound is returned when the todo being moved does not exist.
-	ErrTodoNotFound = errors.New("todo not found")
-	// ErrTodoCompleted is returned when the todo being moved is completed and
+	// ErrItemNotFound is returned when the item being moved does not exist.
+	ErrItemNotFound = errors.New("item not found")
+	// ErrItemCompleted is returned when the item being moved is completed and
 	// therefore carries no position.
-	ErrTodoCompleted = errors.New("cannot reposition a completed todo")
-	// ErrAnchorCompleted is returned when the todo used as the move anchor is
+	ErrItemCompleted = errors.New("cannot reposition a completed item")
+	// ErrAnchorCompleted is returned when the item used as the move anchor is
 	// completed and therefore carries no position.
-	ErrAnchorCompleted = errors.New("cannot position relative to a completed todo")
+	ErrAnchorCompleted = errors.New("cannot position relative to a completed item")
 )
 
-// MoveAnchor identifies where a todo should be placed relative to another todo.
+// MoveAnchor identifies where an item should be placed relative to another item.
 type MoveAnchor struct {
 	TargetID uint
 	// Before places the subject immediately before TargetID; otherwise it is
@@ -45,12 +45,12 @@ type MoveOptions struct {
 	ListID     *uint
 }
 
-// NextPosition returns the rank to use when appending a todo to the tail of the
+// NextPosition returns the rank to use when appending an item to the tail of the
 // manual order.
 func NextPosition(db *gorm.DB, userID uint) (float64, error) {
 	var maxPosition *float64
 	if err := db.
-		Model(&Todo{}).
+		Model(&Item{}).
 		Where("done = ?", false).
 		Where("user_id = ?", userID).
 		Select("MAX(position)").
@@ -65,14 +65,14 @@ func NextPosition(db *gorm.DB, userID uint) (float64, error) {
 	return *maxPosition + positionStep, nil
 }
 
-// AssignInitialPosition sets the position of a new todo so that it lands at the
-// tail of the manual order. Completed todos are left without a position. The
-// todo's UserID is set to the given identifier so callers need only assign the
+// AssignInitialPosition sets the position of a new item so that it lands at the
+// tail of the manual order. Completed items are left without a position. The
+// item's UserID is set to the given identifier so callers need only assign the
 // user once.
-func AssignInitialPosition(db *gorm.DB, todo *Todo, userID uint) error {
-	todo.UserID = userID
-	if todo.Done {
-		todo.Position = nil
+func AssignInitialPosition(db *gorm.DB, item *Item, userID uint) error {
+	item.UserID = userID
+	if item.Done {
+		item.Position = nil
 		return nil
 	}
 
@@ -80,99 +80,99 @@ func AssignInitialPosition(db *gorm.DB, todo *Todo, userID uint) error {
 	if err != nil {
 		return err
 	}
-	todo.Position = &position
+	item.Position = &position
 
 	return nil
 }
 
-// TodoFilter narrows a todo listing.
-type TodoFilter struct {
-	// Labels restricts the result to todos carrying every one of these labels.
+// ItemFilter narrows an item listing.
+type ItemFilter struct {
+	// Labels restricts the result to items carrying every one of these labels.
 	// Names are normalised before matching, and an unknown name therefore
 	// yields no results rather than being ignored.
 	Labels []string
 }
 
-// apply narrows a query to the todos matching the filter.
-func (f TodoFilter) apply(db *gorm.DB) *gorm.DB {
+// apply narrows a query to the items matching the filter.
+func (f ItemFilter) apply(db *gorm.DB) *gorm.DB {
 	names := normaliseLabelNames(f.Labels)
 	if len(names) == 0 {
 		return db
 	}
 
 	// Every requested label has to be present, so the matching join rows are
-	// counted per todo and compared against the number of names requested.
+	// counted per item and compared against the number of names requested.
 	return db.
-		Joins("JOIN todo_labels ON todo_labels.todo_id = todos.id").
-		Joins("JOIN labels ON labels.id = todo_labels.label_id AND labels.deleted_at IS NULL").
+		Joins("JOIN item_labels ON item_labels.item_id = items.id").
+		Joins("JOIN labels ON labels.id = item_labels.label_id AND labels.deleted_at IS NULL").
 		Where("labels.name IN ?", names).
-		Where("labels.user_id = todos.user_id").
-		Group("todos.id").
+		Where("labels.user_id = items.user_id").
+		Group("items.id").
 		Having("COUNT(DISTINCT labels.id) = ?", len(names))
 }
 
-// ListActive returns the active todos in manual order. The identifier is used
+// ListActive returns the active items in manual order. The identifier is used
 // as a tiebreak so the order stays deterministic even if two ranks ever
 // collide.
-func ListActive(db *gorm.DB, userID uint, filter TodoFilter) ([]Todo, error) {
-	var todos []Todo
+func ListActive(db *gorm.DB, userID uint, filter ItemFilter) ([]Item, error) {
+	var items []Item
 	// Columns are qualified because the label filter joins two further tables
 	// that carry columns of the same name.
 	if err := filter.apply(db).
 		Preload("Labels").
-		Select("todos.*").
-		Where("todos.done = ?", false).
-		Where("todos.user_id = ?", userID).
-		Order("todos.position ASC, todos.id ASC").
-		Find(&todos).Error; err != nil {
-		return nil, fmt.Errorf("failed to list active todos: %w", err)
+		Select("items.*").
+		Where("items.done = ?", false).
+		Where("items.user_id = ?", userID).
+		Order("items.position ASC, items.id ASC").
+		Find(&items).Error; err != nil {
+		return nil, fmt.Errorf("failed to list active items: %w", err)
 	}
 
-	return todos, nil
+	return items, nil
 }
 
-// ListCompleted returns the completed todos, most recently updated first.
-// Completed todos do not take part in the manual ordering.
-func ListCompleted(db *gorm.DB, userID uint, filter TodoFilter) ([]Todo, error) {
-	var todos []Todo
+// ListCompleted returns the completed items, most recently updated first.
+// Completed items do not take part in the manual ordering.
+func ListCompleted(db *gorm.DB, userID uint, filter ItemFilter) ([]Item, error) {
+	var items []Item
 	if err := filter.apply(db).
 		Preload("Labels").
-		Select("todos.*").
-		Where("todos.done = ?", true).
-		Where("todos.user_id = ?", userID).
-		Order("todos.updated_at DESC, todos.id DESC").
-		Find(&todos).Error; err != nil {
-		return nil, fmt.Errorf("failed to list completed todos: %w", err)
+		Select("items.*").
+		Where("items.done = ?", true).
+		Where("items.user_id = ?", userID).
+		Order("items.updated_at DESC, items.id DESC").
+		Find(&items).Error; err != nil {
+		return nil, fmt.Errorf("failed to list completed items: %w", err)
 	}
 
-	return todos, nil
+	return items, nil
 }
 
-// activeTodosForRebalance returns the active todos in manual order without
+// activeItemsForRebalance returns the active items in manual order without
 // loading their labels. Rebalancing runs inside a move transaction, so it is
 // kept as cheap as possible.
-func activeTodosForRebalance(db *gorm.DB, userID uint) ([]Todo, error) {
-	var todos []Todo
+func activeItemsForRebalance(db *gorm.DB, userID uint) ([]Item, error) {
+	var items []Item
 	if err := db.
 		Select("id", "position").
 		Where("done = ?", false).
 		Where("user_id = ?", userID).
 		Order("position ASC, id ASC").
-		Find(&todos).Error; err != nil {
-		return nil, fmt.Errorf("failed to list active todos: %w", err)
+		Find(&items).Error; err != nil {
+		return nil, fmt.Errorf("failed to list active items: %w", err)
 	}
 
-	return todos, nil
+	return items, nil
 }
 
-// SetDone marks a todo as completed or active. Completing a todo removes it
+// SetDone marks an item as completed or active. Completing an item removes it
 // from the manual ordering; making it active again appends it to the tail. This
-// is the only place where the "a todo has a position exactly when it is active"
+// is the only place where the "an item has a position exactly when it is active"
 // invariant is maintained.
-func SetDone(db *gorm.DB, userID uint, id uint, done bool) (*Todo, error) {
-	var todo Todo
+func SetDone(db *gorm.DB, userID uint, id uint, done bool) (*Item, error) {
+	var item Item
 	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := findTodo(tx, userID, id, &todo); err != nil {
+		if err := findItem(tx, userID, id, &item); err != nil {
 			return err
 		}
 
@@ -185,39 +185,39 @@ func SetDone(db *gorm.DB, userID uint, id uint, done bool) (*Todo, error) {
 			updates["position"] = position
 		}
 
-		if err := tx.Model(&todo).Updates(updates).Error; err != nil {
-			return fmt.Errorf("failed to update the todo: %w", err)
+		if err := tx.Model(&item).Updates(updates).Error; err != nil {
+			return fmt.Errorf("failed to update the item: %w", err)
 		}
 
-		return findTodo(tx, userID, id, &todo)
+		return findItem(tx, userID, id, &item)
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &todo, nil
+	return &item, nil
 }
 
-// MoveTodo places a todo immediately before or after another todo in the manual
+// MoveItem places an item immediately before or after another item in the manual
 // order and optionally reassigns its list in the same transaction.
-func MoveTodo(db *gorm.DB, userID uint, id uint, anchor MoveAnchor, opts MoveOptions) (*Todo, error) {
-	var subject Todo
+func MoveItem(db *gorm.DB, userID uint, id uint, anchor MoveAnchor, opts MoveOptions) (*Item, error) {
+	var subject Item
 	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := findTodo(tx, userID, id, &subject); err != nil {
+		if err := findItem(tx, userID, id, &subject); err != nil {
 			return err
 		}
 		if subject.Done {
-			return ErrTodoCompleted
+			return ErrItemCompleted
 		}
 
-		// Moving a todo relative to itself only ever applies the list change.
+		// Moving an item relative to itself only ever applies the list change.
 		if id != anchor.TargetID {
 			position, err := resolvePosition(tx, userID, id, anchor)
 			if err != nil {
 				return err
 			}
 			if err := tx.Model(&subject).Update("position", position).Error; err != nil {
-				return fmt.Errorf("failed to update the position of the todo: %w", err)
+				return fmt.Errorf("failed to update the position of the item: %w", err)
 			}
 		}
 
@@ -226,11 +226,11 @@ func MoveTodo(db *gorm.DB, userID uint, id uint, anchor MoveAnchor, opts MoveOpt
 			// is written as NULL instead of being skipped as a zero value.
 			if err := tx.Model(&subject).
 				Updates(map[string]any{"list_id": opts.ListID}).Error; err != nil {
-				return fmt.Errorf("failed to update the list of the todo: %w", err)
+				return fmt.Errorf("failed to update the list of the item: %w", err)
 			}
 		}
 
-		return findTodo(tx, userID, id, &subject)
+		return findItem(tx, userID, id, &subject)
 	})
 	if err != nil {
 		return nil, err
@@ -243,8 +243,8 @@ func MoveTodo(db *gorm.DB, userID uint, id uint, anchor MoveAnchor, opts MoveOpt
 // rebalancing the ordering once if the neighbouring gap is too small to split.
 func resolvePosition(tx *gorm.DB, userID uint, subjectID uint, anchor MoveAnchor) (float64, error) {
 	for range 2 {
-		var target Todo
-		if err := findTodo(tx, userID, anchor.TargetID, &target); err != nil {
+		var target Item
+		if err := findItem(tx, userID, anchor.TargetID, &target); err != nil {
 			return 0, err
 		}
 		if target.Done || target.Position == nil {
@@ -278,19 +278,19 @@ func resolvePosition(tx *gorm.DB, userID uint, subjectID uint, anchor MoveAnchor
 	}
 
 	// Unreachable in practice: every gap is positionStep after a rebalance.
-	return 0, fmt.Errorf("failed to find a position for todo %d after rebalancing", subjectID)
+	return 0, fmt.Errorf("failed to find a position for item %d after rebalancing", subjectID)
 }
 
-// neighbourPosition returns the rank of the active todo sitting immediately on
-// the requested side of position, ignoring the todo being moved. It returns nil
-// when there is no such todo.
+// neighbourPosition returns the rank of the active item sitting immediately on
+// the requested side of position, ignoring the item being moved. It returns nil
+// when there is no such item.
 func neighbourPosition(tx *gorm.DB, userID uint, subjectID uint, position float64, before bool) (*float64, error) {
 	comparison, order := "position > ?", "position ASC"
 	if before {
 		comparison, order = "position < ?", "position DESC"
 	}
 
-	var neighbour Todo
+	var neighbour Item
 	err := tx.
 		Where("done = ?", false).
 		Where("user_id = ?", userID).
@@ -302,7 +302,7 @@ func neighbourPosition(tx *gorm.DB, userID uint, subjectID uint, position float6
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to find the neighbouring todo: %w", err)
+		return nil, fmt.Errorf("failed to find the neighbouring item: %w", err)
 	}
 
 	return neighbour.Position, nil
@@ -312,33 +312,33 @@ func neighbourPosition(tx *gorm.DB, userID uint, subjectID uint, position float6
 // positionStep, preserving the current order and restoring the gaps that make
 // midpoint insertion possible.
 func rebalance(tx *gorm.DB, userID uint) error {
-	todos, err := activeTodosForRebalance(tx, userID)
+	items, err := activeItemsForRebalance(tx, userID)
 	if err != nil {
 		return err
 	}
 
-	for i := range todos {
+	for i := range items {
 		position := positionStep * float64(i+1)
-		if err := tx.Model(&Todo{}).
-			Where("id = ?", todos[i].ID).
+		if err := tx.Model(&Item{}).
+			Where("id = ?", items[i].ID).
 			Update("position", position).Error; err != nil {
-			return fmt.Errorf("failed to rebalance the todo ordering: %w", err)
+			return fmt.Errorf("failed to rebalance the item ordering: %w", err)
 		}
 	}
 
 	return nil
 }
 
-// findTodo loads a todo by identifier, translating a missing row into
-// ErrTodoNotFound. The query is scoped to the given user so cross-user access
+// findItem loads an item by identifier, translating a missing row into
+// ErrItemNotFound. The query is scoped to the given user so cross-user access
 // is reported as not found rather than leaking existence.
-func findTodo(tx *gorm.DB, userID uint, id uint, todo *Todo) error {
-	err := tx.Preload("Labels").Where("user_id = ?", userID).First(todo, id).Error
+func findItem(tx *gorm.DB, userID uint, id uint, item *Item) error {
+	err := tx.Preload("Labels").Where("user_id = ?", userID).First(item, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return fmt.Errorf("%w: %d", ErrTodoNotFound, id)
+		return fmt.Errorf("%w: %d", ErrItemNotFound, id)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to query the todo: %w", err)
+		return fmt.Errorf("failed to query the item: %w", err)
 	}
 
 	return nil

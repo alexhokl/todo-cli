@@ -38,7 +38,7 @@ func runDeleteLabel(cmd *cobra.Command, args []string) error {
 	}
 	defer func() { _ = conn.Close() }()
 
-	if _, err := proto.NewTodoServiceClient(conn).DeleteLabel(
+	if _, err := proto.NewItemServiceClient(conn).DeleteLabel(
 		cmd.Context(),
 		&proto.DeleteLabelRequest{Id: id},
 	); err != nil {

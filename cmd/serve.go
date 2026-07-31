@@ -270,7 +270,7 @@ func getGrpcServer(dbConn *gorm.DB, unaryAuth grpc.UnaryServerInterceptor, strea
 		),
 	)
 
-	proto.RegisterTodoServiceServer(grpcServer, internal.NewTodoServer(dbConn))
+	proto.RegisterItemServiceServer(grpcServer, internal.NewItemServer(dbConn))
 
 	// Server reflection allows tools such as grpcurl to discover the available
 	// services without a compiled copy of the protobuf descriptors.
