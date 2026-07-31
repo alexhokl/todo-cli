@@ -1,0 +1,78 @@
+version: "3"
+
+env:
+  APP_NAME: todo-cli
+
+tasks:
+  build:
+    desc: Build
+    cmds:
+      - go build -o /dev/null ./...
+
+  install:
+    desc: Install
+    cmd: go install
+
+  test:
+    desc: Test
+    cmd: go test ./...
+
+  coverage:
+    desc: Test with coverage
+    cmd: go test --cover ./...
+
+  coverage-html:
+    desc: Test with coverage in HTML
+    cmd: go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html
+
+  open-coverage-html:
+    desc: Test with coverage in HTML and open the HTML
+    cmds:
+      - task: coverage-html
+      - open coverage.html
+
+  bench:
+    desc: Run benchmarks on CPU and memory
+    cmd: go test -bench=. -benchmem ./...
+
+  lint:
+    desc: Lint
+    cmd: golangci-lint run
+
+  sec:
+    desc: Security check
+    # Generated protobuf code is excluded: it is not hand maintained, so its
+    # findings are not actionable here.
+    cmd: gosec -exclude-generated ./...
+
+  completion-linux:
+    desc: Generate bash completion and save to configuration directory
+    cmd: todo completion bash | sudo tee /etc/bash_completion.d/todo
+
+  proto:
+    desc: Generate Go files from protobuf definitions
+    cmds:
+      - |
+        protoc \
+          -I . \
+          --go_out=. --go_opt=paths=source_relative \
+          --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+          ./proto/*.proto
+
+  update-proto-dependencies:
+    desc: Update protobuf dependencies
+    cmds:
+      - curl -o google/protobuf/empty.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/empty.proto
+      - curl -o google/protobuf/timestamp.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/timestamp.proto
+
+  tag:
+    desc: Create a new git tag with incremented patch version (0.1.x)
+    silent: true
+    cmds:
+      - |
+        LATEST=$(git tag --sort=-version:refname | grep -E '^0\.1\.[0-9]+$' | head -1)
+        PATCH=$(echo "$LATEST" | cut -d. -f3)
+        if [ -z "$PATCH" ]; then PATCH=-1; fi
+        NEW_TAG="0.1.$((PATCH + 1))"
+        git tag "$NEW_TAG"
+        echo "Created tag $NEW_TAG"

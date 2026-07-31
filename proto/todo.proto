@@ -1,0 +1,129 @@
+syntax = "proto3";
+
+package todo;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/alexhokl/todo-cli/proto";
+
+// TodoService is the gRPC API served by `todo serve`. RPCs are added here and
+// registered in cmd/serve.go.
+service TodoService {
+  // ListTodos returns the active todos in their manual order along with the
+  // completed todos ordered by how recently they were updated.
+  rpc ListTodos(ListTodosRequest) returns (ListTodosResponse);
+  // CreateTodo appends a new todo to the end of the manual order.
+  rpc CreateTodo(CreateTodoRequest) returns (Todo);
+  // MoveTodo places a todo immediately before or after another todo and
+  // optionally reassigns its list in the same operation.
+  rpc MoveTodo(MoveTodoRequest) returns (Todo);
+  // SetTodoDone completes or reopens a todo. Completing removes it from the
+  // manual order; reopening appends it to the end.
+  rpc SetTodoDone(SetTodoDoneRequest) returns (Todo);
+  // UpdateTodoLabels attaches and detaches labels on a todo. Labels being
+  // added are created on the fly when they do not exist yet.
+  rpc UpdateTodoLabels(UpdateTodoLabelsRequest) returns (Todo);
+
+  // ListLabels returns every known label ordered by name.
+  rpc ListLabels(ListLabelsRequest) returns (ListLabelsResponse);
+  // CreateLabel creates a label explicitly and reports a name that is already
+  // taken rather than returning the existing label.
+  rpc CreateLabel(CreateLabelRequest) returns (Label);
+  // RenameLabel changes the name of an existing label.
+  rpc RenameLabel(RenameLabelRequest) returns (Label);
+  // DeleteLabel removes a label that is no longer attached to any todo.
+  rpc DeleteLabel(DeleteLabelRequest) returns (google.protobuf.Empty);
+}
+
+// Label is a tag that can be attached to any number of todos. Names are
+// normalised to lower case with surrounding whitespace removed.
+message Label {
+  uint32 id = 1;
+  string name = 2;
+}
+
+// Todo is a single todo item.
+message Todo {
+  uint32 id = 1;
+  string title = 2;
+  string description = 3;
+  bool done = 4;
+  optional google.protobuf.Timestamp due_date = 5;
+  optional uint32 list_id = 6;
+  // position is the manual ordering rank. It is set only while done is false.
+  optional double position = 7;
+  repeated Label labels = 8;
+}
+
+message ListTodosRequest {
+  // labels restricts the result to todos carrying every one of these labels.
+  // An unknown name therefore yields no results.
+  repeated string labels = 1;
+}
+
+message ListTodosResponse {
+  // active holds the todos that are not yet done, in manual order.
+  repeated Todo active = 1;
+  // completed holds the done todos, most recently updated first.
+  repeated Todo completed = 2;
+}
+
+message CreateTodoRequest {
+  string title = 1;
+  string description = 2;
+  optional google.protobuf.Timestamp due_date = 3;
+  optional uint32 list_id = 4;
+  // labels are created on the fly when they do not exist yet.
+  repeated string labels = 5;
+}
+
+message MoveTodoRequest {
+  uint32 id = 1;
+  // Exactly one anchor must be supplied.
+  oneof anchor {
+    // before_id places the todo immediately before the identified todo.
+    uint32 before_id = 2;
+    // after_id places the todo immediately after the identified todo.
+    uint32 after_id = 3;
+  }
+  // change_list reports whether list_id should be applied. It distinguishes
+  // leaving the list untouched from clearing it.
+  bool change_list = 4;
+  // list_id is applied only when change_list is true. Leaving it unset while
+  // change_list is true detaches the todo from its list.
+  optional uint32 list_id = 5;
+}
+
+message SetTodoDoneRequest {
+  uint32 id = 1;
+  bool done = 2;
+}
+
+message UpdateTodoLabelsRequest {
+  uint32 id = 1;
+  // add names labels to attach, creating any that do not exist yet.
+  repeated string add = 2;
+  // remove names labels to detach. Names that are not known labels are
+  // ignored rather than being created only to be detached again.
+  repeated string remove = 3;
+}
+
+message ListLabelsRequest {}
+
+message ListLabelsResponse {
+  repeated Label labels = 1;
+}
+
+message CreateLabelRequest {
+  string name = 1;
+}
+
+message RenameLabelRequest {
+  uint32 id = 1;
+  string name = 2;
+}
+
+message DeleteLabelRequest {
+  uint32 id = 1;
+}
