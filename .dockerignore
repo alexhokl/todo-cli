@@ -1,0 +1,20 @@
+.git/
+Dockerfile
+.dockerignore
+
+# Build and test artifacts
+todo-cli
+todo
+coverage.*
+*.out
+*.coverprofile
+profile.cov
+
+# Local databases must never be baked into an image
+*.db
+
+# Documentation and local tooling
+AGENTS.md
+README.md
+LICENSE
+Taskfile.yml
