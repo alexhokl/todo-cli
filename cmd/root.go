@@ -11,7 +11,7 @@ import (
 
 // AppName is the name of this application, used for the config file name and
 // the environment variable prefix.
-const AppName = "todo"
+const AppName = "todo-cli"
 
 // annotationRequiresService marks a command as requiring a connection to a
 // running server. Only commands carrying this annotation are subject to the
