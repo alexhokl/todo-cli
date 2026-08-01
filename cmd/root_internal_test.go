@@ -3,6 +3,7 @@ package cmd
 import (
 	"testing"
 
+	"github.com/alexhokl/helper/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -91,5 +92,22 @@ func TestRequiresService(t *testing.T) {
 func TestServeCommandDoesNotRequireService(t *testing.T) {
 	if requiresService(serveCmd) {
 		t.Errorf("serve command must not require a service URI")
+	}
+}
+
+func TestEnvironmentVariablePrefixIsDerivedFromAppName(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+
+	t.Setenv("TODO_CLI_SERVICE", "from-env")
+
+	// initConfig uses AppName as the application name and an empty prefix so
+	// the helper derives it from the name (hyphens -> underscores). A non-empty
+	// prefix passed verbatim would skip that normalisation and fail to match
+	// the TODO_CLI_* environment variables.
+	cli.ConfigureViper("", AppName, false, "")
+
+	if got := viper.GetString("service"); got != "from-env" {
+		t.Errorf("expected service %q from TODO_CLI_SERVICE but got %q", "from-env", got)
 	}
 }

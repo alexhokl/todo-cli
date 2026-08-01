@@ -11,7 +11,7 @@ import (
 
 // AppName is the name of this application, used for the config file name and
 // the environment variable prefix.
-const AppName = "todo"
+const AppName = "todo-cli"
 
 // annotationRequiresService marks a command as requiring a connection to a
 // running server. Only commands carrying this annotation are subject to the
@@ -36,7 +36,7 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 		bindEnvironmentVariablesToRootOptions(&rootOpts)
 		if requiresService(cmd) && rootOpts.serviceURI == "" {
-			return fmt.Errorf("required flag \"service\" not set (use --service flag, TODO_SERVICE env var, or set \"service\" in config file)")
+			return fmt.Errorf("required flag \"service\" not set (use --service flag, TODO_CLI_SERVICE env var, or set \"service\" in config file)")
 		}
 		return nil
 	},
@@ -69,7 +69,7 @@ func init() {
 }
 
 func initConfig() {
-	cli.ConfigureViper(rootOpts.cfgFile, AppName, rootOpts.verbose, AppName)
+	cli.ConfigureViper(rootOpts.cfgFile, AppName, rootOpts.verbose, "")
 }
 
 // requiresService reports whether the given command needs a service URI to be
