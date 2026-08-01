@@ -91,7 +91,22 @@ type ItemFilter struct {
 	// Names are normalised before matching, and an unknown name therefore
 	// yields no results rather than being ignored.
 	Labels []string
+	// View narrows the listing to a single bucket. ItemViewUnspecified keeps
+	// the legacy two-bucket behaviour served by ListActive and ListCompleted.
+	View ItemView
 }
+
+// ItemView selects a bucket of items. It mirrors the proto enum so the
+// database layer stays decoupled from the generated code.
+type ItemView int
+
+const (
+	ItemViewUnspecified   ItemView = 0
+	ItemViewUntriaged     ItemView = 1
+	ItemViewTriaged       ItemView = 2
+	ItemViewTimeSensitive ItemView = 3
+	ItemViewDone          ItemView = 4
+)
 
 // apply narrows a query to the items matching the filter.
 func (f ItemFilter) apply(db *gorm.DB) *gorm.DB {
@@ -143,6 +158,49 @@ func ListCompleted(db *gorm.DB, userID uint, filter ItemFilter) ([]Item, error) 
 		Order("items.updated_at DESC, items.id DESC").
 		Find(&items).Error; err != nil {
 		return nil, fmt.Errorf("failed to list completed items: %w", err)
+	}
+
+	return items, nil
+}
+
+// ListItemsByView returns the items in the bucket selected by filter.View.
+// Only ItemViewUntriaged, ItemViewTriaged, ItemViewTimeSensitive, and
+// ItemViewDone are supported here; ItemViewUnspecified is handled by the
+// caller via ListActive and ListCompleted.
+func ListItemsByView(db *gorm.DB, userID uint, filter ItemFilter) ([]Item, error) {
+	var items []Item
+
+	query := filter.apply(db).
+		Preload("Labels").
+		Select("items.*").
+		Where("items.user_id = ?", userID)
+
+	switch filter.View {
+	case ItemViewUntriaged:
+		query = query.
+			Where("items.done = ?", false).
+			Where("items.position IS NULL").
+			Order("items.id ASC")
+	case ItemViewTriaged:
+		query = query.
+			Where("items.done = ?", false).
+			Where("items.position IS NOT NULL").
+			Order("items.position ASC, items.id ASC")
+	case ItemViewTimeSensitive:
+		query = query.
+			Where("items.done = ?", false).
+			Where("items.due_date IS NOT NULL").
+			Order("items.position ASC, items.id ASC")
+	case ItemViewDone:
+		query = query.
+			Where("items.done = ?", true).
+			Order("items.updated_at DESC, items.id DESC")
+	default:
+		return nil, fmt.Errorf("unsupported item view: %d", filter.View)
+	}
+
+	if err := query.Find(&items).Error; err != nil {
+		return nil, fmt.Errorf("failed to list items by view: %w", err)
 	}
 
 	return items, nil

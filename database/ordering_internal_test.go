@@ -372,6 +372,94 @@ func TestListCompleted(t *testing.T) {
 	}
 }
 
+func TestListItemsByView(t *testing.T) {
+	db := setupTestDB(t)
+	ids := seedItems(t, db, "triaged-a", "triaged-b")
+
+	// An untriaged item is created directly without AssignInitialPosition so it
+	// carries no position.
+	untriaged := Item{Title: "untriaged-c", UserID: testUserID}
+	if err := db.Create(&untriaged).Error; err != nil {
+		t.Fatalf("failed to create the untriaged item: %v", err)
+	}
+
+	// A time-sensitive item carries a due date.
+	due := time.Date(2026, time.August, 15, 0, 0, 0, 0, time.UTC)
+	timeSensitive := Item{Title: "time-sensitive-d", UserID: testUserID, DueDate: &due}
+	if err := AssignInitialPosition(db, &timeSensitive, testUserID); err != nil {
+		t.Fatalf("failed to assign a position: %v", err)
+	}
+	if err := db.Create(&timeSensitive).Error; err != nil {
+		t.Fatalf("failed to create the time-sensitive item: %v", err)
+	}
+
+	// Complete one triaged item.
+	if _, err := SetDone(db, testUserID, ids["triaged-b"], true); err != nil {
+		t.Fatalf("failed to complete the item: %v", err)
+	}
+	// Pin its updated_at so the done ordering is deterministic.
+	base := time.Date(2026, time.July, 31, 12, 0, 0, 0, time.UTC)
+	if err := db.Model(&Item{}).Where("id = ?", ids["triaged-b"]).
+		UpdateColumn("updated_at", base).Error; err != nil {
+		t.Fatalf("failed to set the timestamp: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		view     ItemView
+		expected []string
+	}{
+		{"untriaged", ItemViewUntriaged, []string{"untriaged-c"}},
+		{"triaged", ItemViewTriaged, []string{"triaged-a", "time-sensitive-d"}},
+		{"time-sensitive", ItemViewTimeSensitive, []string{"time-sensitive-d"}},
+		{"done", ItemViewDone, []string{"triaged-b"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			items, err := ListItemsByView(db, testUserID, ItemFilter{View: test.view})
+			if err != nil {
+				t.Fatalf("expected no error but got %v", err)
+			}
+
+			titles := make([]string, 0, len(items))
+			for _, item := range items {
+				titles = append(titles, item.Title)
+			}
+			if !equalStrings(titles, test.expected) {
+				t.Errorf("expected %v but got %v", test.expected, titles)
+			}
+		})
+	}
+}
+
+func TestListItemsByViewRejectsUnspecified(t *testing.T) {
+	db := setupTestDB(t)
+
+	if _, err := ListItemsByView(db, testUserID, ItemFilter{View: ItemViewUnspecified}); err == nil {
+		t.Errorf("expected an error for the unspecified view but got nil")
+	}
+}
+
+func TestListItemsByViewScopedPerUser(t *testing.T) {
+	db := setupTestDB(t)
+	seedItems(t, db, "mine")
+
+	// A second user's untriaged item must not appear.
+	other := Item{Title: "theirs", UserID: testUserID + 1}
+	if err := db.Create(&other).Error; err != nil {
+		t.Fatalf("failed to create the other user's item: %v", err)
+	}
+
+	items, err := ListItemsByView(db, testUserID, ItemFilter{View: ItemViewUntriaged})
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if len(items) != 0 {
+		t.Errorf("expected no untriaged items for the test user but got %v", items)
+	}
+}
+
 func TestFindItemCrossUserIsNotFound(t *testing.T) {
 	db := setupTestDB(t)
 	ids := seedItems(t, db, "a")

@@ -48,32 +48,67 @@ func (s *ItemServer) ListItems(ctx context.Context, req *proto.ListItemsRequest)
 		return nil, err
 	}
 
-	filter := database.ItemFilter{Labels: req.GetLabels()}
+	filter := database.ItemFilter{
+		Labels: req.GetLabels(),
+		View:   mapItemView(req.GetView()),
+	}
 
-	active, err := database.ListActive(s.DB.WithContext(ctx), userID, filter)
+	if filter.View == database.ItemViewUnspecified {
+		active, err := database.ListActive(s.DB.WithContext(ctx), userID, filter)
+		if err != nil {
+			return nil, mapDatabaseError(err)
+		}
+		completed, err := database.ListCompleted(s.DB.WithContext(ctx), userID, filter)
+		if err != nil {
+			return nil, mapDatabaseError(err)
+		}
+
+		activeItems, err := toProtoItems(active)
+		if err != nil {
+			return nil, err
+		}
+		completedItems, err := toProtoItems(completed)
+		if err != nil {
+			return nil, err
+		}
+
+		endSpanOk(span)
+
+		return &proto.ListItemsResponse{
+			Active:    activeItems,
+			Completed: completedItems,
+		}, nil
+	}
+
+	items, err := database.ListItemsByView(s.DB.WithContext(ctx), userID, filter)
 	if err != nil {
 		return nil, mapDatabaseError(err)
 	}
-	completed, err := database.ListCompleted(s.DB.WithContext(ctx), userID, filter)
-	if err != nil {
-		return nil, mapDatabaseError(err)
-	}
-
-	activeItems, err := toProtoItems(active)
-	if err != nil {
-		return nil, err
-	}
-	completedItems, err := toProtoItems(completed)
+	activeItems, err := toProtoItems(items)
 	if err != nil {
 		return nil, err
 	}
 
 	endSpanOk(span)
 
-	return &proto.ListItemsResponse{
-		Active:    activeItems,
-		Completed: completedItems,
-	}, nil
+	return &proto.ListItemsResponse{Active: activeItems}, nil
+}
+
+// mapItemView translates the proto enum into the database-layer enum so the
+// database package stays free of generated-code imports.
+func mapItemView(view proto.ItemView) database.ItemView {
+	switch view {
+	case proto.ItemView_ITEM_VIEW_UNTRIAGED:
+		return database.ItemViewUntriaged
+	case proto.ItemView_ITEM_VIEW_TRIAGED:
+		return database.ItemViewTriaged
+	case proto.ItemView_ITEM_VIEW_TIME_SENSITIVE:
+		return database.ItemViewTimeSensitive
+	case proto.ItemView_ITEM_VIEW_DONE:
+		return database.ItemViewDone
+	default:
+		return database.ItemViewUnspecified
+	}
 }
 
 // CreateItem appends a new item to the end of the manual order.

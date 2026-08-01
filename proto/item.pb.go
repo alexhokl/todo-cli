@@ -23,6 +23,67 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ItemView narrows ListItems to a single bucket. ITEM_VIEW_UNSPECIFIED keeps
+// the legacy behaviour of returning both active and completed items.
+type ItemView int32
+
+const (
+	ItemView_ITEM_VIEW_UNSPECIFIED ItemView = 0
+	// UNTRIAGED: not done and carrying no manual ordering rank yet.
+	ItemView_ITEM_VIEW_UNTRIAGED ItemView = 1
+	// TRIAGED: not done and already placed in the manual order.
+	ItemView_ITEM_VIEW_TRIAGED ItemView = 2
+	// TIME_SENSITIVE: not done and carrying a due date.
+	ItemView_ITEM_VIEW_TIME_SENSITIVE ItemView = 3
+	// DONE: completed items.
+	ItemView_ITEM_VIEW_DONE ItemView = 4
+)
+
+// Enum value maps for ItemView.
+var (
+	ItemView_name = map[int32]string{
+		0: "ITEM_VIEW_UNSPECIFIED",
+		1: "ITEM_VIEW_UNTRIAGED",
+		2: "ITEM_VIEW_TRIAGED",
+		3: "ITEM_VIEW_TIME_SENSITIVE",
+		4: "ITEM_VIEW_DONE",
+	}
+	ItemView_value = map[string]int32{
+		"ITEM_VIEW_UNSPECIFIED":    0,
+		"ITEM_VIEW_UNTRIAGED":      1,
+		"ITEM_VIEW_TRIAGED":        2,
+		"ITEM_VIEW_TIME_SENSITIVE": 3,
+		"ITEM_VIEW_DONE":           4,
+	}
+)
+
+func (x ItemView) Enum() *ItemView {
+	p := new(ItemView)
+	*p = x
+	return p
+}
+
+func (x ItemView) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ItemView) Descriptor() protoreflect.EnumDescriptor {
+	return file_proto_item_proto_enumTypes[0].Descriptor()
+}
+
+func (ItemView) Type() protoreflect.EnumType {
+	return &file_proto_item_proto_enumTypes[0]
+}
+
+func (x ItemView) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ItemView.Descriptor instead.
+func (ItemView) EnumDescriptor() ([]byte, []int) {
+	return file_proto_item_proto_rawDescGZIP(), []int{0}
+}
+
 // Label is a tag that can be attached to any number of items. Names are
 // normalised to lower case with surrounding whitespace removed.
 type Label struct {
@@ -183,7 +244,10 @@ type ListItemsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// labels restricts the result to items carrying every one of these labels.
 	// An unknown name therefore yields no results.
-	Labels        []string `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty"`
+	Labels []string `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty"`
+	// view narrows the result to a single bucket. Leaving it unset returns both
+	// the active and completed items as before.
+	View          ItemView `protobuf:"varint,2,opt,name=view,proto3,enum=item.ItemView" json:"view,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -223,6 +287,13 @@ func (x *ListItemsRequest) GetLabels() []string {
 		return x.Labels
 	}
 	return nil
+}
+
+func (x *ListItemsRequest) GetView() ItemView {
+	if x != nil {
+		return x.View
+	}
+	return ItemView_ITEM_VIEW_UNSPECIFIED
 }
 
 type ListItemsResponse struct {
@@ -825,9 +896,10 @@ const file_proto_item_proto_rawDesc = "" +
 	"\t_due_dateB\n" +
 	"\n" +
 	"\b_list_idB\v\n" +
-	"\t_position\"*\n" +
+	"\t_position\"N\n" +
 	"\x10ListItemsRequest\x12\x16\n" +
-	"\x06labels\x18\x01 \x03(\tR\x06labels\"a\n" +
+	"\x06labels\x18\x01 \x03(\tR\x06labels\x12\"\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x0e.item.ItemViewR\x04view\"a\n" +
 	"\x11ListItemsResponse\x12\"\n" +
 	"\x06active\x18\x01 \x03(\v2\n" +
 	".item.ItemR\x06active\x12(\n" +
@@ -868,7 +940,13 @@ const file_proto_item_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"$\n" +
 	"\x12DeleteLabelRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\rR\x02id2\x8f\x04\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id*\x87\x01\n" +
+	"\bItemView\x12\x19\n" +
+	"\x15ITEM_VIEW_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13ITEM_VIEW_UNTRIAGED\x10\x01\x12\x15\n" +
+	"\x11ITEM_VIEW_TRIAGED\x10\x02\x12\x1c\n" +
+	"\x18ITEM_VIEW_TIME_SENSITIVE\x10\x03\x12\x12\n" +
+	"\x0eITEM_VIEW_DONE\x10\x042\x8f\x04\n" +
 	"\vItemService\x12<\n" +
 	"\tListItems\x12\x16.item.ListItemsRequest\x1a\x17.item.ListItemsResponse\x121\n" +
 	"\n" +
@@ -898,54 +976,57 @@ func file_proto_item_proto_rawDescGZIP() []byte {
 	return file_proto_item_proto_rawDescData
 }
 
+var file_proto_item_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_proto_item_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_proto_item_proto_goTypes = []any{
-	(*Label)(nil),                   // 0: item.Label
-	(*Item)(nil),                    // 1: item.Item
-	(*ListItemsRequest)(nil),        // 2: item.ListItemsRequest
-	(*ListItemsResponse)(nil),       // 3: item.ListItemsResponse
-	(*CreateItemRequest)(nil),       // 4: item.CreateItemRequest
-	(*MoveItemRequest)(nil),         // 5: item.MoveItemRequest
-	(*SetItemDoneRequest)(nil),      // 6: item.SetItemDoneRequest
-	(*UpdateItemLabelsRequest)(nil), // 7: item.UpdateItemLabelsRequest
-	(*ListLabelsRequest)(nil),       // 8: item.ListLabelsRequest
-	(*ListLabelsResponse)(nil),      // 9: item.ListLabelsResponse
-	(*CreateLabelRequest)(nil),      // 10: item.CreateLabelRequest
-	(*RenameLabelRequest)(nil),      // 11: item.RenameLabelRequest
-	(*DeleteLabelRequest)(nil),      // 12: item.DeleteLabelRequest
-	(*timestamppb.Timestamp)(nil),   // 13: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),           // 14: google.protobuf.Empty
+	(ItemView)(0),                   // 0: item.ItemView
+	(*Label)(nil),                   // 1: item.Label
+	(*Item)(nil),                    // 2: item.Item
+	(*ListItemsRequest)(nil),        // 3: item.ListItemsRequest
+	(*ListItemsResponse)(nil),       // 4: item.ListItemsResponse
+	(*CreateItemRequest)(nil),       // 5: item.CreateItemRequest
+	(*MoveItemRequest)(nil),         // 6: item.MoveItemRequest
+	(*SetItemDoneRequest)(nil),      // 7: item.SetItemDoneRequest
+	(*UpdateItemLabelsRequest)(nil), // 8: item.UpdateItemLabelsRequest
+	(*ListLabelsRequest)(nil),       // 9: item.ListLabelsRequest
+	(*ListLabelsResponse)(nil),      // 10: item.ListLabelsResponse
+	(*CreateLabelRequest)(nil),      // 11: item.CreateLabelRequest
+	(*RenameLabelRequest)(nil),      // 12: item.RenameLabelRequest
+	(*DeleteLabelRequest)(nil),      // 13: item.DeleteLabelRequest
+	(*timestamppb.Timestamp)(nil),   // 14: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),           // 15: google.protobuf.Empty
 }
 var file_proto_item_proto_depIdxs = []int32{
-	13, // 0: item.Item.due_date:type_name -> google.protobuf.Timestamp
-	0,  // 1: item.Item.labels:type_name -> item.Label
-	1,  // 2: item.ListItemsResponse.active:type_name -> item.Item
-	1,  // 3: item.ListItemsResponse.completed:type_name -> item.Item
-	13, // 4: item.CreateItemRequest.due_date:type_name -> google.protobuf.Timestamp
-	0,  // 5: item.ListLabelsResponse.labels:type_name -> item.Label
-	2,  // 6: item.ItemService.ListItems:input_type -> item.ListItemsRequest
-	4,  // 7: item.ItemService.CreateItem:input_type -> item.CreateItemRequest
-	5,  // 8: item.ItemService.MoveItem:input_type -> item.MoveItemRequest
-	6,  // 9: item.ItemService.SetItemDone:input_type -> item.SetItemDoneRequest
-	7,  // 10: item.ItemService.UpdateItemLabels:input_type -> item.UpdateItemLabelsRequest
-	8,  // 11: item.ItemService.ListLabels:input_type -> item.ListLabelsRequest
-	10, // 12: item.ItemService.CreateLabel:input_type -> item.CreateLabelRequest
-	11, // 13: item.ItemService.RenameLabel:input_type -> item.RenameLabelRequest
-	12, // 14: item.ItemService.DeleteLabel:input_type -> item.DeleteLabelRequest
-	3,  // 15: item.ItemService.ListItems:output_type -> item.ListItemsResponse
-	1,  // 16: item.ItemService.CreateItem:output_type -> item.Item
-	1,  // 17: item.ItemService.MoveItem:output_type -> item.Item
-	1,  // 18: item.ItemService.SetItemDone:output_type -> item.Item
-	1,  // 19: item.ItemService.UpdateItemLabels:output_type -> item.Item
-	9,  // 20: item.ItemService.ListLabels:output_type -> item.ListLabelsResponse
-	0,  // 21: item.ItemService.CreateLabel:output_type -> item.Label
-	0,  // 22: item.ItemService.RenameLabel:output_type -> item.Label
-	14, // 23: item.ItemService.DeleteLabel:output_type -> google.protobuf.Empty
-	15, // [15:24] is the sub-list for method output_type
-	6,  // [6:15] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	14, // 0: item.Item.due_date:type_name -> google.protobuf.Timestamp
+	1,  // 1: item.Item.labels:type_name -> item.Label
+	0,  // 2: item.ListItemsRequest.view:type_name -> item.ItemView
+	2,  // 3: item.ListItemsResponse.active:type_name -> item.Item
+	2,  // 4: item.ListItemsResponse.completed:type_name -> item.Item
+	14, // 5: item.CreateItemRequest.due_date:type_name -> google.protobuf.Timestamp
+	1,  // 6: item.ListLabelsResponse.labels:type_name -> item.Label
+	3,  // 7: item.ItemService.ListItems:input_type -> item.ListItemsRequest
+	5,  // 8: item.ItemService.CreateItem:input_type -> item.CreateItemRequest
+	6,  // 9: item.ItemService.MoveItem:input_type -> item.MoveItemRequest
+	7,  // 10: item.ItemService.SetItemDone:input_type -> item.SetItemDoneRequest
+	8,  // 11: item.ItemService.UpdateItemLabels:input_type -> item.UpdateItemLabelsRequest
+	9,  // 12: item.ItemService.ListLabels:input_type -> item.ListLabelsRequest
+	11, // 13: item.ItemService.CreateLabel:input_type -> item.CreateLabelRequest
+	12, // 14: item.ItemService.RenameLabel:input_type -> item.RenameLabelRequest
+	13, // 15: item.ItemService.DeleteLabel:input_type -> item.DeleteLabelRequest
+	4,  // 16: item.ItemService.ListItems:output_type -> item.ListItemsResponse
+	2,  // 17: item.ItemService.CreateItem:output_type -> item.Item
+	2,  // 18: item.ItemService.MoveItem:output_type -> item.Item
+	2,  // 19: item.ItemService.SetItemDone:output_type -> item.Item
+	2,  // 20: item.ItemService.UpdateItemLabels:output_type -> item.Item
+	10, // 21: item.ItemService.ListLabels:output_type -> item.ListLabelsResponse
+	1,  // 22: item.ItemService.CreateLabel:output_type -> item.Label
+	1,  // 23: item.ItemService.RenameLabel:output_type -> item.Label
+	15, // 24: item.ItemService.DeleteLabel:output_type -> google.protobuf.Empty
+	16, // [16:25] is the sub-list for method output_type
+	7,  // [7:16] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_proto_item_proto_init() }
@@ -964,13 +1045,14 @@ func file_proto_item_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_item_proto_rawDesc), len(file_proto_item_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_proto_item_proto_goTypes,
 		DependencyIndexes: file_proto_item_proto_depIdxs,
+		EnumInfos:         file_proto_item_proto_enumTypes,
 		MessageInfos:      file_proto_item_proto_msgTypes,
 	}.Build()
 	File_proto_item_proto = out.File

@@ -15,6 +15,24 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
+@$core.Deprecated('Use itemViewDescriptor instead')
+const ItemView$json = {
+  '1': 'ItemView',
+  '2': [
+    {'1': 'ITEM_VIEW_UNSPECIFIED', '2': 0},
+    {'1': 'ITEM_VIEW_UNTRIAGED', '2': 1},
+    {'1': 'ITEM_VIEW_TRIAGED', '2': 2},
+    {'1': 'ITEM_VIEW_TIME_SENSITIVE', '2': 3},
+    {'1': 'ITEM_VIEW_DONE', '2': 4},
+  ],
+};
+
+/// Descriptor for `ItemView`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List itemViewDescriptor = $convert.base64Decode(
+    'CghJdGVtVmlldxIZChVJVEVNX1ZJRVdfVU5TUEVDSUZJRUQQABIXChNJVEVNX1ZJRVdfVU5UUk'
+    'lBR0VEEAESFQoRSVRFTV9WSUVXX1RSSUFHRUQQAhIcChhJVEVNX1ZJRVdfVElNRV9TRU5TSVRJ'
+    'VkUQAxISCg5JVEVNX1ZJRVdfRE9ORRAE');
+
 @$core.Deprecated('Use labelDescriptor instead')
 const Label$json = {
   '1': 'Label',
@@ -94,12 +112,14 @@ const ListItemsRequest$json = {
   '1': 'ListItemsRequest',
   '2': [
     {'1': 'labels', '3': 1, '4': 3, '5': 9, '10': 'labels'},
+    {'1': 'view', '3': 2, '4': 1, '5': 14, '6': '.item.ItemView', '10': 'view'},
   ],
 };
 
 /// Descriptor for `ListItemsRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List listItemsRequestDescriptor = $convert
-    .base64Decode('ChBMaXN0SXRlbXNSZXF1ZXN0EhYKBmxhYmVscxgBIAMoCVIGbGFiZWxz');
+final $typed_data.Uint8List listItemsRequestDescriptor = $convert.base64Decode(
+    'ChBMaXN0SXRlbXNSZXF1ZXN0EhYKBmxhYmVscxgBIAMoCVIGbGFiZWxzEiIKBHZpZXcYAiABKA'
+    '4yDi5pdGVtLkl0ZW1WaWV3UgR2aWV3');
 
 @$core.Deprecated('Use listItemsResponseDescriptor instead')
 const ListItemsResponse$json = {

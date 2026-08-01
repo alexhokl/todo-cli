@@ -333,6 +333,80 @@ func TestListItemsSeparatesCompleted(t *testing.T) {
 	}
 }
 
+func TestListItemsByView(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "triaged-a", "triaged-b", "triaged-c")
+
+	// Create an untriaged item directly so it never receives a position.
+	untriaged := database.Item{Title: "untriaged-d", UserID: testUserID}
+	if err := server.DB.Create(&untriaged).Error; err != nil {
+		t.Fatalf("failed to create the untriaged item: %v", err)
+	}
+
+	// Give triaged-c a due date so it is also time-sensitive.
+	due := time.Date(2026, time.August, 15, 0, 0, 0, 0, time.UTC)
+	if err := server.DB.Model(&database.Item{}).Where("id = ?", ids["triaged-c"]).
+		UpdateColumn("due_date", due).Error; err != nil {
+		t.Fatalf("failed to set the due date: %v", err)
+	}
+
+	// Complete triaged-b.
+	if _, err := server.SetItemDone(authenticatedContext(), &proto.SetItemDoneRequest{Id: ids["triaged-b"], Done: true}); err != nil {
+		t.Fatalf("failed to complete the item: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		view     proto.ItemView
+		expected []string
+	}{
+		{"untriaged", proto.ItemView_ITEM_VIEW_UNTRIAGED, []string{"untriaged-d"}},
+		{"triaged", proto.ItemView_ITEM_VIEW_TRIAGED, []string{"triaged-a", "triaged-c"}},
+		{"time-sensitive", proto.ItemView_ITEM_VIEW_TIME_SENSITIVE, []string{"triaged-c"}},
+		{"done", proto.ItemView_ITEM_VIEW_DONE, []string{"triaged-b"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response, err := server.ListItems(authenticatedContext(), &proto.ListItemsRequest{View: test.view})
+			if err != nil {
+				t.Fatalf("expected no error but got %v", err)
+			}
+			if len(response.GetCompleted()) != 0 {
+				t.Errorf("expected no completed items but got %v", response.GetCompleted())
+			}
+
+			titles := make([]string, 0, len(response.GetActive()))
+			for _, item := range response.GetActive() {
+				titles = append(titles, item.GetTitle())
+			}
+			if !equalStrings(titles, test.expected) {
+				t.Errorf("expected %v but got %v", test.expected, titles)
+			}
+		})
+	}
+}
+
+func TestListItemsUnspecifiedKeepsBothBuckets(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a", "b")
+
+	if _, err := server.SetItemDone(authenticatedContext(), &proto.SetItemDoneRequest{Id: ids["a"], Done: true}); err != nil {
+		t.Fatalf("failed to complete the item: %v", err)
+	}
+
+	response, err := server.ListItems(authenticatedContext(), &proto.ListItemsRequest{})
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if len(response.GetActive()) != 1 || response.GetActive()[0].GetTitle() != "b" {
+		t.Errorf("expected [b] active but got %v", response.GetActive())
+	}
+	if len(response.GetCompleted()) != 1 || response.GetCompleted()[0].GetTitle() != "a" {
+		t.Errorf("expected [a] completed but got %v", response.GetCompleted())
+	}
+}
+
 func TestUserIDFromContextMissing(t *testing.T) {
 	_, err := userIDFromContext(context.Background())
 	if got := status.Code(err); got != codes.Unauthenticated {

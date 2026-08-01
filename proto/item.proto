@@ -56,10 +56,27 @@ message Item {
   repeated Label labels = 8;
 }
 
+// ItemView narrows ListItems to a single bucket. ITEM_VIEW_UNSPECIFIED keeps
+// the legacy behaviour of returning both active and completed items.
+enum ItemView {
+  ITEM_VIEW_UNSPECIFIED = 0;
+  // UNTRIAGED: not done and carrying no manual ordering rank yet.
+  ITEM_VIEW_UNTRIAGED = 1;
+  // TRIAGED: not done and already placed in the manual order.
+  ITEM_VIEW_TRIAGED = 2;
+  // TIME_SENSITIVE: not done and carrying a due date.
+  ITEM_VIEW_TIME_SENSITIVE = 3;
+  // DONE: completed items.
+  ITEM_VIEW_DONE = 4;
+}
+
 message ListItemsRequest {
   // labels restricts the result to items carrying every one of these labels.
   // An unknown name therefore yields no results.
   repeated string labels = 1;
+  // view narrows the result to a single bucket. Leaving it unset returns both
+  // the active and completed items as before.
+  ItemView view = 2;
 }
 
 message ListItemsResponse {

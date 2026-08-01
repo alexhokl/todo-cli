@@ -16,7 +16,11 @@ import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as $2;
 
+import 'item.pbenum.dart';
+
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
+
+export 'item.pbenum.dart';
 
 /// Label is a tag that can be attached to any number of items. Names are
 /// normalised to lower case with surrounding whitespace removed.
@@ -224,9 +228,11 @@ class Item extends $pb.GeneratedMessage {
 class ListItemsRequest extends $pb.GeneratedMessage {
   factory ListItemsRequest({
     $core.Iterable<$core.String>? labels,
+    ItemView? view,
   }) {
     final result = create();
     if (labels != null) result.labels.addAll(labels);
+    if (view != null) result.view = view;
     return result;
   }
 
@@ -244,6 +250,8 @@ class ListItemsRequest extends $pb.GeneratedMessage {
       package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
       createEmptyInstance: create)
     ..pPS(1, _omitFieldNames ? '' : 'labels')
+    ..aE<ItemView>(2, _omitFieldNames ? '' : 'view',
+        enumValues: ItemView.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -269,6 +277,17 @@ class ListItemsRequest extends $pb.GeneratedMessage {
   /// An unknown name therefore yields no results.
   @$pb.TagNumber(1)
   $pb.PbList<$core.String> get labels => $_getList(0);
+
+  /// view narrows the result to a single bucket. Leaving it unset returns both
+  /// the active and completed items as before.
+  @$pb.TagNumber(2)
+  ItemView get view => $_getN(1);
+  @$pb.TagNumber(2)
+  set view(ItemView value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasView() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearView() => $_clearField(2);
 }
 
 class ListItemsResponse extends $pb.GeneratedMessage {
