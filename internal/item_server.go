@@ -129,6 +129,7 @@ func (s *ItemServer) CreateItem(ctx context.Context, req *proto.CreateItemReques
 		Title:       req.GetTitle(),
 		Description: req.GetDescription(),
 		ListID:      optionalID(req.ListId),
+		UserID:      userID,
 	}
 	if req.DueDate != nil {
 		dueDate := req.GetDueDate().AsTime()
@@ -137,9 +138,9 @@ func (s *ItemServer) CreateItem(ctx context.Context, req *proto.CreateItemReques
 
 	db := s.DB.WithContext(ctx)
 	err = db.Transaction(func(tx *gorm.DB) error {
-		if err := database.AssignInitialPosition(tx, &item, userID); err != nil {
-			return err
-		}
+		// Items are created untriaged (Priority is nil). Triage happens via
+		// MoveItem with top/bottom or a relative anchor, so there is no
+		// initial priority to assign here.
 		// Labels are resolved before the insert so that the item is created
 		// with its join rows already in place.
 		labels, err := database.FindOrCreateLabels(tx, userID, req.GetLabels())
@@ -180,13 +181,17 @@ func (s *ItemServer) MoveItem(ctx context.Context, req *proto.MoveItemRequest) (
 	}
 
 	var anchor database.MoveAnchor
-	switch {
-	case req.GetBeforeId() != 0:
+	switch req.GetAnchor().(type) {
+	case *proto.MoveItemRequest_BeforeId:
 		anchor = database.MoveAnchor{TargetID: uint(req.GetBeforeId()), Before: true}
-	case req.GetAfterId() != 0:
+	case *proto.MoveItemRequest_AfterId:
 		anchor = database.MoveAnchor{TargetID: uint(req.GetAfterId()), Before: false}
+	case *proto.MoveItemRequest_Top:
+		anchor = database.MoveAnchor{Top: true}
+	case *proto.MoveItemRequest_Bottom:
+		anchor = database.MoveAnchor{Bottom: true}
 	default:
-		return nil, status.Error(codes.InvalidArgument, "either before_id or after_id is required")
+		return nil, status.Error(codes.InvalidArgument, "exactly one of before_id, after_id, top, or bottom is required")
 	}
 
 	opts := database.MoveOptions{ChangeList: req.GetChangeList()}
@@ -257,6 +262,8 @@ func mapDatabaseError(err error) error {
 		errors.Is(err, database.ErrAnchorCompleted),
 		errors.Is(err, database.ErrLabelInUse):
 		return status.Error(codes.FailedPrecondition, err.Error())
+	case errors.Is(err, database.ErrAnchorUntriaged):
+		return status.Error(codes.InvalidArgument, err.Error())
 	default:
 		return status.Errorf(codes.Internal, "%v", err)
 	}
@@ -286,7 +293,7 @@ func toProtoItem(item database.Item) (*proto.Item, error) {
 		Title:       item.Title,
 		Description: item.Description,
 		Done:        item.Done,
-		Position:    item.Position,
+		Priority:    item.Priority,
 	}
 	if item.DueDate != nil {
 		result.DueDate = timestamppb.New(*item.DueDate)

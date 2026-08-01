@@ -8,27 +8,38 @@ import (
 	"gorm.io/gorm"
 )
 
-// seedItems creates the named items in order, each appended to the tail of the
-// manual ordering, and returns their identifiers keyed by title.
+// seedItems creates the named items in order, triages each via MoveItem with
+// bottom (so the first item is highest priority and the last is lowest), and
+// returns their identifiers keyed by title. The display order therefore
+// matches the creation order.
 func seedItems(t *testing.T, db *gorm.DB, titles ...string) map[string]uint {
 	t.Helper()
 
 	ids := make(map[string]uint, len(titles))
 	for _, title := range titles {
-		item := Item{Title: title}
-		if err := AssignInitialPosition(db, &item, testUserID); err != nil {
-			t.Fatalf("failed to assign an initial position to %q: %v", title, err)
-		}
+		item := Item{Title: title, UserID: testUserID}
 		if err := db.Create(&item).Error; err != nil {
 			t.Fatalf("failed to create the item %q: %v", title, err)
 		}
 		ids[title] = item.ID
 	}
 
+	// Triage in creation order by appending to the tail (bottom). The first
+	// item lands at priority 0 on an empty ordering, the next at -priorityStep,
+	// and so on, so the display order (DESC) matches the creation order.
+	for _, title := range titles {
+		anchor := MoveAnchor{Bottom: true}
+		if _, err := MoveItem(db, testUserID, ids[title], anchor, MoveOptions{}); err != nil {
+			t.Fatalf("failed to triage %q: %v", title, err)
+		}
+	}
+
 	return ids
 }
 
-// activeTitles returns the titles of the active items in manual order.
+// activeTitles returns the titles of the triaged active items in manual order
+// (highest priority first). Untriaged items are excluded; they are listed via
+// ListItemsByView with ItemViewUntriaged.
 func activeTitles(t *testing.T, db *gorm.DB) []string {
 	t.Helper()
 
@@ -58,49 +69,51 @@ func equalStrings(a, b []string) bool {
 	return true
 }
 
-func TestNextPosition(t *testing.T) {
+func TestNextHighestPriority(t *testing.T) {
 	db := setupTestDB(t)
 
-	position, err := NextPosition(db, testUserID)
+	priority, err := NextHighestPriority(db, testUserID)
 	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
-	if position != positionStep {
-		t.Errorf("expected %v on an empty database but got %v", positionStep, position)
+	if priority != priorityStep {
+		t.Errorf("expected %v on an empty database but got %v", priorityStep, priority)
 	}
 
 	seedItems(t, db, "a", "b", "c")
 
-	position, err = NextPosition(db, testUserID)
+	priority, err = NextHighestPriority(db, testUserID)
 	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
-	if expected := 4 * positionStep; position != expected {
-		t.Errorf("expected %v after three items but got %v", expected, position)
+	// seedItems triages via bottom: a=0, b=-priorityStep, c=-2*priorityStep,
+	// so the highest is 0 and the next highest is priorityStep.
+	if expected := priorityStep; priority != expected {
+		t.Errorf("expected %v after three items but got %v", expected, priority)
 	}
 }
 
-func TestAssignInitialPositionAppendsToTail(t *testing.T) {
-	db := setupTestDB(t)
-	seedItems(t, db, "a", "b", "c")
-
-	if titles := activeTitles(t, db); !equalStrings(titles, []string{"a", "b", "c"}) {
-		t.Errorf("expected [a b c] but got %v", titles)
-	}
-}
-
-func TestAssignInitialPositionSkipsCompletedItems(t *testing.T) {
+func TestNextLowestPriority(t *testing.T) {
 	db := setupTestDB(t)
 
-	item := Item{Title: "done already", Done: true}
-	if err := AssignInitialPosition(db, &item, testUserID); err != nil {
+	priority, err := NextLowestPriority(db, testUserID)
+	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
-	if item.Position != nil {
-		t.Errorf("expected no position on a completed item but got %v", *item.Position)
+	if priority != 0 {
+		t.Errorf("expected 0 on an empty database but got %v", priority)
 	}
-	if item.UserID != testUserID {
-		t.Errorf("expected the user id to be set but got %d", item.UserID)
+
+	seedItems(t, db, "a", "b", "c")
+
+	priority, err = NextLowestPriority(db, testUserID)
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	// seedItems triages via bottom: a=0, b=-priorityStep, c=-2*priorityStep,
+	// so the lowest is -2*priorityStep and the next lowest is -3*priorityStep.
+	if expected := -3 * priorityStep; priority != expected {
+		t.Errorf("expected %v after three items but got %v", expected, priority)
 	}
 }
 
@@ -139,6 +152,63 @@ func TestMoveItem(t *testing.T) {
 	}
 }
 
+func TestMoveItemAbsoluteTopBottom(t *testing.T) {
+	tests := []struct {
+		name     string
+		subject  string
+		top      bool
+		expected []string
+	}{
+		{"top triages the first item", "a", true, []string{"a"}},
+		{"bottom triages the first item", "b", false, []string{"b"}},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			db := setupTestDB(t)
+			ids := seedItems(t, db, "a", "b", "c")
+
+			// Reset a fresh untriaged item by clearing its priority directly.
+			if err := db.Model(&Item{}).Where("id = ?", ids[test.subject]).
+				Update("priority", nil).Error; err != nil {
+				t.Fatalf("failed to clear the priority: %v", err)
+			}
+
+			anchor := MoveAnchor{Top: test.top, Bottom: !test.top}
+			if _, err := MoveItem(db, testUserID, ids[test.subject], anchor, MoveOptions{}); err != nil {
+				t.Fatalf("expected no error but got %v", err)
+			}
+
+			// The triaged item must carry a priority after the absolute move.
+			var item Item
+			if err := db.Select("priority").First(&item, ids[test.subject]).Error; err != nil {
+				t.Fatalf("failed to load the item: %v", err)
+			}
+			if item.Priority == nil {
+				t.Fatalf("expected the item to carry a priority after triage")
+			}
+		})
+	}
+}
+
+func TestMoveItemTopOnEmptyOrdering(t *testing.T) {
+	db := setupTestDB(t)
+
+	// A single untriaged item with no prioritised peers can be triaged via top.
+	item := Item{Title: "solo", UserID: testUserID}
+	if err := db.Create(&item).Error; err != nil {
+		t.Fatalf("failed to create the item: %v", err)
+	}
+
+	moved, err := MoveItem(db, testUserID, item.ID, MoveAnchor{Top: true}, MoveOptions{})
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if moved.Priority == nil || *moved.Priority != priorityStep {
+		t.Errorf("expected priority %v on an empty ordering but got %v", priorityStep, moved.Priority)
+	}
+}
+
 func TestMoveItemErrors(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -171,6 +241,25 @@ func TestMoveItemErrors(t *testing.T) {
 				t.Errorf("expected %v but got %v", test.expected, err)
 			}
 		})
+	}
+}
+
+func TestMoveItemRejectsUntriagedAnchor(t *testing.T) {
+	db := setupTestDB(t)
+	ids := seedItems(t, db, "a", "b")
+
+	// Create an untriaged item directly (no priority).
+	untriaged := Item{Title: "untriaged", UserID: testUserID}
+	if err := db.Create(&untriaged).Error; err != nil {
+		t.Fatalf("failed to create the untriaged item: %v", err)
+	}
+
+	// Moving relative to an untriaged anchor is rejected: relative moves
+	// require a triaged anchor.
+	anchor := MoveAnchor{TargetID: untriaged.ID, Before: true}
+	_, err := MoveItem(db, testUserID, ids["a"], anchor, MoveOptions{})
+	if !errors.Is(err, ErrAnchorUntriaged) {
+		t.Errorf("expected %v but got %v", ErrAnchorUntriaged, err)
 	}
 }
 
@@ -237,7 +326,7 @@ func TestMoveItemRebalances(t *testing.T) {
 
 	// Alternately wedging two items into the gap just after "a" halves that gap
 	// on every move. Without a rebalance the gap would fall below
-	// positionEpsilon after roughly thirty iterations, so sixty guarantees the
+	// priorityEpsilon after roughly thirty iterations, so sixty guarantees the
 	// lazy rebalance path is taken.
 	for i := 0; i < 60; i++ {
 		for _, title := range []string{"c", "d"} {
@@ -257,13 +346,15 @@ func TestMoveItemRebalances(t *testing.T) {
 		t.Fatalf("failed to list the active items: %v", err)
 	}
 	for _, item := range items {
-		if item.Position == nil {
-			t.Fatalf("expected %q to carry a position", item.Title)
+		if item.Priority == nil {
+			t.Fatalf("expected %q to carry a priority", item.Title)
 		}
 	}
-	// Adjacent gaps must remain splittable after all that churn.
+	// Adjacent gaps must remain splittable after all that churn. Under DESC
+	// order items[i-1] has the higher priority, so the gap is the difference
+	// the other way around compared to the old ASC ordering.
 	for i := 1; i < len(items); i++ {
-		if gap := *items[i].Position - *items[i-1].Position; gap < positionEpsilon {
+		if gap := *items[i-1].Priority - *items[i].Priority; gap < priorityEpsilon {
 			t.Errorf("expected a splittable gap between %q and %q but got %v", items[i-1].Title, items[i].Title, gap)
 		}
 	}
@@ -281,9 +372,11 @@ func TestRebalanceRestoresEvenSpacing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to list the active items: %v", err)
 	}
+	// Under DESC order the first item (highest) gets N*priorityStep, the last
+	// gets 1*priorityStep.
 	for i, item := range items {
-		if expected := positionStep * float64(i+1); *item.Position != expected {
-			t.Errorf("expected %q at %v but got %v", item.Title, expected, *item.Position)
+		if expected := priorityStep * float64(len(items)-i); *item.Priority != expected {
+			t.Errorf("expected %q at %v but got %v", item.Title, expected, *item.Priority)
 		}
 	}
 }
@@ -299,8 +392,8 @@ func TestSetDone(t *testing.T) {
 	if !completed.Done {
 		t.Errorf("expected the item to be completed")
 	}
-	if completed.Position != nil {
-		t.Errorf("expected the position to be cleared but got %v", *completed.Position)
+	if completed.Priority != nil {
+		t.Errorf("expected the priority to be cleared but got %v", *completed.Priority)
 	}
 	if titles := activeTitles(t, db); !equalStrings(titles, []string{"a", "c"}) {
 		t.Errorf("expected [a c] but got %v", titles)
@@ -310,12 +403,22 @@ func TestSetDone(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
-	if reopened.Position == nil {
-		t.Fatalf("expected a position after reopening the item")
+	// Reopening returns the item to the untriaged bucket rather than appending
+	// it to the manual order, so it carries no priority and does not appear in
+	// the default active listing.
+	if reopened.Priority != nil {
+		t.Fatalf("expected no priority after reopening the item but got %v", *reopened.Priority)
 	}
-	// Reopening appends to the tail rather than restoring the original slot.
-	if titles := activeTitles(t, db); !equalStrings(titles, []string{"a", "c", "b"}) {
-		t.Errorf("expected [a c b] but got %v", titles)
+	if titles := activeTitles(t, db); !equalStrings(titles, []string{"a", "c"}) {
+		t.Errorf("expected [a c] with the reopened item untriaged but got %v", titles)
+	}
+	// The reopened item shows up in the untriaged view instead.
+	untriaged, err := ListItemsByView(db, testUserID, ItemFilter{View: ItemViewUntriaged})
+	if err != nil {
+		t.Fatalf("failed to list the untriaged items: %v", err)
+	}
+	if len(untriaged) != 1 || untriaged[0].Title != "b" {
+		t.Errorf("expected [b] untriaged but got %v", untriaged)
 	}
 }
 
@@ -374,26 +477,22 @@ func TestListCompleted(t *testing.T) {
 
 func TestListItemsByView(t *testing.T) {
 	db := setupTestDB(t)
-	ids := seedItems(t, db, "triaged-a", "triaged-b")
+	ids := seedItems(t, db, "triaged-a", "triaged-b", "triaged-c")
 
-	// An untriaged item is created directly without AssignInitialPosition so it
-	// carries no position.
-	untriaged := Item{Title: "untriaged-c", UserID: testUserID}
+	// An untriaged item is created directly so it never receives a priority.
+	untriaged := Item{Title: "untriaged-d", UserID: testUserID}
 	if err := db.Create(&untriaged).Error; err != nil {
 		t.Fatalf("failed to create the untriaged item: %v", err)
 	}
 
-	// A time-sensitive item carries a due date.
+	// Give triaged-c a due date so it is also time-sensitive.
 	due := time.Date(2026, time.August, 15, 0, 0, 0, 0, time.UTC)
-	timeSensitive := Item{Title: "time-sensitive-d", UserID: testUserID, DueDate: &due}
-	if err := AssignInitialPosition(db, &timeSensitive, testUserID); err != nil {
-		t.Fatalf("failed to assign a position: %v", err)
-	}
-	if err := db.Create(&timeSensitive).Error; err != nil {
-		t.Fatalf("failed to create the time-sensitive item: %v", err)
+	if err := db.Model(&Item{}).Where("id = ?", ids["triaged-c"]).
+		UpdateColumn("due_date", due).Error; err != nil {
+		t.Fatalf("failed to set the due date: %v", err)
 	}
 
-	// Complete one triaged item.
+	// Complete triaged-b.
 	if _, err := SetDone(db, testUserID, ids["triaged-b"], true); err != nil {
 		t.Fatalf("failed to complete the item: %v", err)
 	}
@@ -409,9 +508,9 @@ func TestListItemsByView(t *testing.T) {
 		view     ItemView
 		expected []string
 	}{
-		{"untriaged", ItemViewUntriaged, []string{"untriaged-c"}},
-		{"triaged", ItemViewTriaged, []string{"triaged-a", "time-sensitive-d"}},
-		{"time-sensitive", ItemViewTimeSensitive, []string{"time-sensitive-d"}},
+		{"untriaged", ItemViewUntriaged, []string{"untriaged-d"}},
+		{"triaged", ItemViewTriaged, []string{"triaged-a", "triaged-c"}},
+		{"time-sensitive", ItemViewTimeSensitive, []string{"triaged-c"}},
 		{"done", ItemViewDone, []string{"triaged-b"}},
 	}
 
@@ -473,12 +572,13 @@ func TestFindItemCrossUserIsNotFound(t *testing.T) {
 	}
 }
 
-func TestNeighbourPositionReturnsNilAtExtents(t *testing.T) {
+func TestNeighbourPriorityReturnsNilAtExtents(t *testing.T) {
 	db := setupTestDB(t)
 	ids := seedItems(t, db, "a", "b", "c")
 
-	// "a" is the head, so there is no active item with a smaller position.
-	neighbour, err := neighbourPosition(db, testUserID, ids["a"], *positionOf(t, db, ids["a"]), true)
+	// "a" is the head (highest priority), so there is no active item with a
+	// higher priority to move it before.
+	neighbour, err := neighbourPriority(db, testUserID, ids["a"], *priorityOf(t, db, ids["a"]), true)
 	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
@@ -486,8 +586,9 @@ func TestNeighbourPositionReturnsNilAtExtents(t *testing.T) {
 		t.Errorf("expected nil before the head but got %v", *neighbour)
 	}
 
-	// "c" is the tail, so there is no active item with a larger position.
-	neighbour, err = neighbourPosition(db, testUserID, ids["c"], *positionOf(t, db, ids["c"]), false)
+	// "c" is the tail (lowest priority), so there is no active item with a
+	// lower priority to move it after.
+	neighbour, err = neighbourPriority(db, testUserID, ids["c"], *priorityOf(t, db, ids["c"]), false)
 	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
@@ -496,13 +597,13 @@ func TestNeighbourPositionReturnsNilAtExtents(t *testing.T) {
 	}
 }
 
-// positionOf loads the position of the named item for use in neighbourPosition
+// priorityOf loads the priority of the named item for use in neighbourPriority
 // assertions.
-func positionOf(t *testing.T, db *gorm.DB, id uint) *float64 {
+func priorityOf(t *testing.T, db *gorm.DB, id uint) *float64 {
 	t.Helper()
 	var item Item
-	if err := db.Select("position").First(&item, id).Error; err != nil {
-		t.Fatalf("failed to load the position of item %d: %v", id, err)
+	if err := db.Select("priority").First(&item, id).Error; err != nil {
+		t.Fatalf("failed to load the priority of item %d: %v", id, err)
 	}
-	return item.Position
+	return item.Priority
 }

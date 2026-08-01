@@ -74,12 +74,12 @@ const Item$json = {
       '17': true
     },
     {
-      '1': 'position',
+      '1': 'priority',
       '3': 7,
       '4': 1,
       '5': 1,
       '9': 2,
-      '10': 'position',
+      '10': 'priority',
       '17': true
     },
     {
@@ -94,7 +94,7 @@ const Item$json = {
   '8': [
     {'1': '_due_date'},
     {'1': '_list_id'},
-    {'1': '_position'},
+    {'1': '_priority'},
   ],
 };
 
@@ -103,9 +103,9 @@ final $typed_data.Uint8List itemDescriptor = $convert.base64Decode(
     'CgRJdGVtEg4KAmlkGAEgASgNUgJpZBIUCgV0aXRsZRgCIAEoCVIFdGl0bGUSIAoLZGVzY3JpcH'
     'Rpb24YAyABKAlSC2Rlc2NyaXB0aW9uEhIKBGRvbmUYBCABKAhSBGRvbmUSOgoIZHVlX2RhdGUY'
     'BSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSABSB2R1ZURhdGWIAQESHAoHbGlzdF'
-    '9pZBgGIAEoDUgBUgZsaXN0SWSIAQESHwoIcG9zaXRpb24YByABKAFIAlIIcG9zaXRpb26IAQES'
+    '9pZBgGIAEoDUgBUgZsaXN0SWSIAQESHwoIcHJpb3JpdHkYByABKAFIAlIIcHJpb3JpdHmIAQES'
     'IwoGbGFiZWxzGAggAygLMgsuaXRlbS5MYWJlbFIGbGFiZWxzQgsKCV9kdWVfZGF0ZUIKCghfbG'
-    'lzdF9pZEILCglfcG9zaXRpb24=');
+    'lzdF9pZEILCglfcHJpb3JpdHk=');
 
 @$core.Deprecated('Use listItemsRequestDescriptor instead')
 const ListItemsRequest$json = {
@@ -189,6 +189,8 @@ const MoveItemRequest$json = {
     {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
     {'1': 'before_id', '3': 2, '4': 1, '5': 13, '9': 0, '10': 'beforeId'},
     {'1': 'after_id', '3': 3, '4': 1, '5': 13, '9': 0, '10': 'afterId'},
+    {'1': 'top', '3': 6, '4': 1, '5': 8, '9': 0, '10': 'top'},
+    {'1': 'bottom', '3': 7, '4': 1, '5': 8, '9': 0, '10': 'bottom'},
     {'1': 'change_list', '3': 4, '4': 1, '5': 8, '10': 'changeList'},
     {
       '1': 'list_id',
@@ -209,9 +211,10 @@ const MoveItemRequest$json = {
 /// Descriptor for `MoveItemRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List moveItemRequestDescriptor = $convert.base64Decode(
     'Cg9Nb3ZlSXRlbVJlcXVlc3QSDgoCaWQYASABKA1SAmlkEh0KCWJlZm9yZV9pZBgCIAEoDUgAUg'
-    'hiZWZvcmVJZBIbCghhZnRlcl9pZBgDIAEoDUgAUgdhZnRlcklkEh8KC2NoYW5nZV9saXN0GAQg'
-    'ASgIUgpjaGFuZ2VMaXN0EhwKB2xpc3RfaWQYBSABKA1IAVIGbGlzdElkiAEBQggKBmFuY2hvck'
-    'IKCghfbGlzdF9pZA==');
+    'hiZWZvcmVJZBIbCghhZnRlcl9pZBgDIAEoDUgAUgdhZnRlcklkEhIKA3RvcBgGIAEoCEgAUgN0'
+    'b3ASGAoGYm90dG9tGAcgASgISABSBmJvdHRvbRIfCgtjaGFuZ2VfbGlzdBgEIAEoCFIKY2hhbm'
+    'dlTGlzdBIcCgdsaXN0X2lkGAUgASgNSAFSBmxpc3RJZIgBAUIICgZhbmNob3JCCgoIX2xpc3Rf'
+    'aWQ=');
 
 @$core.Deprecated('Use setItemDoneRequestDescriptor instead')
 const SetItemDoneRequest$json = {

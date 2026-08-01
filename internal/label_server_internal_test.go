@@ -236,6 +236,8 @@ func TestCreateItemWithLabels(t *testing.T) {
 
 func TestListItemsFiltersByLabel(t *testing.T) {
 	server := setupItemServer(t)
+	// Items are created untriaged; triage them so they appear in the default
+	// active listing filtered by label below.
 	if _, err := server.CreateItem(authenticatedContext(), &proto.CreateItemRequest{
 		Title:  "a",
 		Labels: []string{"work", "urgent"},
@@ -247,6 +249,29 @@ func TestListItemsFiltersByLabel(t *testing.T) {
 		Labels: []string{"work"},
 	}); err != nil {
 		t.Fatalf("failed to create the item: %v", err)
+	}
+	// Triage both items to the bottom so they join the manual ordering.
+	for _, title := range []string{"a", "b"} {
+		listed, err := server.ListItems(authenticatedContext(), &proto.ListItemsRequest{View: proto.ItemView_ITEM_VIEW_UNTRIAGED})
+		if err != nil {
+			t.Fatalf("failed to list the untriaged items: %v", err)
+		}
+		var id uint32
+		for _, item := range listed.GetActive() {
+			if item.GetTitle() == title {
+				id = item.GetId()
+				break
+			}
+		}
+		if id == 0 {
+			t.Fatalf("failed to find the untriaged item %q", title)
+		}
+		if _, err := server.MoveItem(authenticatedContext(), &proto.MoveItemRequest{
+			Id:     id,
+			Anchor: &proto.MoveItemRequest_Bottom{Bottom: true},
+		}); err != nil {
+			t.Fatalf("failed to triage %q: %v", title, err)
+		}
 	}
 
 	tests := []struct {

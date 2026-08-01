@@ -49,12 +49,14 @@ type Item struct {
 	Description string `gorm:""`
 	Done        bool   `gorm:"not null;default:false;index:idx_items_order,priority:1"`
 	DueDate     *time.Time
-	// Position is the sparse fractional rank used for manual ordering of
-	// active items. It is non-nil exactly when Done is false. Larger values
-	// sort later. Gaps between adjacent values are intentional: inserting
-	// between two neighbours takes their midpoint, so a move rewrites a
-	// single row.
-	Position *float64 `gorm:"index:idx_items_order,priority:2"`
+	// Priority is the sparse fractional rank used for manual ordering of
+	// active, triaged items. It is non-nil exactly when Done is false and the
+	// item has been triaged. Larger values sort first. Gaps between adjacent
+	// values are intentional: inserting between two neighbours takes their
+	// midpoint, so a move rewrites a single row. Items are created untriaged
+	// (Priority is nil); triage happens via MoveItem with top/bottom or a
+	// relative anchor.
+	Priority *float64 `gorm:"column:priority;index:idx_items_order,priority:2"`
 	ListID   *uint
 	List     *List `gorm:"foreignKey:ListID"`
 	UserID   uint  `gorm:"not null;index"`

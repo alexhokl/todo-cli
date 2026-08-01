@@ -51,8 +51,10 @@ message Item {
   bool done = 4;
   optional google.protobuf.Timestamp due_date = 5;
   optional uint32 list_id = 6;
-  // position is the manual ordering rank. It is set only while done is false.
-  optional double position = 7;
+  // priority is the manual ordering rank. Higher values sort first. It is set
+  // only while done is false and the item has been triaged; untriaged items
+  // carry no priority and are excluded from the default listing.
+  optional double priority = 7;
   repeated Label labels = 8;
 }
 
@@ -99,10 +101,18 @@ message MoveItemRequest {
   uint32 id = 1;
   // Exactly one anchor must be supplied.
   oneof anchor {
-    // before_id places the item immediately before the identified item.
+    // before_id places the item immediately before the identified item. The
+    // anchor must already carry a priority (i.e. be triaged).
     uint32 before_id = 2;
-    // after_id places the item immediately after the identified item.
+    // after_id places the item immediately after the identified item. The
+    // anchor must already carry a priority (i.e. be triaged).
     uint32 after_id = 3;
+    // top assigns the highest priority, used to triage an item when no
+    // prioritised anchor exists yet.
+    bool top = 6;
+    // bottom assigns the lowest priority, used to triage an item when no
+    // prioritised anchor exists yet.
+    bool bottom = 7;
   }
   // change_list reports whether list_id should be applied. It distinguishes
   // leaving the list untouched from clearing it.

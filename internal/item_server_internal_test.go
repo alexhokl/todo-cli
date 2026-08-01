@@ -43,8 +43,10 @@ func setupItemServer(t *testing.T) *ItemServer {
 	return NewItemServer(db)
 }
 
-// createItems creates the named items in order and returns their identifiers
-// keyed by title.
+// createItems creates the named items in order, triages each via MoveItem with
+// bottom (so the first item is highest priority and the last is lowest), and
+// returns their identifiers keyed by title. The display order therefore
+// matches the creation order.
 func createItems(t *testing.T, server *ItemServer, titles ...string) map[string]uint32 {
 	t.Helper()
 
@@ -56,6 +58,16 @@ func createItems(t *testing.T, server *ItemServer, titles ...string) map[string]
 			t.Fatalf("failed to create the item %q: %v", title, err)
 		}
 		ids[title] = item.GetId()
+	}
+
+	// Triage in creation order by appending to the tail (bottom). The first
+	// item lands at priority 0 on an empty ordering, the next at -priorityStep,
+	// and so on, so the display order (DESC) matches the creation order.
+	for _, title := range titles {
+		req := &proto.MoveItemRequest{Id: ids[title], Anchor: &proto.MoveItemRequest_Bottom{Bottom: true}}
+		if _, err := server.MoveItem(ctx, req); err != nil {
+			t.Fatalf("failed to triage %q: %v", title, err)
+		}
 	}
 
 	return ids
@@ -90,12 +102,39 @@ func equalStrings(a, b []string) bool {
 	return true
 }
 
-func TestCreateItemAppendsToTail(t *testing.T) {
+func TestCreateItemLeavesItemUntriaged(t *testing.T) {
 	server := setupItemServer(t)
-	createItems(t, server, "a", "b", "c")
 
-	if titles := activeTitles(t, server); !equalStrings(titles, []string{"a", "b", "c"}) {
-		t.Errorf("expected [a b c] but got %v", titles)
+	// Create items directly via CreateItem (no triage) so they remain
+	// untriaged, which is the new default.
+	ctx := authenticatedContext()
+	for _, title := range []string{"a", "b", "c"} {
+		if _, err := server.CreateItem(ctx, &proto.CreateItemRequest{Title: title}); err != nil {
+			t.Fatalf("failed to create %q: %v", title, err)
+		}
+	}
+
+	// Newly created items are untriaged: they carry no priority and are
+	// excluded from the default active listing.
+	response, err := server.ListItems(ctx, &proto.ListItemsRequest{})
+	if err != nil {
+		t.Fatalf("failed to list the items: %v", err)
+	}
+	if len(response.GetActive()) != 0 {
+		t.Errorf("expected no triaged active items but got %v", response.GetActive())
+	}
+
+	// The items show up in the untriaged view instead, in creation order.
+	untriaged, err := server.ListItems(ctx, &proto.ListItemsRequest{View: proto.ItemView_ITEM_VIEW_UNTRIAGED})
+	if err != nil {
+		t.Fatalf("failed to list the untriaged items: %v", err)
+	}
+	titles := make([]string, 0, len(untriaged.GetActive()))
+	for _, item := range untriaged.GetActive() {
+		titles = append(titles, item.GetTitle())
+	}
+	if !equalStrings(titles, []string{"a", "b", "c"}) {
+		t.Errorf("expected [a b c] untriaged but got %v", titles)
 	}
 }
 
@@ -146,10 +185,11 @@ func TestMoveItem(t *testing.T) {
 
 func TestMoveItemErrorCodes(t *testing.T) {
 	tests := []struct {
-		name     string
-		request  func(ids map[string]uint32) *proto.MoveItemRequest
-		complete string
-		expected codes.Code
+		name           string
+		request        func(ids map[string]uint32) *proto.MoveItemRequest
+		complete       string
+		createUntriaged bool
+		expected       codes.Code
 	}{
 		{
 			name: "missing id",
@@ -207,12 +247,38 @@ func TestMoveItemErrorCodes(t *testing.T) {
 			complete: "b",
 			expected: codes.FailedPrecondition,
 		},
+		{
+			name: "untriaged anchor",
+			request: func(ids map[string]uint32) *proto.MoveItemRequest {
+				// "d" is created untriaged and never triaged, so moving
+				// relative to it is rejected with InvalidArgument.
+				return &proto.MoveItemRequest{
+					Id:     ids["a"],
+					Anchor: &proto.MoveItemRequest_BeforeId{BeforeId: ids["d"]},
+				}
+			},
+			createUntriaged: true,
+			expected:       codes.InvalidArgument,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			server := setupItemServer(t)
 			ids := createItems(t, server, "a", "b", "c")
+			if test.createUntriaged {
+				// "d" is created directly (no triage) so it carries no priority.
+				more := createItems(t, server, "d")
+				for k, v := range more {
+					ids[k] = v
+				}
+				// Undo the triage that createItems applied, leaving d untriaged.
+				if err := server.DB.Model(&database.Item{}).
+					Where("id = ?", ids["d"]).
+					Update("priority", nil).Error; err != nil {
+					t.Fatalf("failed to clear the priority of d: %v", err)
+				}
+			}
 			if test.complete != "" {
 				req := &proto.SetItemDoneRequest{Id: ids[test.complete], Done: true}
 				if _, err := server.SetItemDone(authenticatedContext(), req); err != nil {
@@ -276,19 +342,37 @@ func TestSetItemDone(t *testing.T) {
 	if !completed.GetDone() {
 		t.Errorf("expected the item to be completed")
 	}
-	if completed.Position != nil {
-		t.Errorf("expected the position to be cleared but got %v", completed.GetPosition())
+	if completed.Priority != nil {
+		t.Errorf("expected the priority to be cleared but got %v", completed.GetPriority())
 	}
 	if titles := activeTitles(t, server); !equalStrings(titles, []string{"a", "c"}) {
 		t.Errorf("expected [a c] but got %v", titles)
 	}
 
-	// Reopening appends to the tail rather than restoring the original slot.
-	if _, err := server.SetItemDone(authenticatedContext(), &proto.SetItemDoneRequest{Id: ids["b"]}); err != nil {
+	// Reopening returns the item to the untriaged bucket rather than appending
+	// it to the manual order, so it carries no priority and does not appear in
+	// the default active listing.
+	reopened, err := server.SetItemDone(authenticatedContext(), &proto.SetItemDoneRequest{Id: ids["b"]})
+	if err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
-	if titles := activeTitles(t, server); !equalStrings(titles, []string{"a", "c", "b"}) {
-		t.Errorf("expected [a c b] but got %v", titles)
+	if reopened.Priority != nil {
+		t.Fatalf("expected no priority after reopening but got %v", reopened.GetPriority())
+	}
+	if titles := activeTitles(t, server); !equalStrings(titles, []string{"a", "c"}) {
+		t.Errorf("expected [a c] with the reopened item untriaged but got %v", titles)
+	}
+	// The reopened item shows up in the untriaged view instead.
+	untriaged, err := server.ListItems(authenticatedContext(), &proto.ListItemsRequest{View: proto.ItemView_ITEM_VIEW_UNTRIAGED})
+	if err != nil {
+		t.Fatalf("failed to list the untriaged items: %v", err)
+	}
+	untriagedTitles := make([]string, 0, len(untriaged.GetActive()))
+	for _, item := range untriaged.GetActive() {
+		untriagedTitles = append(untriagedTitles, item.GetTitle())
+	}
+	if !equalStrings(untriagedTitles, []string{"b"}) {
+		t.Errorf("expected [b] untriaged but got %v", untriagedTitles)
 	}
 }
 
@@ -337,7 +421,7 @@ func TestListItemsByView(t *testing.T) {
 	server := setupItemServer(t)
 	ids := createItems(t, server, "triaged-a", "triaged-b", "triaged-c")
 
-	// Create an untriaged item directly so it never receives a position.
+	// Create an untriaged item directly so it never receives a priority.
 	untriaged := database.Item{Title: "untriaged-d", UserID: testUserID}
 	if err := server.DB.Create(&untriaged).Error; err != nil {
 		t.Fatalf("failed to create the untriaged item: %v", err)

@@ -44,7 +44,7 @@ func TestParseID(t *testing.T) {
 
 func TestItemCommandsRequireService(t *testing.T) {
 	commands := map[string]bool{
-		"update position": requiresService(moveItemCmd),
+		"update priority": requiresService(moveItemCmd),
 		"list items":      requiresService(listItemsCmd),
 		"create item":     requiresService(createItemCmd),
 		"update done":     requiresService(completeItemCmd),
@@ -72,10 +72,18 @@ func TestMoveItemFlagValidation(t *testing.T) {
 	}{
 		{"before only", []string{"7", "--before", "3"}, false},
 		{"after only", []string{"7", "--after", "3"}, false},
+		{"top only", []string{"7", "--top"}, false},
+		{"bottom only", []string{"7", "--bottom"}, false},
 		{"before with list", []string{"7", "--before", "3", "--list", "2"}, false},
 		{"after with clear-list", []string{"7", "--after", "3", "--clear-list"}, false},
+		{"top with list", []string{"7", "--top", "--list", "2"}, false},
+		{"bottom with clear-list", []string{"7", "--bottom", "--clear-list"}, false},
 		{"no anchor", []string{"7"}, true},
 		{"both anchors", []string{"7", "--before", "3", "--after", "4"}, true},
+		{"before with top", []string{"7", "--before", "3", "--top"}, true},
+		{"after with bottom", []string{"7", "--after", "3", "--bottom"}, true},
+		{"top with bottom", []string{"7", "--top", "--bottom"}, true},
+		{"before with bottom", []string{"7", "--before", "3", "--bottom"}, true},
 		{"list and clear-list", []string{"7", "--before", "3", "--list", "2", "--clear-list"}, true},
 		{"no arguments", []string{"--before", "3"}, true},
 		{"too many arguments", []string{"7", "8", "--before", "3"}, true},

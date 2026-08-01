@@ -147,8 +147,10 @@ type Item struct {
 	Done        bool                   `protobuf:"varint,4,opt,name=done,proto3" json:"done,omitempty"`
 	DueDate     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=due_date,json=dueDate,proto3,oneof" json:"due_date,omitempty"`
 	ListId      *uint32                `protobuf:"varint,6,opt,name=list_id,json=listId,proto3,oneof" json:"list_id,omitempty"`
-	// position is the manual ordering rank. It is set only while done is false.
-	Position      *float64 `protobuf:"fixed64,7,opt,name=position,proto3,oneof" json:"position,omitempty"`
+	// priority is the manual ordering rank. Higher values sort first. It is set
+	// only while done is false and the item has been triaged; untriaged items
+	// carry no priority and are excluded from the default listing.
+	Priority      *float64 `protobuf:"fixed64,7,opt,name=priority,proto3,oneof" json:"priority,omitempty"`
 	Labels        []*Label `protobuf:"bytes,8,rep,name=labels,proto3" json:"labels,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -226,9 +228,9 @@ func (x *Item) GetListId() uint32 {
 	return 0
 }
 
-func (x *Item) GetPosition() float64 {
-	if x != nil && x.Position != nil {
-		return *x.Position
+func (x *Item) GetPriority() float64 {
+	if x != nil && x.Priority != nil {
+		return *x.Priority
 	}
 	return 0
 }
@@ -436,6 +438,8 @@ type MoveItemRequest struct {
 	//
 	//	*MoveItemRequest_BeforeId
 	//	*MoveItemRequest_AfterId
+	//	*MoveItemRequest_Top
+	//	*MoveItemRequest_Bottom
 	Anchor isMoveItemRequest_Anchor `protobuf_oneof:"anchor"`
 	// change_list reports whether list_id should be applied. It distinguishes
 	// leaving the list untouched from clearing it.
@@ -509,6 +513,24 @@ func (x *MoveItemRequest) GetAfterId() uint32 {
 	return 0
 }
 
+func (x *MoveItemRequest) GetTop() bool {
+	if x != nil {
+		if x, ok := x.Anchor.(*MoveItemRequest_Top); ok {
+			return x.Top
+		}
+	}
+	return false
+}
+
+func (x *MoveItemRequest) GetBottom() bool {
+	if x != nil {
+		if x, ok := x.Anchor.(*MoveItemRequest_Bottom); ok {
+			return x.Bottom
+		}
+	}
+	return false
+}
+
 func (x *MoveItemRequest) GetChangeList() bool {
 	if x != nil {
 		return x.ChangeList
@@ -528,18 +550,36 @@ type isMoveItemRequest_Anchor interface {
 }
 
 type MoveItemRequest_BeforeId struct {
-	// before_id places the item immediately before the identified item.
+	// before_id places the item immediately before the identified item. The
+	// anchor must already carry a priority (i.e. be triaged).
 	BeforeId uint32 `protobuf:"varint,2,opt,name=before_id,json=beforeId,proto3,oneof"`
 }
 
 type MoveItemRequest_AfterId struct {
-	// after_id places the item immediately after the identified item.
+	// after_id places the item immediately after the identified item. The
+	// anchor must already carry a priority (i.e. be triaged).
 	AfterId uint32 `protobuf:"varint,3,opt,name=after_id,json=afterId,proto3,oneof"`
+}
+
+type MoveItemRequest_Top struct {
+	// top assigns the highest priority, used to triage an item when no
+	// prioritised anchor exists yet.
+	Top bool `protobuf:"varint,6,opt,name=top,proto3,oneof"`
+}
+
+type MoveItemRequest_Bottom struct {
+	// bottom assigns the lowest priority, used to triage an item when no
+	// prioritised anchor exists yet.
+	Bottom bool `protobuf:"varint,7,opt,name=bottom,proto3,oneof"`
 }
 
 func (*MoveItemRequest_BeforeId) isMoveItemRequest_Anchor() {}
 
 func (*MoveItemRequest_AfterId) isMoveItemRequest_Anchor() {}
+
+func (*MoveItemRequest_Top) isMoveItemRequest_Anchor() {}
+
+func (*MoveItemRequest_Bottom) isMoveItemRequest_Anchor() {}
 
 type SetItemDoneRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -891,12 +931,12 @@ const file_proto_item_proto_rawDesc = "" +
 	"\x04done\x18\x04 \x01(\bR\x04done\x12:\n" +
 	"\bdue_date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\adueDate\x88\x01\x01\x12\x1c\n" +
 	"\alist_id\x18\x06 \x01(\rH\x01R\x06listId\x88\x01\x01\x12\x1f\n" +
-	"\bposition\x18\a \x01(\x01H\x02R\bposition\x88\x01\x01\x12#\n" +
+	"\bpriority\x18\a \x01(\x01H\x02R\bpriority\x88\x01\x01\x12#\n" +
 	"\x06labels\x18\b \x03(\v2\v.item.LabelR\x06labelsB\v\n" +
 	"\t_due_dateB\n" +
 	"\n" +
 	"\b_list_idB\v\n" +
-	"\t_position\"N\n" +
+	"\t_priority\"N\n" +
 	"\x10ListItemsRequest\x12\x16\n" +
 	"\x06labels\x18\x01 \x03(\tR\x06labels\x12\"\n" +
 	"\x04view\x18\x02 \x01(\x0e2\x0e.item.ItemViewR\x04view\"a\n" +
@@ -913,11 +953,13 @@ const file_proto_item_proto_rawDesc = "" +
 	"\x06labels\x18\x05 \x03(\tR\x06labelsB\v\n" +
 	"\t_due_dateB\n" +
 	"\n" +
-	"\b_list_id\"\xb2\x01\n" +
+	"\b_list_id\"\xe0\x01\n" +
 	"\x0fMoveItemRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x1d\n" +
 	"\tbefore_id\x18\x02 \x01(\rH\x00R\bbeforeId\x12\x1b\n" +
-	"\bafter_id\x18\x03 \x01(\rH\x00R\aafterId\x12\x1f\n" +
+	"\bafter_id\x18\x03 \x01(\rH\x00R\aafterId\x12\x12\n" +
+	"\x03top\x18\x06 \x01(\bH\x00R\x03top\x12\x18\n" +
+	"\x06bottom\x18\a \x01(\bH\x00R\x06bottom\x12\x1f\n" +
 	"\vchange_list\x18\x04 \x01(\bR\n" +
 	"changeList\x12\x1c\n" +
 	"\alist_id\x18\x05 \x01(\rH\x01R\x06listId\x88\x01\x01B\b\n" +
@@ -1039,6 +1081,8 @@ func file_proto_item_proto_init() {
 	file_proto_item_proto_msgTypes[5].OneofWrappers = []any{
 		(*MoveItemRequest_BeforeId)(nil),
 		(*MoveItemRequest_AfterId)(nil),
+		(*MoveItemRequest_Top)(nil),
+		(*MoveItemRequest_Bottom)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

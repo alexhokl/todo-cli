@@ -11,7 +11,7 @@ import (
 )
 
 // writeItemTable renders items as an aligned table. Active items are shown in
-// their manual order, so the leading column is the position in that order
+// their manual order, so the leading column is the priority in that order
 // rather than an identifier the user has to interpret.
 func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
 	if len(items) == 0 {

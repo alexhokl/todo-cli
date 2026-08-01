@@ -98,7 +98,7 @@ class Item extends $pb.GeneratedMessage {
     $core.bool? done,
     $2.Timestamp? dueDate,
     $core.int? listId,
-    $core.double? position,
+    $core.double? priority,
     $core.Iterable<Label>? labels,
   }) {
     final result = create();
@@ -108,7 +108,7 @@ class Item extends $pb.GeneratedMessage {
     if (done != null) result.done = done;
     if (dueDate != null) result.dueDate = dueDate;
     if (listId != null) result.listId = listId;
-    if (position != null) result.position = position;
+    if (priority != null) result.priority = priority;
     if (labels != null) result.labels.addAll(labels);
     return result;
   }
@@ -133,7 +133,7 @@ class Item extends $pb.GeneratedMessage {
     ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'dueDate',
         subBuilder: $2.Timestamp.create)
     ..aI(6, _omitFieldNames ? '' : 'listId', fieldType: $pb.PbFieldType.OU3)
-    ..aD(7, _omitFieldNames ? '' : 'position')
+    ..aD(7, _omitFieldNames ? '' : 'priority')
     ..pPM<Label>(8, _omitFieldNames ? '' : 'labels', subBuilder: Label.create)
     ..hasRequiredFields = false;
 
@@ -211,15 +211,17 @@ class Item extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   void clearListId() => $_clearField(6);
 
-  /// position is the manual ordering rank. It is set only while done is false.
+  /// priority is the manual ordering rank. Higher values sort first. It is set
+  /// only while done is false and the item has been triaged; untriaged items
+  /// carry no priority and are excluded from the default listing.
   @$pb.TagNumber(7)
-  $core.double get position => $_getN(6);
+  $core.double get priority => $_getN(6);
   @$pb.TagNumber(7)
-  set position($core.double value) => $_setDouble(6, value);
+  set priority($core.double value) => $_setDouble(6, value);
   @$pb.TagNumber(7)
-  $core.bool hasPosition() => $_has(6);
+  $core.bool hasPriority() => $_has(6);
   @$pb.TagNumber(7)
-  void clearPosition() => $_clearField(7);
+  void clearPriority() => $_clearField(7);
 
   @$pb.TagNumber(8)
   $pb.PbList<Label> get labels => $_getList(7);
@@ -446,7 +448,7 @@ class CreateItemRequest extends $pb.GeneratedMessage {
   $pb.PbList<$core.String> get labels => $_getList(4);
 }
 
-enum MoveItemRequest_Anchor { beforeId, afterId, notSet }
+enum MoveItemRequest_Anchor { beforeId, afterId, top, bottom, notSet }
 
 class MoveItemRequest extends $pb.GeneratedMessage {
   factory MoveItemRequest({
@@ -455,6 +457,8 @@ class MoveItemRequest extends $pb.GeneratedMessage {
     $core.int? afterId,
     $core.bool? changeList,
     $core.int? listId,
+    $core.bool? top,
+    $core.bool? bottom,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -462,6 +466,8 @@ class MoveItemRequest extends $pb.GeneratedMessage {
     if (afterId != null) result.afterId = afterId;
     if (changeList != null) result.changeList = changeList;
     if (listId != null) result.listId = listId;
+    if (top != null) result.top = top;
+    if (bottom != null) result.bottom = bottom;
     return result;
   }
 
@@ -478,18 +484,22 @@ class MoveItemRequest extends $pb.GeneratedMessage {
       _MoveItemRequest_AnchorByTag = {
     2: MoveItemRequest_Anchor.beforeId,
     3: MoveItemRequest_Anchor.afterId,
+    6: MoveItemRequest_Anchor.top,
+    7: MoveItemRequest_Anchor.bottom,
     0: MoveItemRequest_Anchor.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'MoveItemRequest',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
       createEmptyInstance: create)
-    ..oo(0, [2, 3])
+    ..oo(0, [2, 3, 6, 7])
     ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
     ..aI(2, _omitFieldNames ? '' : 'beforeId', fieldType: $pb.PbFieldType.OU3)
     ..aI(3, _omitFieldNames ? '' : 'afterId', fieldType: $pb.PbFieldType.OU3)
     ..aOB(4, _omitFieldNames ? '' : 'changeList')
     ..aI(5, _omitFieldNames ? '' : 'listId', fieldType: $pb.PbFieldType.OU3)
+    ..aOB(6, _omitFieldNames ? '' : 'top')
+    ..aOB(7, _omitFieldNames ? '' : 'bottom')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -513,10 +523,14 @@ class MoveItemRequest extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(2)
   @$pb.TagNumber(3)
+  @$pb.TagNumber(6)
+  @$pb.TagNumber(7)
   MoveItemRequest_Anchor whichAnchor() =>
       _MoveItemRequest_AnchorByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(2)
   @$pb.TagNumber(3)
+  @$pb.TagNumber(6)
+  @$pb.TagNumber(7)
   void clearAnchor() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -528,7 +542,8 @@ class MoveItemRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => $_clearField(1);
 
-  /// before_id places the item immediately before the identified item.
+  /// before_id places the item immediately before the identified item. The
+  /// anchor must already carry a priority (i.e. be triaged).
   @$pb.TagNumber(2)
   $core.int get beforeId => $_getIZ(1);
   @$pb.TagNumber(2)
@@ -538,7 +553,8 @@ class MoveItemRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearBeforeId() => $_clearField(2);
 
-  /// after_id places the item immediately after the identified item.
+  /// after_id places the item immediately after the identified item. The
+  /// anchor must already carry a priority (i.e. be triaged).
   @$pb.TagNumber(3)
   $core.int get afterId => $_getIZ(2);
   @$pb.TagNumber(3)
@@ -569,6 +585,28 @@ class MoveItemRequest extends $pb.GeneratedMessage {
   $core.bool hasListId() => $_has(4);
   @$pb.TagNumber(5)
   void clearListId() => $_clearField(5);
+
+  /// top assigns the highest priority, used to triage an item when no
+  /// prioritised anchor exists yet.
+  @$pb.TagNumber(6)
+  $core.bool get top => $_getBF(5);
+  @$pb.TagNumber(6)
+  set top($core.bool value) => $_setBool(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasTop() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearTop() => $_clearField(6);
+
+  /// bottom assigns the lowest priority, used to triage an item when no
+  /// prioritised anchor exists yet.
+  @$pb.TagNumber(7)
+  $core.bool get bottom => $_getBF(6);
+  @$pb.TagNumber(7)
+  set bottom($core.bool value) => $_setBool(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasBottom() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearBottom() => $_clearField(7);
 }
 
 class SetItemDoneRequest extends $pb.GeneratedMessage {
