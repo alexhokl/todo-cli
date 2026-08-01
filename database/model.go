@@ -88,6 +88,12 @@ type Item struct {
 	// foreign key lives on Blocker. Each Blocker also carries a denormalised
 	// UserID so queries can scope directly without joining items.
 	Blockers []Blocker `gorm:"foreignKey:ItemID"`
+	// LinkedItems are the items linked to this one. The relationship is
+	// symmetric (undirected): linking A to B also links B to A, stored as
+	// two join rows (A->B and B->A) so GORM's Preload reads correctly from
+	// either side. Self-links are rejected. The joinForeignKey and
+	// joinReferences overrides are required because both sides are Item.
+	LinkedItems []Item `gorm:"many2many:item_links;joinForeignKey:ItemID;joinReferences:LinkedItemID"`
 }
 
 // Blocker is a free-form description of a single blocking reason on an item.

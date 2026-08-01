@@ -106,7 +106,12 @@ own a label named "work". An item carries at most one effort via a nullable
 join table. `Blocker` is one-to-many on `Item` (has-many via `ItemID` foreign
 key) and carries a denormalised `UserID` for direct scoping; its description is
 free-form (no normalisation or uniqueness), so `Blocker` has no composite
-unique index.
+unique index. `LinkedItems` is a symmetric self-referential many-to-many on
+`Item` via the `item_links` join table (`joinForeignKey:ItemID;
+joinReferences:LinkedItemID`): linking A to B also links B to A, stored as two
+join rows so GORM's Preload reads correctly from either side. Self-links are
+rejected; soft-deleted linked items are filtered out of the preload via a
+`deleted_at IS NULL` clause rather than active join-row cleanup.
 
 The Tailscale interceptor depends on `github.com/alexhokl/privateserver`, which
 embeds a `tsnet.Server`. `*pserver.Server` implicitly satisfies the unexported

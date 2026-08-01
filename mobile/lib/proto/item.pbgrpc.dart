@@ -79,6 +79,15 @@ class ItemServiceClient extends $grpc.Client {
     return $createUnaryCall(_$updateItemLabels, request, options: options);
   }
 
+  /// UpdateItemLinks attaches and detaches links between an item and other
+  /// items. The relationship is symmetric: linking A to B also links B to A.
+  $grpc.ResponseFuture<$0.Item> updateItemLinks(
+    $0.UpdateItemLinksRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$updateItemLinks, request, options: options);
+  }
+
   /// SetItemEffort attaches an effort to an item by name, or clears it when the
   /// name is empty. The effort must already exist; unknown names are reported.
   $grpc.ResponseFuture<$0.Item> setItemEffort(
@@ -212,6 +221,11 @@ class ItemServiceClient extends $grpc.Client {
           '/item.ItemService/UpdateItemLabels',
           ($0.UpdateItemLabelsRequest value) => value.writeToBuffer(),
           $0.Item.fromBuffer);
+  static final _$updateItemLinks =
+      $grpc.ClientMethod<$0.UpdateItemLinksRequest, $0.Item>(
+          '/item.ItemService/UpdateItemLinks',
+          ($0.UpdateItemLinksRequest value) => value.writeToBuffer(),
+          $0.Item.fromBuffer);
   static final _$setItemEffort =
       $grpc.ClientMethod<$0.SetItemEffortRequest, $0.Item>(
           '/item.ItemService/SetItemEffort',
@@ -320,6 +334,14 @@ abstract class ItemServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) =>
             $0.UpdateItemLabelsRequest.fromBuffer(value),
+        ($0.Item value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.UpdateItemLinksRequest, $0.Item>(
+        'UpdateItemLinks',
+        updateItemLinks_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.UpdateItemLinksRequest.fromBuffer(value),
         ($0.Item value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.SetItemEffortRequest, $0.Item>(
         'SetItemEffort',
@@ -467,6 +489,14 @@ abstract class ItemServiceBase extends $grpc.Service {
 
   $async.Future<$0.Item> updateItemLabels(
       $grpc.ServiceCall call, $0.UpdateItemLabelsRequest request);
+
+  $async.Future<$0.Item> updateItemLinks_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.UpdateItemLinksRequest> $request) async {
+    return updateItemLinks($call, await $request);
+  }
+
+  $async.Future<$0.Item> updateItemLinks(
+      $grpc.ServiceCall call, $0.UpdateItemLinksRequest request);
 
   $async.Future<$0.Item> setItemEffort_Pre($grpc.ServiceCall $call,
       $async.Future<$0.SetItemEffortRequest> $request) async {

@@ -237,6 +237,7 @@ class Item extends $pb.GeneratedMessage {
     $core.Iterable<Label>? labels,
     Effort? effort,
     $core.Iterable<Blocker>? blockers,
+    $core.Iterable<Item>? linkedItems,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -249,6 +250,7 @@ class Item extends $pb.GeneratedMessage {
     if (labels != null) result.labels.addAll(labels);
     if (effort != null) result.effort = effort;
     if (blockers != null) result.blockers.addAll(blockers);
+    if (linkedItems != null) result.linkedItems.addAll(linkedItems);
     return result;
   }
 
@@ -277,6 +279,8 @@ class Item extends $pb.GeneratedMessage {
     ..aOM<Effort>(9, _omitFieldNames ? '' : 'effort', subBuilder: Effort.create)
     ..pPM<Blocker>(10, _omitFieldNames ? '' : 'blockers',
         subBuilder: Blocker.create)
+    ..pPM<Item>(11, _omitFieldNames ? '' : 'linkedItems',
+        subBuilder: Item.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -383,6 +387,11 @@ class Item extends $pb.GeneratedMessage {
   /// blockers are the distinct blocking reasons attached to the item.
   @$pb.TagNumber(10)
   $pb.PbList<Blocker> get blockers => $_getList(9);
+
+  /// linked_items are the items linked to this one. The relationship is
+  /// symmetric, so a link from A to B appears on B as well.
+  @$pb.TagNumber(11)
+  $pb.PbList<Item> get linkedItems => $_getList(10);
 }
 
 class ListItemsRequest extends $pb.GeneratedMessage {
@@ -514,6 +523,7 @@ class CreateItemRequest extends $pb.GeneratedMessage {
     $core.int? listId,
     $core.Iterable<$core.String>? labels,
     $core.String? effort,
+    $core.Iterable<$core.int>? linkItemIds,
   }) {
     final result = create();
     if (title != null) result.title = title;
@@ -522,6 +532,7 @@ class CreateItemRequest extends $pb.GeneratedMessage {
     if (listId != null) result.listId = listId;
     if (labels != null) result.labels.addAll(labels);
     if (effort != null) result.effort = effort;
+    if (linkItemIds != null) result.linkItemIds.addAll(linkItemIds);
     return result;
   }
 
@@ -545,6 +556,7 @@ class CreateItemRequest extends $pb.GeneratedMessage {
     ..aI(4, _omitFieldNames ? '' : 'listId', fieldType: $pb.PbFieldType.OU3)
     ..pPS(5, _omitFieldNames ? '' : 'labels')
     ..aOS(6, _omitFieldNames ? '' : 'effort')
+    ..p<$core.int>(7, _omitFieldNames ? '' : 'linkItemIds', $pb.PbFieldType.KU3)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -618,6 +630,12 @@ class CreateItemRequest extends $pb.GeneratedMessage {
   $core.bool hasEffort() => $_has(5);
   @$pb.TagNumber(6)
   void clearEffort() => $_clearField(6);
+
+  /// link_item_ids are the ids of existing items to link to. The relationship
+  /// is symmetric. Unknown or cross-user ids are reported; self-links are
+  /// rejected.
+  @$pb.TagNumber(7)
+  $pb.PbList<$core.int> get linkItemIds => $_getList(6);
 }
 
 enum MoveItemRequest_Anchor { beforeId, afterId, top, bottom, notSet }
@@ -915,6 +933,77 @@ class UpdateItemLabelsRequest extends $pb.GeneratedMessage {
   /// ignored rather than being created only to be detached again.
   @$pb.TagNumber(3)
   $pb.PbList<$core.String> get remove => $_getList(2);
+}
+
+class UpdateItemLinksRequest extends $pb.GeneratedMessage {
+  factory UpdateItemLinksRequest({
+    $core.int? id,
+    $core.Iterable<$core.int>? add,
+    $core.Iterable<$core.int>? remove,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (add != null) result.add.addAll(add);
+    if (remove != null) result.remove.addAll(remove);
+    return result;
+  }
+
+  UpdateItemLinksRequest._();
+
+  factory UpdateItemLinksRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateItemLinksRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateItemLinksRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..p<$core.int>(2, _omitFieldNames ? '' : 'add', $pb.PbFieldType.KU3)
+    ..p<$core.int>(3, _omitFieldNames ? '' : 'remove', $pb.PbFieldType.KU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateItemLinksRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateItemLinksRequest copyWith(
+          void Function(UpdateItemLinksRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateItemLinksRequest))
+          as UpdateItemLinksRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateItemLinksRequest create() => UpdateItemLinksRequest._();
+  @$core.override
+  UpdateItemLinksRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateItemLinksRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateItemLinksRequest>(create);
+  static UpdateItemLinksRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  /// add are the ids of items to link to. The relationship is symmetric, so
+  /// each link also attaches to the target item. Self-links are rejected.
+  @$pb.TagNumber(2)
+  $pb.PbList<$core.int> get add => $_getList(1);
+
+  /// remove are the ids of items to unlink. Removing a link detaches it on
+  /// both sides.
+  @$pb.TagNumber(3)
+  $pb.PbList<$core.int> get remove => $_getList(2);
 }
 
 class ListLabelsRequest extends $pb.GeneratedMessage {

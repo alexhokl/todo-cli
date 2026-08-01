@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/alexhokl/todo-cli/proto"
@@ -135,4 +136,18 @@ func parseID(value, subject string) (uint32, error) {
 	}
 
 	return uint32(id), nil
+}
+
+// toUint32Slice narrows a slice of uint to uint32, rejecting values that
+// exceed the supported range so a truncated identifier can never silently
+// address the wrong record. It mirrors the range check in parseID.
+func toUint32Slice(ids []uint) ([]uint32, error) {
+	result := make([]uint32, 0, len(ids))
+	for _, id := range ids {
+		if uint64(id) > math.MaxUint32 {
+			return nil, fmt.Errorf("identifier %d exceeds the supported range", id)
+		}
+		result = append(result, uint32(id))
+	}
+	return result, nil
 }

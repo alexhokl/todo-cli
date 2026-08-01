@@ -15,6 +15,7 @@ type createItemOptions struct {
 	ListID      uint32
 	Labels      []string
 	Effort      string
+	LinkItemIDs []uint
 }
 
 var createItemOpts createItemOptions
@@ -25,7 +26,8 @@ var createItemCmd = &cobra.Command{
 	Short: "Create an item at the end of the manual order",
 	Example: `  todo create item "buy milk" --due 2026-08-15
   todo create item "ship it" --label urgent --label work
-  todo create item "release" --effort high`,
+  todo create item "release" --effort high
+  todo create item "follow up" --link 3 --link 5`,
 	Args:        cobra.ExactArgs(1),
 	Annotations: map[string]string{annotationRequiresService: "true"},
 	RunE:        runCreateItem,
@@ -40,6 +42,7 @@ func init() {
 	flags.Uint32Var(&createItemOpts.ListID, "list", 0, "ID of the list to add this item to")
 	flags.StringArrayVar(&createItemOpts.Labels, "label", nil, "Label to attach to the item, created if unknown (repeatable)")
 	flags.StringVar(&createItemOpts.Effort, "effort", "", "Name of an existing effort to attach (empty leaves the item without an effort)")
+	flags.UintSliceVar(&createItemOpts.LinkItemIDs, "link", nil, "ID of an existing item to link to (repeatable, symmetric)")
 }
 
 func runCreateItem(cmd *cobra.Command, args []string) error {
@@ -87,6 +90,14 @@ func buildCreateItemRequest(args []string, opts createItemOptions, listChanged b
 
 	if opts.Effort != "" {
 		req.Effort = &opts.Effort
+	}
+
+	if len(opts.LinkItemIDs) > 0 {
+		ids, err := toUint32Slice(opts.LinkItemIDs)
+		if err != nil {
+			return nil, err
+		}
+		req.LinkItemIds = ids
 	}
 
 	return req, nil

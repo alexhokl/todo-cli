@@ -133,6 +133,14 @@ const Item$json = {
       '6': '.item.Blocker',
       '10': 'blockers'
     },
+    {
+      '1': 'linked_items',
+      '3': 11,
+      '4': 3,
+      '5': 11,
+      '6': '.item.Item',
+      '10': 'linkedItems'
+    },
   ],
   '8': [
     {'1': '_due_date'},
@@ -149,7 +157,8 @@ final $typed_data.Uint8List itemDescriptor = $convert.base64Decode(
     '9pZBgGIAEoDUgBUgZsaXN0SWSIAQESHwoIcHJpb3JpdHkYByABKAFIAlIIcHJpb3JpdHmIAQES'
     'IwoGbGFiZWxzGAggAygLMgsuaXRlbS5MYWJlbFIGbGFiZWxzEiQKBmVmZm9ydBgJIAEoCzIMLm'
     'l0ZW0uRWZmb3J0UgZlZmZvcnQSKQoIYmxvY2tlcnMYCiADKAsyDS5pdGVtLkJsb2NrZXJSCGJs'
-    'b2NrZXJzQgsKCV9kdWVfZGF0ZUIKCghfbGlzdF9pZEILCglfcHJpb3JpdHk=');
+    'b2NrZXJzEi0KDGxpbmtlZF9pdGVtcxgLIAMoCzIKLml0ZW0uSXRlbVILbGlua2VkSXRlbXNCCw'
+    'oJX2R1ZV9kYXRlQgoKCF9saXN0X2lkQgsKCV9wcmlvcml0eQ==');
 
 @$core.Deprecated('Use listItemsRequestDescriptor instead')
 const ListItemsRequest$json = {
@@ -213,6 +222,7 @@ const CreateItemRequest$json = {
     },
     {'1': 'labels', '3': 5, '4': 3, '5': 9, '10': 'labels'},
     {'1': 'effort', '3': 6, '4': 1, '5': 9, '9': 2, '10': 'effort', '17': true},
+    {'1': 'link_item_ids', '3': 7, '4': 3, '5': 13, '10': 'linkItemIds'},
   ],
   '8': [
     {'1': '_due_date'},
@@ -226,8 +236,9 @@ final $typed_data.Uint8List createItemRequestDescriptor = $convert.base64Decode(
     'ChFDcmVhdGVJdGVtUmVxdWVzdBIUCgV0aXRsZRgBIAEoCVIFdGl0bGUSIAoLZGVzY3JpcHRpb2'
     '4YAiABKAlSC2Rlc2NyaXB0aW9uEjoKCGR1ZV9kYXRlGAMgASgLMhouZ29vZ2xlLnByb3RvYnVm'
     'LlRpbWVzdGFtcEgAUgdkdWVEYXRliAEBEhwKB2xpc3RfaWQYBCABKA1IAVIGbGlzdElkiAEBEh'
-    'YKBmxhYmVscxgFIAMoCVIGbGFiZWxzEhsKBmVmZm9ydBgGIAEoCUgCUgZlZmZvcnSIAQFCCwoJ'
-    'X2R1ZV9kYXRlQgoKCF9saXN0X2lkQgkKB19lZmZvcnQ=');
+    'YKBmxhYmVscxgFIAMoCVIGbGFiZWxzEhsKBmVmZm9ydBgGIAEoCUgCUgZlZmZvcnSIAQESIgoN'
+    'bGlua19pdGVtX2lkcxgHIAMoDVILbGlua0l0ZW1JZHNCCwoJX2R1ZV9kYXRlQgoKCF9saXN0X2'
+    'lkQgkKB19lZmZvcnQ=');
 
 @$core.Deprecated('Use moveItemRequestDescriptor instead')
 const MoveItemRequest$json = {
@@ -292,6 +303,22 @@ final $typed_data.Uint8List updateItemLabelsRequestDescriptor =
     $convert.base64Decode(
         'ChdVcGRhdGVJdGVtTGFiZWxzUmVxdWVzdBIOCgJpZBgBIAEoDVICaWQSEAoDYWRkGAIgAygJUg'
         'NhZGQSFgoGcmVtb3ZlGAMgAygJUgZyZW1vdmU=');
+
+@$core.Deprecated('Use updateItemLinksRequestDescriptor instead')
+const UpdateItemLinksRequest$json = {
+  '1': 'UpdateItemLinksRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+    {'1': 'add', '3': 2, '4': 3, '5': 13, '10': 'add'},
+    {'1': 'remove', '3': 3, '4': 3, '5': 13, '10': 'remove'},
+  ],
+};
+
+/// Descriptor for `UpdateItemLinksRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateItemLinksRequestDescriptor =
+    $convert.base64Decode(
+        'ChZVcGRhdGVJdGVtTGlua3NSZXF1ZXN0Eg4KAmlkGAEgASgNUgJpZBIQCgNhZGQYAiADKA1SA2'
+        'FkZBIWCgZyZW1vdmUYAyADKA1SBnJlbW92ZQ==');
 
 @$core.Deprecated('Use listLabelsRequestDescriptor instead')
 const ListLabelsRequest$json = {

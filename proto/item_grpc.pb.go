@@ -25,6 +25,7 @@ const (
 	ItemService_MoveItem_FullMethodName         = "/item.ItemService/MoveItem"
 	ItemService_SetItemDone_FullMethodName      = "/item.ItemService/SetItemDone"
 	ItemService_UpdateItemLabels_FullMethodName = "/item.ItemService/UpdateItemLabels"
+	ItemService_UpdateItemLinks_FullMethodName  = "/item.ItemService/UpdateItemLinks"
 	ItemService_SetItemEffort_FullMethodName    = "/item.ItemService/SetItemEffort"
 	ItemService_ListLabels_FullMethodName       = "/item.ItemService/ListLabels"
 	ItemService_CreateLabel_FullMethodName      = "/item.ItemService/CreateLabel"
@@ -61,6 +62,9 @@ type ItemServiceClient interface {
 	// UpdateItemLabels attaches and detaches labels on an item. Labels being
 	// added are created on the fly when they do not exist yet.
 	UpdateItemLabels(ctx context.Context, in *UpdateItemLabelsRequest, opts ...grpc.CallOption) (*Item, error)
+	// UpdateItemLinks attaches and detaches links between an item and other
+	// items. The relationship is symmetric: linking A to B also links B to A.
+	UpdateItemLinks(ctx context.Context, in *UpdateItemLinksRequest, opts ...grpc.CallOption) (*Item, error)
 	// SetItemEffort attaches an effort to an item by name, or clears it when the
 	// name is empty. The effort must already exist; unknown names are reported.
 	SetItemEffort(ctx context.Context, in *SetItemEffortRequest, opts ...grpc.CallOption) (*Item, error)
@@ -145,6 +149,16 @@ func (c *itemServiceClient) UpdateItemLabels(ctx context.Context, in *UpdateItem
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Item)
 	err := c.cc.Invoke(ctx, ItemService_UpdateItemLabels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) UpdateItemLinks(ctx context.Context, in *UpdateItemLinksRequest, opts ...grpc.CallOption) (*Item, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Item)
+	err := c.cc.Invoke(ctx, ItemService_UpdateItemLinks_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -302,6 +316,9 @@ type ItemServiceServer interface {
 	// UpdateItemLabels attaches and detaches labels on an item. Labels being
 	// added are created on the fly when they do not exist yet.
 	UpdateItemLabels(context.Context, *UpdateItemLabelsRequest) (*Item, error)
+	// UpdateItemLinks attaches and detaches links between an item and other
+	// items. The relationship is symmetric: linking A to B also links B to A.
+	UpdateItemLinks(context.Context, *UpdateItemLinksRequest) (*Item, error)
 	// SetItemEffort attaches an effort to an item by name, or clears it when the
 	// name is empty. The effort must already exist; unknown names are reported.
 	SetItemEffort(context.Context, *SetItemEffortRequest) (*Item, error)
@@ -356,6 +373,9 @@ func (UnimplementedItemServiceServer) SetItemDone(context.Context, *SetItemDoneR
 }
 func (UnimplementedItemServiceServer) UpdateItemLabels(context.Context, *UpdateItemLabelsRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateItemLabels not implemented")
+}
+func (UnimplementedItemServiceServer) UpdateItemLinks(context.Context, *UpdateItemLinksRequest) (*Item, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateItemLinks not implemented")
 }
 func (UnimplementedItemServiceServer) SetItemEffort(context.Context, *SetItemEffortRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetItemEffort not implemented")
@@ -503,6 +523,24 @@ func _ItemService_UpdateItemLabels_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ItemServiceServer).UpdateItemLabels(ctx, req.(*UpdateItemLabelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_UpdateItemLinks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateItemLinksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).UpdateItemLinks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_UpdateItemLinks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).UpdateItemLinks(ctx, req.(*UpdateItemLinksRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -767,6 +805,10 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateItemLabels",
 			Handler:    _ItemService_UpdateItemLabels_Handler,
+		},
+		{
+			MethodName: "UpdateItemLinks",
+			Handler:    _ItemService_UpdateItemLinks_Handler,
 		},
 		{
 			MethodName: "SetItemEffort",

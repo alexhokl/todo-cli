@@ -163,7 +163,27 @@ func (s *ItemServer) CreateItem(ctx context.Context, req *proto.CreateItemReques
 			item.Effort = effort
 		}
 
-		return tx.Create(&item).Error
+		if err := tx.Create(&item).Error; err != nil {
+			return err
+		}
+
+		// Linked items are attached after the insert so the item has an id and
+		// the symmetric two-row join writes can reference it. The target ids
+		// are resolved (and scoped to the caller) inside UpdateItemLinks, which
+		// also reloads the item with the preloaded associations.
+		if len(req.GetLinkItemIds()) > 0 {
+			ids := make([]uint, 0, len(req.GetLinkItemIds()))
+			for _, id := range req.GetLinkItemIds() {
+				ids = append(ids, uint(id))
+			}
+			linked, err := database.UpdateItemLinks(tx, userID, item.ID, ids, nil)
+			if err != nil {
+				return err
+			}
+			item = *linked
+		}
+
+		return nil
 	})
 	if err != nil {
 		return nil, mapDatabaseError(err)
@@ -275,7 +295,8 @@ func mapDatabaseError(err error) error {
 		return status.Error(codes.AlreadyExists, err.Error())
 	case errors.Is(err, database.ErrLabelNameEmpty),
 		errors.Is(err, database.ErrEffortNameEmpty),
-		errors.Is(err, database.ErrBlockerDescriptionEmpty):
+		errors.Is(err, database.ErrBlockerDescriptionEmpty),
+		errors.Is(err, database.ErrItemLinkToSelf):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, database.ErrItemCompleted),
 		errors.Is(err, database.ErrAnchorCompleted),
@@ -344,6 +365,12 @@ func toProtoItem(item database.Item) (*proto.Item, error) {
 		return nil, err
 	}
 	result.Blockers = blockers
+
+	linkedItems, err := toProtoItems(item.LinkedItems)
+	if err != nil {
+		return nil, err
+	}
+	result.LinkedItems = linkedItems
 
 	return result, nil
 }

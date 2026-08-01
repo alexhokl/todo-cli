@@ -24,6 +24,9 @@ service ItemService {
   // UpdateItemLabels attaches and detaches labels on an item. Labels being
   // added are created on the fly when they do not exist yet.
   rpc UpdateItemLabels(UpdateItemLabelsRequest) returns (Item);
+  // UpdateItemLinks attaches and detaches links between an item and other
+  // items. The relationship is symmetric: linking A to B also links B to A.
+  rpc UpdateItemLinks(UpdateItemLinksRequest) returns (Item);
   // SetItemEffort attaches an effort to an item by name, or clears it when the
   // name is empty. The effort must already exist; unknown names are reported.
   rpc SetItemEffort(SetItemEffortRequest) returns (Item);
@@ -98,6 +101,9 @@ message Item {
   Effort effort = 9;
   // blockers are the distinct blocking reasons attached to the item.
   repeated Blocker blockers = 10;
+  // linked_items are the items linked to this one. The relationship is
+  // symmetric, so a link from A to B appears on B as well.
+  repeated Item linked_items = 11;
 }
 
 // ItemView narrows ListItems to a single bucket. ITEM_VIEW_UNSPECIFIED keeps
@@ -140,6 +146,10 @@ message CreateItemRequest {
   // effort is the name of an existing effort to attach to the item. An empty
   // string leaves the item without an effort. Unknown names are reported.
   optional string effort = 6;
+  // link_item_ids are the ids of existing items to link to. The relationship
+  // is symmetric. Unknown or cross-user ids are reported; self-links are
+  // rejected.
+  repeated uint32 link_item_ids = 7;
 }
 
 message MoveItemRequest {
@@ -179,6 +189,16 @@ message UpdateItemLabelsRequest {
   // remove names labels to detach. Names that are not known labels are
   // ignored rather than being created only to be detached again.
   repeated string remove = 3;
+}
+
+message UpdateItemLinksRequest {
+  uint32 id = 1;
+  // add are the ids of items to link to. The relationship is symmetric, so
+  // each link also attaches to the target item. Self-links are rejected.
+  repeated uint32 add = 2;
+  // remove are the ids of items to unlink. Removing a link detaches it on
+  // both sides.
+  repeated uint32 remove = 3;
 }
 
 message ListLabelsRequest {}
