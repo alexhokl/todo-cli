@@ -38,6 +38,7 @@ type Label struct {
 	// "Work", " work " and "WORK" all resolve to the same label. Use
 	// NormaliseLabelName before comparing against this column.
 	Name   string `gorm:"not null;uniqueIndex:idx_label_user,priority:1"`
+	Colour string `gorm:"not null"`
 	UserID uint   `gorm:"not null;uniqueIndex:idx_label_user,priority:2;index"`
 	User   User   `gorm:"foreignKey:UserID"`
 }

@@ -28,10 +28,12 @@ class Label extends $pb.GeneratedMessage {
   factory Label({
     $core.int? id,
     $core.String? name,
+    $core.String? colour,
   }) {
     final result = create();
     if (id != null) result.id = id;
     if (name != null) result.name = name;
+    if (colour != null) result.colour = colour;
     return result;
   }
 
@@ -50,6 +52,7 @@ class Label extends $pb.GeneratedMessage {
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
     ..aOS(2, _omitFieldNames ? '' : 'name')
+    ..aOS(3, _omitFieldNames ? '' : 'colour')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -87,6 +90,15 @@ class Label extends $pb.GeneratedMessage {
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
   void clearName() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get colour => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set colour($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasColour() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearColour() => $_clearField(3);
 }
 
 /// Effort is a per-user named level of effort (e.g. "low", "medium", "high").
@@ -1166,9 +1178,11 @@ class ListLabelsResponse extends $pb.GeneratedMessage {
 class CreateLabelRequest extends $pb.GeneratedMessage {
   factory CreateLabelRequest({
     $core.String? name,
+    $core.String? colour,
   }) {
     final result = create();
     if (name != null) result.name = name;
+    if (colour != null) result.colour = colour;
     return result;
   }
 
@@ -1186,6 +1200,7 @@ class CreateLabelRequest extends $pb.GeneratedMessage {
       package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
       createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'name')
+    ..aOS(2, _omitFieldNames ? '' : 'colour')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1215,16 +1230,27 @@ class CreateLabelRequest extends $pb.GeneratedMessage {
   $core.bool hasName() => $_has(0);
   @$pb.TagNumber(1)
   void clearName() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get colour => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set colour($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasColour() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearColour() => $_clearField(2);
 }
 
 class RenameLabelRequest extends $pb.GeneratedMessage {
   factory RenameLabelRequest({
     $core.int? id,
     $core.String? name,
+    $core.String? colour,
   }) {
     final result = create();
     if (id != null) result.id = id;
     if (name != null) result.name = name;
+    if (colour != null) result.colour = colour;
     return result;
   }
 
@@ -1243,6 +1269,7 @@ class RenameLabelRequest extends $pb.GeneratedMessage {
       createEmptyInstance: create)
     ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
     ..aOS(2, _omitFieldNames ? '' : 'name')
+    ..aOS(3, _omitFieldNames ? '' : 'colour')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1281,6 +1308,15 @@ class RenameLabelRequest extends $pb.GeneratedMessage {
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
   void clearName() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get colour => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set colour($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasColour() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearColour() => $_clearField(3);
 }
 
 class DeleteLabelRequest extends $pb.GeneratedMessage {

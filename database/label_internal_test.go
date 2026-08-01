@@ -82,6 +82,9 @@ func TestCreateLabel(t *testing.T) {
 	if label.Name != "work" {
 		t.Errorf("expected the name to be normalised to %q but got %q", "work", label.Name)
 	}
+	if label.Colour != DefaultLabelColour {
+		t.Errorf("expected default colour %q but got %q", DefaultLabelColour, label.Colour)
+	}
 
 	// A duplicate is reported rather than quietly returning the existing label.
 	if _, err := CreateLabel(db, testUserID, "WORK"); !errors.Is(err, ErrLabelExists) {
@@ -90,6 +93,38 @@ func TestCreateLabel(t *testing.T) {
 
 	if _, err := CreateLabel(db, testUserID, "   "); !errors.Is(err, ErrLabelNameEmpty) {
 		t.Errorf("expected %v but got %v", ErrLabelNameEmpty, err)
+	}
+}
+
+func TestLabelColourValidationAndUpdate(t *testing.T) {
+	db := setupTestDB(t)
+	label, err := CreateLabel(db, testUserID, "work", "#12abEF")
+	if err != nil {
+		t.Fatalf("failed to create label: %v", err)
+	}
+	if label.Colour != "#12ABEF" {
+		t.Errorf("expected upper-case colour but got %q", label.Colour)
+	}
+
+	if _, err := CreateLabel(db, testUserID, "bad", "red"); !errors.Is(err, ErrLabelColourInvalid) {
+		t.Errorf("expected invalid colour error but got %v", err)
+	}
+
+	renamed, err := RenameLabel(db, testUserID, label.ID, "renamed")
+	if err != nil {
+		t.Fatalf("failed to rename label: %v", err)
+	}
+	if renamed.Colour != "#12ABEF" {
+		t.Errorf("expected colour to be preserved but got %q", renamed.Colour)
+	}
+
+	colour := "#00ff00"
+	renamed, err = RenameLabel(db, testUserID, label.ID, "renamed", &colour)
+	if err != nil {
+		t.Fatalf("failed to update colour: %v", err)
+	}
+	if renamed.Colour != "#00FF00" {
+		t.Errorf("expected updated colour but got %q", renamed.Colour)
 	}
 }
 
