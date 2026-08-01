@@ -46,6 +46,9 @@ func TestCreateLabelNormalisesAndRejectsDuplicates(t *testing.T) {
 	if label.GetName() != "work" {
 		t.Errorf("expected %q but got %q", "work", label.GetName())
 	}
+	if label.GetColour() != "#FFFF00" {
+		t.Errorf("expected default colour but got %q", label.GetColour())
+	}
 
 	_, err = server.CreateLabel(authenticatedContext(), &proto.CreateLabelRequest{Name: "WORK"})
 	if got := status.Code(err); got != codes.AlreadyExists {

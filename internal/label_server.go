@@ -45,7 +45,11 @@ func (s *ItemServer) CreateLabel(ctx context.Context, req *proto.CreateLabelRequ
 		return nil, err
 	}
 
-	label, err := database.CreateLabel(s.DB.WithContext(ctx), userID, req.GetName())
+	colour := req.GetColour()
+	if colour == "" {
+		colour = database.DefaultLabelColour
+	}
+	label, err := database.CreateLabel(s.DB.WithContext(ctx), userID, req.GetName(), colour)
 	if err != nil {
 		return nil, mapDatabaseError(err)
 	}
@@ -74,7 +78,12 @@ func (s *ItemServer) RenameLabel(ctx context.Context, req *proto.RenameLabelRequ
 		return nil, err
 	}
 
-	label, err := database.RenameLabel(s.DB.WithContext(ctx), userID, uint(req.GetId()), req.GetName())
+	var colour *string
+	if req.Colour != nil {
+		value := req.GetColour()
+		colour = &value
+	}
+	label, err := database.RenameLabel(s.DB.WithContext(ctx), userID, uint(req.GetId()), req.GetName(), colour)
 	if err != nil {
 		return nil, mapDatabaseError(err)
 	}
@@ -169,5 +178,5 @@ func toProtoLabel(label database.Label) (*proto.Label, error) {
 		return nil, err
 	}
 
-	return &proto.Label{Id: id, Name: label.Name}, nil
+	return &proto.Label{Id: id, Name: label.Name, Colour: label.Colour}, nil
 }

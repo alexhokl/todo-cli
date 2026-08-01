@@ -329,6 +329,7 @@ func mapDatabaseError(err error) error {
 		errors.Is(err, database.ErrEffortExists):
 		return status.Error(codes.AlreadyExists, err.Error())
 	case errors.Is(err, database.ErrLabelNameEmpty),
+		errors.Is(err, database.ErrLabelColourInvalid),
 		errors.Is(err, database.ErrEffortNameEmpty),
 		errors.Is(err, database.ErrBlockerDescriptionEmpty),
 		errors.Is(err, database.ErrItemLinkToSelf):

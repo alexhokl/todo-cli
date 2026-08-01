@@ -90,6 +90,7 @@ type Label struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Colour        string                 `protobuf:"bytes,3,opt,name=colour,proto3" json:"colour,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -134,6 +135,13 @@ func (x *Label) GetId() uint32 {
 func (x *Label) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *Label) GetColour() string {
+	if x != nil {
+		return x.Colour
 	}
 	return ""
 }
@@ -1054,6 +1062,7 @@ func (x *ListLabelsResponse) GetLabels() []*Label {
 type CreateLabelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Colour        string                 `protobuf:"bytes,2,opt,name=colour,proto3" json:"colour,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1095,10 +1104,18 @@ func (x *CreateLabelRequest) GetName() string {
 	return ""
 }
 
+func (x *CreateLabelRequest) GetColour() string {
+	if x != nil {
+		return x.Colour
+	}
+	return ""
+}
+
 type RenameLabelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Colour        *string                `protobuf:"bytes,3,opt,name=colour,proto3,oneof" json:"colour,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1143,6 +1160,13 @@ func (x *RenameLabelRequest) GetId() uint32 {
 func (x *RenameLabelRequest) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *RenameLabelRequest) GetColour() string {
+	if x != nil && x.Colour != nil {
+		return *x.Colour
 	}
 	return ""
 }
@@ -1705,10 +1729,11 @@ var File_proto_item_proto protoreflect.FileDescriptor
 
 const file_proto_item_proto_rawDesc = "" +
 	"\n" +
-	"\x10proto/item.proto\x12\x04item\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"+\n" +
+	"\x10proto/item.proto\x12\x04item\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"C\n" +
 	"\x05Label\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\",\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
+	"\x06colour\x18\x03 \x01(\tR\x06colour\",\n" +
 	"\x06Effort\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\";\n" +
@@ -1782,12 +1807,15 @@ const file_proto_item_proto_rawDesc = "" +
 	"\t_due_date\"\x13\n" +
 	"\x11ListLabelsRequest\"9\n" +
 	"\x12ListLabelsResponse\x12#\n" +
-	"\x06labels\x18\x01 \x03(\v2\v.item.LabelR\x06labels\"(\n" +
+	"\x06labels\x18\x01 \x03(\v2\v.item.LabelR\x06labels\"@\n" +
 	"\x12CreateLabelRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"8\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
+	"\x06colour\x18\x02 \x01(\tR\x06colour\"`\n" +
 	"\x12RenameLabelRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"$\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1b\n" +
+	"\x06colour\x18\x03 \x01(\tH\x00R\x06colour\x88\x01\x01B\t\n" +
+	"\a_colour\"$\n" +
 	"\x12DeleteLabelRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\">\n" +
 	"\x14SetItemEffortRequest\x12\x0e\n" +
@@ -1974,6 +2002,7 @@ func file_proto_item_proto_init() {
 		(*MoveItemRequest_Bottom)(nil),
 	}
 	file_proto_item_proto_msgTypes[11].OneofWrappers = []any{}
+	file_proto_item_proto_msgTypes[15].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

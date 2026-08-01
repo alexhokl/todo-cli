@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"gorm.io/gorm"
@@ -17,8 +18,22 @@ var (
 	// to at least one item.
 	ErrLabelInUse = errors.New("label is still attached to items")
 	// ErrLabelNameEmpty is returned when a label name normalises to nothing.
-	ErrLabelNameEmpty = errors.New("label name must not be empty")
+	ErrLabelNameEmpty     = errors.New("label name must not be empty")
+	ErrLabelColourInvalid = errors.New("label colour must be a #RRGGBB value")
 )
+
+var labelColourPattern = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+
+const DefaultLabelColour = "#FFFF00"
+
+// ValidateLabelColour validates a label colour code and returns its canonical
+// upper-case form.
+func ValidateLabelColour(colour string) (string, error) {
+	if !labelColourPattern.MatchString(colour) {
+		return "", ErrLabelColourInvalid
+	}
+	return strings.ToUpper(colour), nil
+}
 
 // NormaliseLabelName reduces a label name to its canonical form. It is the
 // single definition of label identity: any two names with the same normalised
@@ -61,14 +76,22 @@ func ListLabels(db *gorm.DB, userID uint) ([]Label, error) {
 // CreateLabel creates a label explicitly. Unlike the tagging path it does not
 // fall back to returning an existing label, so that an accidental duplicate is
 // reported rather than silently accepted.
-func CreateLabel(db *gorm.DB, userID uint, name string) (*Label, error) {
+func CreateLabel(db *gorm.DB, userID uint, name string, colours ...string) (*Label, error) {
 	normalised := NormaliseLabelName(name)
 	if normalised == "" {
 		return nil, ErrLabelNameEmpty
 	}
+	colour := DefaultLabelColour
+	if len(colours) > 0 {
+		colour = colours[0]
+	}
+	colour, err := ValidateLabelColour(colour)
+	if err != nil {
+		return nil, err
+	}
 
 	var label Label
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err = db.Transaction(func(tx *gorm.DB) error {
 		switch err := tx.Where("name = ?", normalised).Where("user_id = ?", userID).First(&label).Error; {
 		case err == nil:
 			return fmt.Errorf("%w: %s", ErrLabelExists, normalised)
@@ -76,7 +99,7 @@ func CreateLabel(db *gorm.DB, userID uint, name string) (*Label, error) {
 			return fmt.Errorf("failed to query the label: %w", err)
 		}
 
-		label = Label{Name: normalised, UserID: userID}
+		label = Label{Name: normalised, Colour: colour, UserID: userID}
 		if err := tx.Create(&label).Error; err != nil {
 			return fmt.Errorf("failed to create the label: %w", err)
 		}
@@ -92,9 +115,13 @@ func CreateLabel(db *gorm.DB, userID uint, name string) (*Label, error) {
 
 // RenameLabel changes the name of an existing label. Renaming a label to the
 // name it already has is a no-op rather than a conflict.
-func RenameLabel(db *gorm.DB, userID uint, id uint, name string) (*Label, error) {
+func RenameLabel(db *gorm.DB, userID uint, id uint, name string, colours ...*string) (*Label, error) {
+	var colour *string
+	if len(colours) > 0 {
+		colour = colours[0]
+	}
 	normalised := NormaliseLabelName(name)
-	if normalised == "" {
+	if normalised == "" && colour == nil {
 		return nil, ErrLabelNameEmpty
 	}
 
@@ -103,19 +130,32 @@ func RenameLabel(db *gorm.DB, userID uint, id uint, name string) (*Label, error)
 		if err := findLabel(tx, userID, id, &label); err != nil {
 			return err
 		}
+		if normalised == "" {
+			normalised = label.Name
+		}
 		if label.Name == normalised {
-			return nil
+			if colour == nil {
+				return nil
+			}
+		}
+		updates := map[string]any{"name": normalised}
+		if colour != nil {
+			validated, err := ValidateLabelColour(*colour)
+			if err != nil {
+				return err
+			}
+			updates["colour"] = validated
 		}
 
 		var existing Label
-		switch err := tx.Where("name = ?", normalised).Where("user_id = ?", userID).First(&existing).Error; {
+		switch err := tx.Where("name = ?", normalised).Where("user_id = ?", userID).Where("id <> ?", id).First(&existing).Error; {
 		case err == nil:
 			return fmt.Errorf("%w: %s", ErrLabelExists, normalised)
 		case !errors.Is(err, gorm.ErrRecordNotFound):
 			return fmt.Errorf("failed to query the label: %w", err)
 		}
 
-		if err := tx.Model(&label).Update("name", normalised).Error; err != nil {
+		if err := tx.Model(&label).Updates(updates).Error; err != nil {
 			return fmt.Errorf("failed to rename the label: %w", err)
 		}
 
@@ -184,7 +224,7 @@ func FindOrCreateLabels(db *gorm.DB, userID uint, names []string) ([]Label, erro
 			switch {
 			case err == nil:
 			case errors.Is(err, gorm.ErrRecordNotFound):
-				label = Label{Name: name, UserID: userID}
+				label = Label{Name: name, Colour: DefaultLabelColour, UserID: userID}
 				if createErr := tx.Create(&label).Error; createErr != nil {
 					return fmt.Errorf("failed to create the label %q: %w", name, createErr)
 				}

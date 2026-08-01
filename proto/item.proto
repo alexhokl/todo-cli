@@ -69,6 +69,7 @@ service ItemService {
 message Label {
   uint32 id = 1;
   string name = 2;
+  string colour = 3;
 }
 
 // Effort is a per-user named level of effort (e.g. "low", "medium", "high").
@@ -217,11 +218,13 @@ message ListLabelsResponse {
 
 message CreateLabelRequest {
   string name = 1;
+  string colour = 2;
 }
 
 message RenameLabelRequest {
   uint32 id = 1;
   string name = 2;
+  optional string colour = 3;
 }
 
 message DeleteLabelRequest {

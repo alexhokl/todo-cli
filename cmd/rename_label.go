@@ -8,7 +8,8 @@ import (
 )
 
 type renameLabelOptions struct {
-	Name string
+	Name   string
+	Colour string
 }
 
 var renameLabelOpts renameLabelOptions
@@ -16,9 +17,10 @@ var renameLabelOpts renameLabelOptions
 // renameLabelCmd renames an existing label. Note that this takes a label ID,
 // unlike `todo update todo`, which takes a todo ID.
 var renameLabelCmd = &cobra.Command{
-	Use:         "label [id]",
-	Short:       "Rename a label",
-	Example:     `  todo update label 3 --name errands`,
+	Use:   "label [id]",
+	Short: "Rename a label",
+	Example: `  todo update label 3 --name errands
+  todo update label 3 --colour "#FF0000"`,
 	Args:        cobra.ExactArgs(1),
 	Annotations: map[string]string{annotationRequiresService: "true"},
 	RunE:        runRenameLabel,
@@ -28,7 +30,8 @@ func init() {
 	updateCmd.AddCommand(renameLabelCmd)
 
 	renameLabelCmd.Flags().StringVar(&renameLabelOpts.Name, "name", "", "New name of the label")
-	_ = renameLabelCmd.MarkFlagRequired("name")
+	renameLabelCmd.Flags().StringVar(&renameLabelOpts.Colour, "colour", "", "New colour code in #RRGGBB format")
+	renameLabelCmd.MarkFlagsOneRequired("name", "colour")
 }
 
 func runRenameLabel(cmd *cobra.Command, args []string) error {
@@ -43,9 +46,13 @@ func runRenameLabel(cmd *cobra.Command, args []string) error {
 	}
 	defer func() { _ = conn.Close() }()
 
+	request := &proto.RenameLabelRequest{Id: id, Name: renameLabelOpts.Name}
+	if cmd.Flags().Changed("colour") {
+		request.Colour = &renameLabelOpts.Colour
+	}
 	label, err := proto.NewItemServiceClient(conn).RenameLabel(
 		cmd.Context(),
-		&proto.RenameLabelRequest{Id: id, Name: renameLabelOpts.Name},
+		request,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to rename the label: %w", err)
