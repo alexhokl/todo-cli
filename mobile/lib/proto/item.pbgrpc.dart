@@ -88,6 +88,14 @@ class ItemServiceClient extends $grpc.Client {
     return $createUnaryCall(_$updateItemLinks, request, options: options);
   }
 
+  /// UpdateItemDueDate sets or clears an item's due date.
+  $grpc.ResponseFuture<$0.Item> updateItemDueDate(
+    $0.UpdateItemDueDateRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$updateItemDueDate, request, options: options);
+  }
+
   /// SetItemEffort attaches an effort to an item by name, or clears it when the
   /// name is empty. The effort must already exist; unknown names are reported.
   $grpc.ResponseFuture<$0.Item> setItemEffort(
@@ -226,6 +234,11 @@ class ItemServiceClient extends $grpc.Client {
           '/item.ItemService/UpdateItemLinks',
           ($0.UpdateItemLinksRequest value) => value.writeToBuffer(),
           $0.Item.fromBuffer);
+  static final _$updateItemDueDate =
+      $grpc.ClientMethod<$0.UpdateItemDueDateRequest, $0.Item>(
+          '/item.ItemService/UpdateItemDueDate',
+          ($0.UpdateItemDueDateRequest value) => value.writeToBuffer(),
+          $0.Item.fromBuffer);
   static final _$setItemEffort =
       $grpc.ClientMethod<$0.SetItemEffortRequest, $0.Item>(
           '/item.ItemService/SetItemEffort',
@@ -342,6 +355,14 @@ abstract class ItemServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) =>
             $0.UpdateItemLinksRequest.fromBuffer(value),
+        ($0.Item value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.UpdateItemDueDateRequest, $0.Item>(
+        'UpdateItemDueDate',
+        updateItemDueDate_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.UpdateItemDueDateRequest.fromBuffer(value),
         ($0.Item value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.SetItemEffortRequest, $0.Item>(
         'SetItemEffort',
@@ -497,6 +518,14 @@ abstract class ItemServiceBase extends $grpc.Service {
 
   $async.Future<$0.Item> updateItemLinks(
       $grpc.ServiceCall call, $0.UpdateItemLinksRequest request);
+
+  $async.Future<$0.Item> updateItemDueDate_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.UpdateItemDueDateRequest> $request) async {
+    return updateItemDueDate($call, await $request);
+  }
+
+  $async.Future<$0.Item> updateItemDueDate(
+      $grpc.ServiceCall call, $0.UpdateItemDueDateRequest request);
 
   $async.Future<$0.Item> setItemEffort_Pre($grpc.ServiceCall $call,
       $async.Future<$0.SetItemEffortRequest> $request) async {

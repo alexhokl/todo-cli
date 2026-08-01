@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"time"
 
 	"github.com/alexhokl/todo-cli/database"
 	"github.com/alexhokl/todo-cli/proto"
@@ -245,6 +246,40 @@ func (s *ItemServer) MoveItem(ctx context.Context, req *proto.MoveItemRequest) (
 
 	endSpanOk(span)
 
+	return result, nil
+}
+
+// UpdateItemDueDate sets or clears an item's due date.
+func (s *ItemServer) UpdateItemDueDate(ctx context.Context, req *proto.UpdateItemDueDateRequest) (*proto.Item, error) {
+	ctx, span := startSpan(ctx, "UpdateItemDueDate")
+	defer span.End()
+
+	if req.GetId() == 0 {
+		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+
+	userID, err := userIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var dueDate *time.Time
+	if req.GetDueDate() != nil {
+		value := req.GetDueDate().AsTime()
+		dueDate = &value
+	}
+
+	item, err := database.UpdateItemDueDate(s.DB.WithContext(ctx), userID, uint(req.GetId()), dueDate)
+	if err != nil {
+		return nil, mapDatabaseError(err)
+	}
+
+	result, err := toProtoItem(*item)
+	if err != nil {
+		return nil, err
+	}
+
+	endSpanOk(span)
 	return result, nil
 }
 

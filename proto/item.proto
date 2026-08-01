@@ -27,6 +27,8 @@ service ItemService {
   // UpdateItemLinks attaches and detaches links between an item and other
   // items. The relationship is symmetric: linking A to B also links B to A.
   rpc UpdateItemLinks(UpdateItemLinksRequest) returns (Item);
+  // UpdateItemDueDate sets or clears an item's due date.
+  rpc UpdateItemDueDate(UpdateItemDueDateRequest) returns (Item);
   // SetItemEffort attaches an effort to an item by name, or clears it when the
   // name is empty. The effort must already exist; unknown names are reported.
   rpc SetItemEffort(SetItemEffortRequest) returns (Item);
@@ -199,6 +201,12 @@ message UpdateItemLinksRequest {
   // remove are the ids of items to unlink. Removing a link detaches it on
   // both sides.
   repeated uint32 remove = 3;
+}
+
+message UpdateItemDueDateRequest {
+  uint32 id = 1;
+  // due_date sets the date when present; leaving it unset clears the date.
+  optional google.protobuf.Timestamp due_date = 2;
 }
 
 message ListLabelsRequest {}

@@ -20,6 +20,9 @@ func TestUpdateItemFlagValidation(t *testing.T) {
 		{"add only", []string{"7", "--add-label", "urgent"}, false},
 		{"remove only", []string{"7", "--remove-label", "later"}, false},
 		{"add and remove", []string{"7", "--add-label", "urgent", "--remove-label", "later"}, false},
+		{"set due date", []string{"7", "--due-date", "2026-08-15"}, false},
+		{"clear due date", []string{"7", "--clear-due-date"}, false},
+		{"both due date flags", []string{"7", "--due-date", "2026-08-15", "--clear-due-date"}, true},
 		{"repeated add", []string{"7", "--add-label", "urgent", "--add-label", "work"}, false},
 		{"no label flags", []string{"7"}, true},
 		{"no arguments", []string{"--add-label", "urgent"}, true},
@@ -44,6 +47,20 @@ func TestUpdateItemFlagValidation(t *testing.T) {
 				t.Errorf("expected no error but got %v", err)
 			}
 		})
+	}
+}
+
+func TestParseDueDate(t *testing.T) {
+	valid, err := parseDueDate("2026-08-15")
+	if err != nil {
+		t.Fatalf("expected valid date but got %v", err)
+	}
+	if valid.Format(time.DateOnly) != "2026-08-15" {
+		t.Errorf("expected 2026-08-15 but got %s", valid.Format(time.DateOnly))
+	}
+
+	if _, err := parseDueDate("15-08-2026"); err == nil {
+		t.Errorf("expected invalid date error")
 	}
 }
 

@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/alexhokl/todo-cli/proto"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type updateItemOptions struct {
@@ -12,6 +14,8 @@ type updateItemOptions struct {
 	RemoveLabels []string
 	AddLinks     []uint
 	RemoveLinks  []uint
+	DueDate      string
+	ClearDueDate bool
 }
 
 var updateItemOpts updateItemOptions
@@ -42,7 +46,9 @@ rejected. --remove-link detaches the link on both sides.`,
   todo update item 7 --remove-label later
   todo update item 7 --add-label urgent --remove-label later
   todo update item 7 --add-link 3 --add-link 5
-  todo update item 7 --remove-link 3`,
+  todo update item 7 --remove-link 3
+  todo update item 7 --due-date 2026-08-15
+  todo update item 7 --clear-due-date`,
 		Args:        cobra.ExactArgs(1),
 		Annotations: map[string]string{annotationRequiresService: "true"},
 		RunE:        runUpdateItem,
@@ -53,9 +59,12 @@ rejected. --remove-link detaches the link on both sides.`,
 	flags.StringArrayVar(&updateItemOpts.RemoveLabels, "remove-label", nil, "Label to detach from the item (repeatable)")
 	flags.UintSliceVar(&updateItemOpts.AddLinks, "add-link", nil, "ID of an item to link to (repeatable, symmetric)")
 	flags.UintSliceVar(&updateItemOpts.RemoveLinks, "remove-link", nil, "ID of an item to unlink (repeatable)")
+	flags.StringVar(&updateItemOpts.DueDate, "due-date", "", "Due date of the item in YYYY-MM-DD format")
+	flags.BoolVar(&updateItemOpts.ClearDueDate, "clear-due-date", false, "Remove the due date from the item")
 
 	// Without at least one of these the command would have nothing to do.
-	cmd.MarkFlagsOneRequired("add-label", "remove-label", "add-link", "remove-link")
+	cmd.MarkFlagsOneRequired("add-label", "remove-label", "add-link", "remove-link", "due-date", "clear-due-date")
+	cmd.MarkFlagsMutuallyExclusive("due-date", "clear-due-date")
 
 	return cmd
 }
@@ -78,11 +87,26 @@ func runUpdateItem(cmd *cobra.Command, args []string) error {
 
 	client := proto.NewItemServiceClient(conn)
 	ctx := cmd.Context()
+	var item *proto.Item
+	if cmd.Flags().Changed("due-date") {
+		dueDate, err := parseDueDate(updateItemOpts.DueDate)
+		if err != nil {
+			return err
+		}
+		item, err = client.UpdateItemDueDate(ctx, &proto.UpdateItemDueDateRequest{Id: id, DueDate: timestamppb.New(dueDate)})
+		if err != nil {
+			return fmt.Errorf("failed to update the item due date: %w", err)
+		}
+	} else if cmd.Flags().Changed("clear-due-date") {
+		item, err = client.UpdateItemDueDate(ctx, &proto.UpdateItemDueDateRequest{Id: id})
+		if err != nil {
+			return fmt.Errorf("failed to clear the item due date: %w", err)
+		}
+	}
 
 	// Label and link mutations are separate RPCs. Labels run first so the
 	// returned item (used for the final output) carries the fresh labels; if
 	// links are also requested they run after and their result is printed.
-	var item *proto.Item
 	if len(updateItemOpts.AddLabels) > 0 || len(updateItemOpts.RemoveLabels) > 0 {
 		item, err = client.UpdateItemLabels(ctx, buildUpdateItemLabelsRequest(id, updateItemOpts))
 		if err != nil {
@@ -107,6 +131,14 @@ func runUpdateItem(cmd *cobra.Command, args []string) error {
 	}
 
 	return writeItemLine(cmd.OutOrStdout(), item)
+}
+
+func parseDueDate(value string) (time.Time, error) {
+	dueDate, err := time.ParseInLocation(time.DateOnly, value, time.Local)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid due date %q: expected YYYY-MM-DD", value)
+	}
+	return dueDate, nil
 }
 
 // buildUpdateItemLabelsRequest assembles the wire request from the parsed

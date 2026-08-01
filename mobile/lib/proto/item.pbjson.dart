@@ -320,6 +320,33 @@ final $typed_data.Uint8List updateItemLinksRequestDescriptor =
         'ChZVcGRhdGVJdGVtTGlua3NSZXF1ZXN0Eg4KAmlkGAEgASgNUgJpZBIQCgNhZGQYAiADKA1SA2'
         'FkZBIWCgZyZW1vdmUYAyADKA1SBnJlbW92ZQ==');
 
+@$core.Deprecated('Use updateItemDueDateRequestDescriptor instead')
+const UpdateItemDueDateRequest$json = {
+  '1': 'UpdateItemDueDateRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+    {
+      '1': 'due_date',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 0,
+      '10': 'dueDate',
+      '17': true
+    },
+  ],
+  '8': [
+    {'1': '_due_date'},
+  ],
+};
+
+/// Descriptor for `UpdateItemDueDateRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateItemDueDateRequestDescriptor = $convert.base64Decode(
+    'ChhVcGRhdGVJdGVtRHVlRGF0ZVJlcXVlc3QSDgoCaWQYASABKA1SAmlkEjoKCGR1ZV9kYXRlGA'
+    'IgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAUgdkdWVEYXRliAEBQgsKCV9kdWVf'
+    'ZGF0ZQ==');
+
 @$core.Deprecated('Use listLabelsRequestDescriptor instead')
 const ListLabelsRequest$json = {
   '1': 'ListLabelsRequest',

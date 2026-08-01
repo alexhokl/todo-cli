@@ -1006,6 +1006,77 @@ class UpdateItemLinksRequest extends $pb.GeneratedMessage {
   $pb.PbList<$core.int> get remove => $_getList(2);
 }
 
+class UpdateItemDueDateRequest extends $pb.GeneratedMessage {
+  factory UpdateItemDueDateRequest({
+    $core.int? id,
+    $2.Timestamp? dueDate,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (dueDate != null) result.dueDate = dueDate;
+    return result;
+  }
+
+  UpdateItemDueDateRequest._();
+
+  factory UpdateItemDueDateRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateItemDueDateRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateItemDueDateRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..aOM<$2.Timestamp>(2, _omitFieldNames ? '' : 'dueDate',
+        subBuilder: $2.Timestamp.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateItemDueDateRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateItemDueDateRequest copyWith(
+          void Function(UpdateItemDueDateRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateItemDueDateRequest))
+          as UpdateItemDueDateRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateItemDueDateRequest create() => UpdateItemDueDateRequest._();
+  @$core.override
+  UpdateItemDueDateRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateItemDueDateRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateItemDueDateRequest>(create);
+  static UpdateItemDueDateRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  /// due_date sets the date when present; leaving it unset clears the date.
+  @$pb.TagNumber(2)
+  $2.Timestamp get dueDate => $_getN(1);
+  @$pb.TagNumber(2)
+  set dueDate($2.Timestamp value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDueDate() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDueDate() => $_clearField(2);
+  @$pb.TagNumber(2)
+  $2.Timestamp ensureDueDate() => $_ensure(1);
+}
+
 class ListLabelsRequest extends $pb.GeneratedMessage {
   factory ListLabelsRequest() => create();
 

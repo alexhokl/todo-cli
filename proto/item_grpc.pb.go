@@ -20,25 +20,26 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ItemService_ListItems_FullMethodName        = "/item.ItemService/ListItems"
-	ItemService_CreateItem_FullMethodName       = "/item.ItemService/CreateItem"
-	ItemService_MoveItem_FullMethodName         = "/item.ItemService/MoveItem"
-	ItemService_SetItemDone_FullMethodName      = "/item.ItemService/SetItemDone"
-	ItemService_UpdateItemLabels_FullMethodName = "/item.ItemService/UpdateItemLabels"
-	ItemService_UpdateItemLinks_FullMethodName  = "/item.ItemService/UpdateItemLinks"
-	ItemService_SetItemEffort_FullMethodName    = "/item.ItemService/SetItemEffort"
-	ItemService_ListLabels_FullMethodName       = "/item.ItemService/ListLabels"
-	ItemService_CreateLabel_FullMethodName      = "/item.ItemService/CreateLabel"
-	ItemService_RenameLabel_FullMethodName      = "/item.ItemService/RenameLabel"
-	ItemService_DeleteLabel_FullMethodName      = "/item.ItemService/DeleteLabel"
-	ItemService_ListEfforts_FullMethodName      = "/item.ItemService/ListEfforts"
-	ItemService_CreateEffort_FullMethodName     = "/item.ItemService/CreateEffort"
-	ItemService_RenameEffort_FullMethodName     = "/item.ItemService/RenameEffort"
-	ItemService_DeleteEffort_FullMethodName     = "/item.ItemService/DeleteEffort"
-	ItemService_ListBlockers_FullMethodName     = "/item.ItemService/ListBlockers"
-	ItemService_CreateBlocker_FullMethodName    = "/item.ItemService/CreateBlocker"
-	ItemService_UpdateBlocker_FullMethodName    = "/item.ItemService/UpdateBlocker"
-	ItemService_DeleteBlocker_FullMethodName    = "/item.ItemService/DeleteBlocker"
+	ItemService_ListItems_FullMethodName         = "/item.ItemService/ListItems"
+	ItemService_CreateItem_FullMethodName        = "/item.ItemService/CreateItem"
+	ItemService_MoveItem_FullMethodName          = "/item.ItemService/MoveItem"
+	ItemService_SetItemDone_FullMethodName       = "/item.ItemService/SetItemDone"
+	ItemService_UpdateItemLabels_FullMethodName  = "/item.ItemService/UpdateItemLabels"
+	ItemService_UpdateItemLinks_FullMethodName   = "/item.ItemService/UpdateItemLinks"
+	ItemService_UpdateItemDueDate_FullMethodName = "/item.ItemService/UpdateItemDueDate"
+	ItemService_SetItemEffort_FullMethodName     = "/item.ItemService/SetItemEffort"
+	ItemService_ListLabels_FullMethodName        = "/item.ItemService/ListLabels"
+	ItemService_CreateLabel_FullMethodName       = "/item.ItemService/CreateLabel"
+	ItemService_RenameLabel_FullMethodName       = "/item.ItemService/RenameLabel"
+	ItemService_DeleteLabel_FullMethodName       = "/item.ItemService/DeleteLabel"
+	ItemService_ListEfforts_FullMethodName       = "/item.ItemService/ListEfforts"
+	ItemService_CreateEffort_FullMethodName      = "/item.ItemService/CreateEffort"
+	ItemService_RenameEffort_FullMethodName      = "/item.ItemService/RenameEffort"
+	ItemService_DeleteEffort_FullMethodName      = "/item.ItemService/DeleteEffort"
+	ItemService_ListBlockers_FullMethodName      = "/item.ItemService/ListBlockers"
+	ItemService_CreateBlocker_FullMethodName     = "/item.ItemService/CreateBlocker"
+	ItemService_UpdateBlocker_FullMethodName     = "/item.ItemService/UpdateBlocker"
+	ItemService_DeleteBlocker_FullMethodName     = "/item.ItemService/DeleteBlocker"
 )
 
 // ItemServiceClient is the client API for ItemService service.
@@ -65,6 +66,8 @@ type ItemServiceClient interface {
 	// UpdateItemLinks attaches and detaches links between an item and other
 	// items. The relationship is symmetric: linking A to B also links B to A.
 	UpdateItemLinks(ctx context.Context, in *UpdateItemLinksRequest, opts ...grpc.CallOption) (*Item, error)
+	// UpdateItemDueDate sets or clears an item's due date.
+	UpdateItemDueDate(ctx context.Context, in *UpdateItemDueDateRequest, opts ...grpc.CallOption) (*Item, error)
 	// SetItemEffort attaches an effort to an item by name, or clears it when the
 	// name is empty. The effort must already exist; unknown names are reported.
 	SetItemEffort(ctx context.Context, in *SetItemEffortRequest, opts ...grpc.CallOption) (*Item, error)
@@ -159,6 +162,16 @@ func (c *itemServiceClient) UpdateItemLinks(ctx context.Context, in *UpdateItemL
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Item)
 	err := c.cc.Invoke(ctx, ItemService_UpdateItemLinks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) UpdateItemDueDate(ctx context.Context, in *UpdateItemDueDateRequest, opts ...grpc.CallOption) (*Item, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Item)
+	err := c.cc.Invoke(ctx, ItemService_UpdateItemDueDate_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -319,6 +332,8 @@ type ItemServiceServer interface {
 	// UpdateItemLinks attaches and detaches links between an item and other
 	// items. The relationship is symmetric: linking A to B also links B to A.
 	UpdateItemLinks(context.Context, *UpdateItemLinksRequest) (*Item, error)
+	// UpdateItemDueDate sets or clears an item's due date.
+	UpdateItemDueDate(context.Context, *UpdateItemDueDateRequest) (*Item, error)
 	// SetItemEffort attaches an effort to an item by name, or clears it when the
 	// name is empty. The effort must already exist; unknown names are reported.
 	SetItemEffort(context.Context, *SetItemEffortRequest) (*Item, error)
@@ -376,6 +391,9 @@ func (UnimplementedItemServiceServer) UpdateItemLabels(context.Context, *UpdateI
 }
 func (UnimplementedItemServiceServer) UpdateItemLinks(context.Context, *UpdateItemLinksRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateItemLinks not implemented")
+}
+func (UnimplementedItemServiceServer) UpdateItemDueDate(context.Context, *UpdateItemDueDateRequest) (*Item, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateItemDueDate not implemented")
 }
 func (UnimplementedItemServiceServer) SetItemEffort(context.Context, *SetItemEffortRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetItemEffort not implemented")
@@ -541,6 +559,24 @@ func _ItemService_UpdateItemLinks_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ItemServiceServer).UpdateItemLinks(ctx, req.(*UpdateItemLinksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_UpdateItemDueDate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateItemDueDateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).UpdateItemDueDate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_UpdateItemDueDate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).UpdateItemDueDate(ctx, req.(*UpdateItemDueDateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -809,6 +845,10 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateItemLinks",
 			Handler:    _ItemService_UpdateItemLinks_Handler,
+		},
+		{
+			MethodName: "UpdateItemDueDate",
+			Handler:    _ItemService_UpdateItemDueDate_Handler,
 		},
 		{
 			MethodName: "SetItemEffort",
