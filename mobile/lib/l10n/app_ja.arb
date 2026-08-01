@@ -1,0 +1,17 @@
+{
+  "@@locale": "ja",
+  "appTitle": "Todo",
+  "items": "アイテム",
+  "settings": "設定",
+  "retry": "再試行",
+  "noItems": "アイテムがありません",
+  "active": "進行中",
+  "completed": "完了済み",
+  "backendConfiguration": "バックエンド設定",
+  "backendServiceUrl": "バックエンドサービスURL",
+  "enterBackendServiceUrl": "バックエンドサービスURLを入力",
+  "about": "情報",
+  "gitCommit": "Gitコミット",
+  "gitCommitCopied": "Gitコミットハッシュをコピーしました",
+  "copyToClipboard": "クリップボードにコピー"
+}

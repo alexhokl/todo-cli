@@ -8,7 +8,8 @@ A todo management application written in Go, providing a single binary that acts
 as both a gRPC server (`todo serve`) and a CLI client. The server uses GORM with
 SQLite for persistence and is instrumented with OpenTelemetry. Records (items,
 lists, labels) are scoped per user; authentication is pluggable via a gRPC
-interceptor (dummy by default, Tailscale when `--hostname` is set).
+interceptor (dummy by default, Tailscale when `--hostname` is set). A Flutter
+mobile app lives under `mobile/` and talks to the gRPC server.
 
 ### Directory Structure
 
@@ -16,6 +17,8 @@ interceptor (dummy by default, Tailscale when `--hostname` is set).
 - `internal/` -- gRPC server implementations, interceptors, helpers
 - `database/` -- GORM models and database operations
 - `proto/` -- Protobuf definitions and generated Go code
+- `mobile/` -- Flutter application (macOS, Android); generated Dart protobuf
+  code lives in `mobile/lib/proto/`
 
 ### Current State
 
@@ -46,11 +49,21 @@ task coverage                 # or: go test --cover ./...
 go test -run TestRequireSecureConnection ./cmd/            # single test
 go test -run TestRequireSecureConnection/localhost ./cmd/  # single subtest
 go test -v -run TestRequireSecureConnection ./cmd/         # verbose
-task lint                     # golangci-lint run
+task lint                     # golangci-lint run && dart fix --dry-run
 task sec                      # gosec ./...
 task bench                    # go test -bench=. -benchmem ./...
 task install                  # go install
-task proto                    # generate protobuf Go code
+task proto                    # generate protobuf Go + Dart code
+```
+
+### Flutter / Dart
+
+```bash
+task flutter-coverage         # or: cd mobile && flutter test --no-pub --coverage
+cd mobile && flutter test test/item_service_test.dart  # single test file
+dart fix --dry-run            # lint (dry run)
+task mac                      # flutter build macos
+task apk                      # flutter build apk
 ```
 
 ## Configuration

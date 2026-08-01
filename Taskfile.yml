@@ -37,7 +37,9 @@ tasks:
 
   lint:
     desc: Lint
-    cmd: golangci-lint run
+    cmds:
+      - golangci-lint run
+      - dart fix --dry-run
 
   sec:
     desc: Security check
@@ -57,6 +59,7 @@ tasks:
           -I . \
           --go_out=. --go_opt=paths=source_relative \
           --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+          --dart_out=grpc:mobile/lib \
           ./proto/*.proto
 
   update-proto-dependencies:
@@ -64,6 +67,29 @@ tasks:
     cmds:
       - curl -o google/protobuf/empty.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/empty.proto
       - curl -o google/protobuf/timestamp.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/timestamp.proto
+
+  flutter-coverage:
+    desc: Run Flutter tests with coverage
+    dir: mobile
+    cmd: flutter test --no-pub --coverage
+
+  flutter-coverage-html:
+    desc: Generate Flutter coverage HTML report
+    dir: mobile
+    cmds:
+      - task: flutter-coverage
+      - genhtml coverage/lcov.info -o coverage/html
+
+  mac:
+    desc: Build macOS
+    cmds:
+      - cd mobile && flutter build macos --dart-define=GIT_COMMIT=$(git rev-parse --short HEAD)
+      - cp -r mobile/build/macos/Build/Products/Release/todo.app /Applications/
+
+  apk:
+    desc: Build Android APK
+    cmds:
+      - cd mobile && flutter build apk --dart-define=GIT_COMMIT=$(git rev-parse --short HEAD)
 
   tag:
     desc: Create a new git tag with incremented patch version (0.1.x)

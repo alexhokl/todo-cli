@@ -1,0 +1,59 @@
+{
+  "@@locale": "en",
+  "appTitle": "Todo",
+  "@appTitle": {
+    "description": "Application title shown in the app bar"
+  },
+  "items": "Items",
+  "@items": {
+    "description": "Navigation destination label for the items tab"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Menu item label for opening settings"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Button label to retry loading items"
+  },
+  "noItems": "No items",
+  "@noItems": {
+    "description": "Empty state message when there are no todo items"
+  },
+  "active": "Active",
+  "@active": {
+    "description": "Section header for active (not done) items"
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Section header for completed items"
+  },
+  "backendConfiguration": "Backend Configuration",
+  "@backendConfiguration": {
+    "description": "Settings section title for backend configuration"
+  },
+  "backendServiceUrl": "Backend Service URL",
+  "@backendServiceUrl": {
+    "description": "Text field label for the backend service URL"
+  },
+  "enterBackendServiceUrl": "Enter the backend service URL",
+  "@enterBackendServiceUrl": {
+    "description": "Text field hint for the backend service URL"
+  },
+  "about": "About",
+  "@about": {
+    "description": "Settings section title for the about section"
+  },
+  "gitCommit": "Git Commit",
+  "@gitCommit": {
+    "description": "Read-only field label showing the git commit hash"
+  },
+  "gitCommitCopied": "Git commit hash copied to clipboard",
+  "@gitCommitCopied": {
+    "description": "SnackBar message after copying the git commit to clipboard"
+  },
+  "copyToClipboard": "Copy to clipboard",
+  "@copyToClipboard": {
+    "description": "Tooltip for the copy-to-clipboard icon button"
+  }
+}

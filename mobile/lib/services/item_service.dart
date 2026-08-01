@@ -1,0 +1,225 @@
+import 'package:grpc/grpc.dart';
+import 'package:todo/proto/item.pbgrpc.dart';
+
+/// Result of listing items, split into active and completed.
+class ListItemsResult {
+  final List<Item> active;
+  final List<Item> completed;
+
+  ListItemsResult({required this.active, required this.completed});
+}
+
+/// Service for interacting with the todo gRPC server.
+class ItemService {
+  static const String _defaultHost = 'localhost';
+  static const int _defaultPort = 8080;
+
+  ClientChannel? _channel;
+  ItemServiceClient? _client;
+
+  final String host;
+  final int port;
+
+  ItemService({this.host = _defaultHost, this.port = _defaultPort});
+
+  /// Determine whether a secure (TLS) connection is required based on the host.
+  /// Returns false for localhost/loopback addresses, true otherwise. This
+  /// mirrors the client-side logic in cmd/security.go of the photos project.
+  bool requireSecureConnection() {
+    if (host.isEmpty ||
+        host == 'localhost' ||
+        host == '127.0.0.1' ||
+        host == '::1') {
+      return false;
+    }
+    return true;
+  }
+
+  /// Get the appropriate channel credentials based on the host.
+  ChannelCredentials _getCredentials() {
+    if (requireSecureConnection()) {
+      return const ChannelCredentials.secure();
+    }
+    return const ChannelCredentials.insecure();
+  }
+
+  /// Initialise the gRPC channel and client lazily.
+  void _ensureInitialized() {
+    if (_channel == null) {
+      _channel = ClientChannel(
+        host,
+        port: port,
+        options: ChannelOptions(credentials: _getCredentials()),
+      );
+      _client = ItemServiceClient(_channel!);
+    }
+  }
+
+  /// List items, optionally filtered by label names.
+  Future<ListItemsResult> listItems({List<String>? labels}) async {
+    _ensureInitialized();
+
+    final request = ListItemsRequest();
+    if (labels != null && labels.isNotEmpty) {
+      request.labels.addAll(labels);
+    }
+
+    try {
+      final response = await _client!.listItems(request);
+      return ListItemsResult(
+        active: response.active.toList(),
+        completed: response.completed.toList(),
+      );
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Create a new item. Labels are created on the fly when they do not exist.
+  Future<Item> createItem({
+    required String title,
+    String description = '',
+    List<String>? labels,
+  }) async {
+    _ensureInitialized();
+
+    final request = CreateItemRequest(title: title, description: description);
+    if (labels != null && labels.isNotEmpty) {
+      request.labels.addAll(labels);
+    }
+
+    try {
+      return await _client!.createItem(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Mark an item as done or reopen it.
+  Future<Item> setItemDone(int id, bool done) async {
+    _ensureInitialized();
+
+    final request = SetItemDoneRequest(id: id, done: done);
+
+    try {
+      return await _client!.setItemDone(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Move an item before or after another item, optionally reassigning its
+  /// list in the same operation.
+  Future<Item> moveItem({
+    required int id,
+    int? beforeId,
+    int? afterId,
+    bool changeList = false,
+    int? listId,
+  }) async {
+    _ensureInitialized();
+
+    final request = MoveItemRequest(id: id, changeList: changeList);
+    if (beforeId != null) request.beforeId = beforeId;
+    if (afterId != null) request.afterId = afterId;
+    if (changeList && listId != null) request.listId = listId;
+
+    try {
+      return await _client!.moveItem(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Attach and detach labels on an item. Labels being added are created on
+  /// the fly when they do not exist yet.
+  Future<Item> updateItemLabels({
+    required int id,
+    List<String>? add,
+    List<String>? remove,
+  }) async {
+    _ensureInitialized();
+
+    final request = UpdateItemLabelsRequest(id: id);
+    if (add != null) request.add.addAll(add);
+    if (remove != null) request.remove.addAll(remove);
+
+    try {
+      return await _client!.updateItemLabels(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// List every known label ordered by name.
+  Future<List<Label>> listLabels() async {
+    _ensureInitialized();
+
+    final request = ListLabelsRequest();
+
+    try {
+      final response = await _client!.listLabels(request);
+      return response.labels.toList();
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Create a label explicitly. Reports a name that is already taken rather
+  /// than returning the existing label.
+  Future<Label> createLabel(String name) async {
+    _ensureInitialized();
+
+    final request = CreateLabelRequest(name: name);
+
+    try {
+      return await _client!.createLabel(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Change the name of an existing label.
+  Future<Label> renameLabel(int id, String name) async {
+    _ensureInitialized();
+
+    final request = RenameLabelRequest(id: id, name: name);
+
+    try {
+      return await _client!.renameLabel(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Remove a label that is no longer attached to any item.
+  Future<void> deleteLabel(int id) async {
+    _ensureInitialized();
+
+    final request = DeleteLabelRequest(id: id);
+
+    try {
+      await _client!.deleteLabel(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Close the gRPC channel.
+  Future<void> dispose() async {
+    await _channel?.shutdown();
+    _channel = null;
+    _client = null;
+  }
+}
+
+/// Exception thrown when an item operation fails.
+class ItemException implements Exception {
+  final String message;
+  final GrpcError? grpcError;
+
+  ItemException(this.message, {this.grpcError});
+
+  @override
+  String toString() => 'ItemException: $message';
+}

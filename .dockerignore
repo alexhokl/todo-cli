@@ -18,3 +18,17 @@ AGENTS.md
 README.md
 LICENSE
 Taskfile.yml
+
+# Flutter mobile app (not consumed by the Go server build)
+mobile/
+
+# Cloud Build config (CI-only, not needed in image)
+cloudbuild.yaml
+
+# IDE / editor cruft
+.idea/
+.metadata
+
+# Go coverage reports (regenerable, not needed in image)
+coverage.html
+coverage.out
