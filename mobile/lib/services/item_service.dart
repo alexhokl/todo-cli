@@ -165,12 +165,35 @@ class ItemService {
     }
   }
 
+  /// Validate and canonicalise a label colour expressed in #RRGGBB form.
+  ///
+  /// Returns `null` when [colour] is `null` or empty, meaning "use the server
+  /// default". Throws [ItemException] when [colour] is non-empty but does not
+  /// match `^#[0-9A-Fa-f]{6}$`. A valid colour is returned upper-cased, mirroring
+  /// the server-side canonicalisation in `database/label.go`.
+  static String? normaliseColour(String? colour) {
+    if (colour == null || colour.isEmpty) {
+      return null;
+    }
+    final pattern = RegExp(r'^#[0-9A-Fa-f]{6}$');
+    if (!pattern.hasMatch(colour)) {
+      throw ItemException('colour must be in #RRGGBB format');
+    }
+    return colour.toUpperCase();
+  }
+
   /// Create a label explicitly. Reports a name that is already taken rather
-  /// than returning the existing label.
-  Future<Label> createLabel(String name) async {
+  /// than returning the existing label. When [colour] is null or empty the
+  /// server applies its default (#FFFF00); otherwise it must already be in
+  /// canonical #RRGGBB form or the server rejects the request.
+  Future<Label> createLabel(String name, {String? colour}) async {
     _ensureInitialized();
 
     final request = CreateLabelRequest(name: name);
+    final normalised = normaliseColour(colour);
+    if (normalised != null) {
+      request.colour = normalised;
+    }
 
     try {
       return await _client!.createLabel(request);
@@ -179,11 +202,22 @@ class ItemService {
     }
   }
 
-  /// Change the name of an existing label.
-  Future<Label> renameLabel(int id, String name) async {
+  /// Change the name and/or colour of an existing label. At least one of
+  /// [name] or [colour] must be provided; the server rejects a request that
+  /// changes neither. When [colour] is null the colour is left unchanged on
+  /// the server (the `colour` field is `optional` on `RenameLabelRequest`);
+  /// when it is non-null it must be a canonical #RRGGBB value.
+  Future<Label> renameLabel(int id, {String? name, String? colour}) async {
     _ensureInitialized();
 
-    final request = RenameLabelRequest(id: id, name: name);
+    final request = RenameLabelRequest(id: id);
+    if (name != null) {
+      request.name = name;
+    }
+    final normalised = normaliseColour(colour);
+    if (normalised != null) {
+      request.colour = normalised;
+    }
 
     try {
       return await _client!.renameLabel(request);

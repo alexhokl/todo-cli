@@ -55,5 +55,111 @@
   "copyToClipboard": "Copy to clipboard",
   "@copyToClipboard": {
     "description": "Tooltip for the copy-to-clipboard icon button"
+  },
+  "labels": "Labels",
+  "@labels": {
+    "description": "Menu item and page title for managing labels"
+  },
+  "addLabel": "Add label",
+  "@addLabel": {
+    "description": "Tooltip and dialog title for creating a new label"
+  },
+  "editLabel": "Edit label",
+  "@editLabel": {
+    "description": "Dialog title for editing an existing label"
+  },
+  "labelName": "Name",
+  "@labelName": {
+    "description": "Text field label for the label name"
+  },
+  "labelColour": "Colour",
+  "@labelColour": {
+    "description": "Text field label for the label colour in #RRGGBB format"
+  },
+  "enterLabelName": "Enter a name",
+  "@enterLabelName": {
+    "description": "Hint text for the label name field"
+  },
+  "enterLabelColour": "#RRGGBB",
+  "@enterLabelColour": {
+    "description": "Hint text for the label colour field"
+  },
+  "invalidColour": "Colour must be in #RRGGBB format",
+  "@invalidColour": {
+    "description": "Validation error shown when the colour is not a valid #RRGGBB value"
+  },
+  "confirmDeleteLabel": "Delete label \"{name}\"?",
+  "@confirmDeleteLabel": {
+    "description": "Confirmation dialog prompt asking the user to confirm deleting a label",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "description": "Name of the label being deleted"
+      }
+    }
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Button label to dismiss a dialog without applying changes"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Button label to confirm a destructive action"
+  },
+  "noLabels": "No labels",
+  "@noLabels": {
+    "description": "Empty state message when there are no labels"
+  },
+  "failedToLoadLabels": "Failed to load labels: {error}",
+  "@failedToLoadLabels": {
+    "description": "Error message shown when listing labels fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToCreateLabel": "Failed to create label: {error}",
+  "@failedToCreateLabel": {
+    "description": "Snackbar message shown when creating a label fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToRenameLabel": "Failed to rename label: {error}",
+  "@failedToRenameLabel": {
+    "description": "Snackbar message shown when renaming a label fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToDeleteLabel": "Failed to delete label: {error}",
+  "@failedToDeleteLabel": {
+    "description": "Snackbar message shown when deleting a label fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "labelCreated": "Label created",
+  "@labelCreated": {
+    "description": "Snackbar confirmation after a label is created"
+  },
+  "labelRenamed": "Label updated",
+  "@labelRenamed": {
+    "description": "Snackbar confirmation after a label is renamed"
+  },
+  "labelDeleted": "Label deleted",
+  "@labelDeleted": {
+    "description": "Snackbar confirmation after a label is deleted"
   }
 }

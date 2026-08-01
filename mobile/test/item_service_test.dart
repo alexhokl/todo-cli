@@ -66,4 +66,42 @@ void main() {
       expect(exception.toString(), equals('ItemException: something failed'));
     });
   });
+
+  group('normaliseColour', () {
+    test('returns null for null input', () {
+      expect(ItemService.normaliseColour(null), isNull);
+    });
+
+    test('returns null for empty string', () {
+      expect(ItemService.normaliseColour(''), isNull);
+    });
+
+    test('returns canonical upper-case for valid upper-case input', () {
+      expect(ItemService.normaliseColour('#FF0000'), equals('#FF0000'));
+    });
+
+    test('canonicalises lower-case hex to upper-case', () {
+      expect(ItemService.normaliseColour('#00ff00'), equals('#00FF00'));
+    });
+
+    test('canonicalises mixed-case hex to upper-case', () {
+      expect(ItemService.normaliseColour('#aBcDeF'), equals('#ABCDEF'));
+    });
+
+    test('throws when hash prefix is missing', () {
+      expect(() => ItemService.normaliseColour('FF0000'), throwsA(isA<ItemException>()));
+    });
+
+    test('throws when too short', () {
+      expect(() => ItemService.normaliseColour('#FF0'), throwsA(isA<ItemException>()));
+    });
+
+    test('throws when too long', () {
+      expect(() => ItemService.normaliseColour('#FF00000'), throwsA(isA<ItemException>()));
+    });
+
+    test('throws on non-hex characters', () {
+      expect(() => ItemService.normaliseColour('#GGGGGG'), throwsA(isA<ItemException>()));
+    });
+  });
 }

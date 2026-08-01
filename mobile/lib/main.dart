@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/widgets/item_list.dart';
+import 'package:todo/widgets/labels_page.dart';
 import 'package:todo/widgets/settings_page.dart';
 
 void main() {
@@ -41,7 +42,12 @@ class _HomePageState extends State<HomePage> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
-              if (value == 'settings') {
+              if (value == 'labels') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LabelsPage()),
+                );
+              } else if (value == 'settings') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SettingsPage()),
@@ -49,6 +55,10 @@ class _HomePageState extends State<HomePage> {
               }
             },
             itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'labels',
+                child: Text(AppLocalizations.of(context)!.labels),
+              ),
               PopupMenuItem(
                 value: 'settings',
                 child: Text(AppLocalizations.of(context)!.settings),
