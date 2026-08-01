@@ -46,6 +46,19 @@ const Label$json = {
 final $typed_data.Uint8List labelDescriptor = $convert.base64Decode(
     'CgVMYWJlbBIOCgJpZBgBIAEoDVICaWQSEgoEbmFtZRgCIAEoCVIEbmFtZQ==');
 
+@$core.Deprecated('Use effortDescriptor instead')
+const Effort$json = {
+  '1': 'Effort',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+    {'1': 'name', '3': 2, '4': 1, '5': 9, '10': 'name'},
+  ],
+};
+
+/// Descriptor for `Effort`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List effortDescriptor = $convert.base64Decode(
+    'CgZFZmZvcnQSDgoCaWQYASABKA1SAmlkEhIKBG5hbWUYAiABKAlSBG5hbWU=');
+
 @$core.Deprecated('Use itemDescriptor instead')
 const Item$json = {
   '1': 'Item',
@@ -90,6 +103,14 @@ const Item$json = {
       '6': '.item.Label',
       '10': 'labels'
     },
+    {
+      '1': 'effort',
+      '3': 9,
+      '4': 1,
+      '5': 11,
+      '6': '.item.Effort',
+      '10': 'effort'
+    },
   ],
   '8': [
     {'1': '_due_date'},
@@ -104,8 +125,9 @@ final $typed_data.Uint8List itemDescriptor = $convert.base64Decode(
     'Rpb24YAyABKAlSC2Rlc2NyaXB0aW9uEhIKBGRvbmUYBCABKAhSBGRvbmUSOgoIZHVlX2RhdGUY'
     'BSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSABSB2R1ZURhdGWIAQESHAoHbGlzdF'
     '9pZBgGIAEoDUgBUgZsaXN0SWSIAQESHwoIcHJpb3JpdHkYByABKAFIAlIIcHJpb3JpdHmIAQES'
-    'IwoGbGFiZWxzGAggAygLMgsuaXRlbS5MYWJlbFIGbGFiZWxzQgsKCV9kdWVfZGF0ZUIKCghfbG'
-    'lzdF9pZEILCglfcHJpb3JpdHk=');
+    'IwoGbGFiZWxzGAggAygLMgsuaXRlbS5MYWJlbFIGbGFiZWxzEiQKBmVmZm9ydBgJIAEoCzIMLm'
+    'l0ZW0uRWZmb3J0UgZlZmZvcnRCCwoJX2R1ZV9kYXRlQgoKCF9saXN0X2lkQgsKCV9wcmlvcml0'
+    'eQ==');
 
 @$core.Deprecated('Use listItemsRequestDescriptor instead')
 const ListItemsRequest$json = {
@@ -168,10 +190,12 @@ const CreateItemRequest$json = {
       '17': true
     },
     {'1': 'labels', '3': 5, '4': 3, '5': 9, '10': 'labels'},
+    {'1': 'effort', '3': 6, '4': 1, '5': 9, '9': 2, '10': 'effort', '17': true},
   ],
   '8': [
     {'1': '_due_date'},
     {'1': '_list_id'},
+    {'1': '_effort'},
   ],
 };
 
@@ -180,7 +204,8 @@ final $typed_data.Uint8List createItemRequestDescriptor = $convert.base64Decode(
     'ChFDcmVhdGVJdGVtUmVxdWVzdBIUCgV0aXRsZRgBIAEoCVIFdGl0bGUSIAoLZGVzY3JpcHRpb2'
     '4YAiABKAlSC2Rlc2NyaXB0aW9uEjoKCGR1ZV9kYXRlGAMgASgLMhouZ29vZ2xlLnByb3RvYnVm'
     'LlRpbWVzdGFtcEgAUgdkdWVEYXRliAEBEhwKB2xpc3RfaWQYBCABKA1IAVIGbGlzdElkiAEBEh'
-    'YKBmxhYmVscxgFIAMoCVIGbGFiZWxzQgsKCV9kdWVfZGF0ZUIKCghfbGlzdF9pZA==');
+    'YKBmxhYmVscxgFIAMoCVIGbGFiZWxzEhsKBmVmZm9ydBgGIAEoCUgCUgZlZmZvcnSIAQFCCwoJ'
+    'X2R1ZV9kYXRlQgoKCF9saXN0X2lkQgkKB19lZmZvcnQ=');
 
 @$core.Deprecated('Use moveItemRequestDescriptor instead')
 const MoveItemRequest$json = {
@@ -312,3 +337,84 @@ const DeleteLabelRequest$json = {
 /// Descriptor for `DeleteLabelRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List deleteLabelRequestDescriptor =
     $convert.base64Decode('ChJEZWxldGVMYWJlbFJlcXVlc3QSDgoCaWQYASABKA1SAmlk');
+
+@$core.Deprecated('Use setItemEffortRequestDescriptor instead')
+const SetItemEffortRequest$json = {
+  '1': 'SetItemEffortRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+    {'1': 'effort', '3': 2, '4': 1, '5': 9, '10': 'effort'},
+  ],
+};
+
+/// Descriptor for `SetItemEffortRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setItemEffortRequestDescriptor = $convert.base64Decode(
+    'ChRTZXRJdGVtRWZmb3J0UmVxdWVzdBIOCgJpZBgBIAEoDVICaWQSFgoGZWZmb3J0GAIgASgJUg'
+    'ZlZmZvcnQ=');
+
+@$core.Deprecated('Use listEffortsRequestDescriptor instead')
+const ListEffortsRequest$json = {
+  '1': 'ListEffortsRequest',
+};
+
+/// Descriptor for `ListEffortsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listEffortsRequestDescriptor =
+    $convert.base64Decode('ChJMaXN0RWZmb3J0c1JlcXVlc3Q=');
+
+@$core.Deprecated('Use listEffortsResponseDescriptor instead')
+const ListEffortsResponse$json = {
+  '1': 'ListEffortsResponse',
+  '2': [
+    {
+      '1': 'efforts',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.item.Effort',
+      '10': 'efforts'
+    },
+  ],
+};
+
+/// Descriptor for `ListEffortsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listEffortsResponseDescriptor = $convert.base64Decode(
+    'ChNMaXN0RWZmb3J0c1Jlc3BvbnNlEiYKB2VmZm9ydHMYASADKAsyDC5pdGVtLkVmZm9ydFIHZW'
+    'Zmb3J0cw==');
+
+@$core.Deprecated('Use createEffortRequestDescriptor instead')
+const CreateEffortRequest$json = {
+  '1': 'CreateEffortRequest',
+  '2': [
+    {'1': 'name', '3': 1, '4': 1, '5': 9, '10': 'name'},
+  ],
+};
+
+/// Descriptor for `CreateEffortRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List createEffortRequestDescriptor = $convert
+    .base64Decode('ChNDcmVhdGVFZmZvcnRSZXF1ZXN0EhIKBG5hbWUYASABKAlSBG5hbWU=');
+
+@$core.Deprecated('Use renameEffortRequestDescriptor instead')
+const RenameEffortRequest$json = {
+  '1': 'RenameEffortRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+    {'1': 'name', '3': 2, '4': 1, '5': 9, '10': 'name'},
+  ],
+};
+
+/// Descriptor for `RenameEffortRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List renameEffortRequestDescriptor = $convert.base64Decode(
+    'ChNSZW5hbWVFZmZvcnRSZXF1ZXN0Eg4KAmlkGAEgASgNUgJpZBISCgRuYW1lGAIgASgJUgRuYW'
+    '1l');
+
+@$core.Deprecated('Use deleteEffortRequestDescriptor instead')
+const DeleteEffortRequest$json = {
+  '1': 'DeleteEffortRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `DeleteEffortRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteEffortRequestDescriptor = $convert
+    .base64Decode('ChNEZWxldGVFZmZvcnRSZXF1ZXN0Eg4KAmlkGAEgASgNUgJpZA==');

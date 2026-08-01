@@ -8,7 +8,7 @@ import (
 
 // User is an authenticated Tailscale user. It is created on first sight by
 // the Tailscale authentication interceptor and referenced by TailscaleAddress
-// and the per-user records (List, Label, Item).
+// and the per-user records (List, Label, Effort, Item).
 type User struct {
 	gorm.Model
 	Username string `gorm:"not null;unique"`
@@ -42,6 +42,19 @@ type Label struct {
 	User   User   `gorm:"foreignKey:UserID"`
 }
 
+// Effort is a per-user named level of effort (e.g. "low", "medium", "high").
+// An item carries at most one effort via Item.EffortID, so unlike labels there
+// is no join table and deleting an effort requires that no item references it.
+type Effort struct {
+	gorm.Model
+	// Name is stored in its normalised form: trimmed and lower cased, so that
+	// "High", " high " and "HIGH" all resolve to the same effort. Use
+	// NormaliseEffortName before comparing against this column.
+	Name   string `gorm:"not null;uniqueIndex:idx_effort_user,priority:1"`
+	UserID uint   `gorm:"not null;uniqueIndex:idx_effort_user,priority:2;index"`
+	User   User   `gorm:"foreignKey:UserID"`
+}
+
 // Item is a single todo item, optionally belonging to a List.
 type Item struct {
 	gorm.Model
@@ -65,4 +78,9 @@ type Item struct {
 	// soft delete column, so rows survive a soft deleted item; DeleteLabel
 	// sweeps any that are left behind.
 	Labels []Label `gorm:"many2many:item_labels;"`
+	// EffortID is the optional single effort level attached to this item.
+	// Unlike labels, an item carries at most one effort, so the relationship is
+	// a belongs-to rather than a many-to-many and there is no join table.
+	EffortID *uint
+	Effort   *Effort `gorm:"foreignKey:EffortID"`
 }

@@ -160,6 +160,7 @@ func ListActive(db *gorm.DB, userID uint, filter ItemFilter) ([]Item, error) {
 	// that carry columns of the same name.
 	if err := filter.apply(db).
 		Preload("Labels").
+		Preload("Effort").
 		Select("items.*").
 		Where("items.done = ?", false).
 		Where("items.user_id = ?", userID).
@@ -178,6 +179,7 @@ func ListCompleted(db *gorm.DB, userID uint, filter ItemFilter) ([]Item, error) 
 	var items []Item
 	if err := filter.apply(db).
 		Preload("Labels").
+		Preload("Effort").
 		Select("items.*").
 		Where("items.done = ?", true).
 		Where("items.user_id = ?", userID).
@@ -198,6 +200,7 @@ func ListItemsByView(db *gorm.DB, userID uint, filter ItemFilter) ([]Item, error
 
 	query := filter.apply(db).
 		Preload("Labels").
+		Preload("Effort").
 		Select("items.*").
 		Where("items.user_id = ?", userID)
 
@@ -446,7 +449,7 @@ func rebalance(tx *gorm.DB, userID uint) error {
 // ErrItemNotFound. The query is scoped to the given user so cross-user access
 // is reported as not found rather than leaking existence.
 func findItem(tx *gorm.DB, userID uint, id uint, item *Item) error {
-	err := tx.Preload("Labels").Where("user_id = ?", userID).First(item, id).Error
+	err := tx.Preload("Labels").Preload("Effort").Where("user_id = ?", userID).First(item, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("%w: %d", ErrItemNotFound, id)
 	}

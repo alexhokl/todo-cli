@@ -14,6 +14,7 @@ type createItemOptions struct {
 	DueDate     string
 	ListID      uint32
 	Labels      []string
+	Effort      string
 }
 
 var createItemOpts createItemOptions
@@ -23,7 +24,8 @@ var createItemCmd = &cobra.Command{
 	Use:   "item [title]",
 	Short: "Create an item at the end of the manual order",
 	Example: `  todo create item "buy milk" --due 2026-08-15
-  todo create item "ship it" --label urgent --label work`,
+  todo create item "ship it" --label urgent --label work
+  todo create item "release" --effort high`,
 	Args:        cobra.ExactArgs(1),
 	Annotations: map[string]string{annotationRequiresService: "true"},
 	RunE:        runCreateItem,
@@ -37,6 +39,7 @@ func init() {
 	flags.StringVar(&createItemOpts.DueDate, "due", "", "Due date of the item in YYYY-MM-DD format")
 	flags.Uint32Var(&createItemOpts.ListID, "list", 0, "ID of the list to add this item to")
 	flags.StringArrayVar(&createItemOpts.Labels, "label", nil, "Label to attach to the item, created if unknown (repeatable)")
+	flags.StringVar(&createItemOpts.Effort, "effort", "", "Name of an existing effort to attach (empty leaves the item without an effort)")
 }
 
 func runCreateItem(cmd *cobra.Command, args []string) error {
@@ -80,6 +83,10 @@ func buildCreateItemRequest(args []string, opts createItemOptions, listChanged b
 
 	if listChanged {
 		req.ListId = &opts.ListID
+	}
+
+	if opts.Effort != "" {
+		req.Effort = &opts.Effort
 	}
 
 	return req, nil

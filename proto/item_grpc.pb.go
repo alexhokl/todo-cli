@@ -25,10 +25,15 @@ const (
 	ItemService_MoveItem_FullMethodName         = "/item.ItemService/MoveItem"
 	ItemService_SetItemDone_FullMethodName      = "/item.ItemService/SetItemDone"
 	ItemService_UpdateItemLabels_FullMethodName = "/item.ItemService/UpdateItemLabels"
+	ItemService_SetItemEffort_FullMethodName    = "/item.ItemService/SetItemEffort"
 	ItemService_ListLabels_FullMethodName       = "/item.ItemService/ListLabels"
 	ItemService_CreateLabel_FullMethodName      = "/item.ItemService/CreateLabel"
 	ItemService_RenameLabel_FullMethodName      = "/item.ItemService/RenameLabel"
 	ItemService_DeleteLabel_FullMethodName      = "/item.ItemService/DeleteLabel"
+	ItemService_ListEfforts_FullMethodName      = "/item.ItemService/ListEfforts"
+	ItemService_CreateEffort_FullMethodName     = "/item.ItemService/CreateEffort"
+	ItemService_RenameEffort_FullMethodName     = "/item.ItemService/RenameEffort"
+	ItemService_DeleteEffort_FullMethodName     = "/item.ItemService/DeleteEffort"
 )
 
 // ItemServiceClient is the client API for ItemService service.
@@ -52,6 +57,9 @@ type ItemServiceClient interface {
 	// UpdateItemLabels attaches and detaches labels on an item. Labels being
 	// added are created on the fly when they do not exist yet.
 	UpdateItemLabels(ctx context.Context, in *UpdateItemLabelsRequest, opts ...grpc.CallOption) (*Item, error)
+	// SetItemEffort attaches an effort to an item by name, or clears it when the
+	// name is empty. The effort must already exist; unknown names are reported.
+	SetItemEffort(ctx context.Context, in *SetItemEffortRequest, opts ...grpc.CallOption) (*Item, error)
 	// ListLabels returns every known label ordered by name.
 	ListLabels(ctx context.Context, in *ListLabelsRequest, opts ...grpc.CallOption) (*ListLabelsResponse, error)
 	// CreateLabel creates a label explicitly and reports a name that is already
@@ -61,6 +69,15 @@ type ItemServiceClient interface {
 	RenameLabel(ctx context.Context, in *RenameLabelRequest, opts ...grpc.CallOption) (*Label, error)
 	// DeleteLabel removes a label that is no longer attached to any item.
 	DeleteLabel(ctx context.Context, in *DeleteLabelRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// ListEfforts returns every known effort ordered by name.
+	ListEfforts(ctx context.Context, in *ListEffortsRequest, opts ...grpc.CallOption) (*ListEffortsResponse, error)
+	// CreateEffort creates an effort explicitly and reports a name that is
+	// already taken rather than returning the existing effort.
+	CreateEffort(ctx context.Context, in *CreateEffortRequest, opts ...grpc.CallOption) (*Effort, error)
+	// RenameEffort changes the name of an existing effort.
+	RenameEffort(ctx context.Context, in *RenameEffortRequest, opts ...grpc.CallOption) (*Effort, error)
+	// DeleteEffort removes an effort that is no longer attached to any item.
+	DeleteEffort(ctx context.Context, in *DeleteEffortRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type itemServiceClient struct {
@@ -121,6 +138,16 @@ func (c *itemServiceClient) UpdateItemLabels(ctx context.Context, in *UpdateItem
 	return out, nil
 }
 
+func (c *itemServiceClient) SetItemEffort(ctx context.Context, in *SetItemEffortRequest, opts ...grpc.CallOption) (*Item, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Item)
+	err := c.cc.Invoke(ctx, ItemService_SetItemEffort_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *itemServiceClient) ListLabels(ctx context.Context, in *ListLabelsRequest, opts ...grpc.CallOption) (*ListLabelsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListLabelsResponse)
@@ -161,6 +188,46 @@ func (c *itemServiceClient) DeleteLabel(ctx context.Context, in *DeleteLabelRequ
 	return out, nil
 }
 
+func (c *itemServiceClient) ListEfforts(ctx context.Context, in *ListEffortsRequest, opts ...grpc.CallOption) (*ListEffortsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListEffortsResponse)
+	err := c.cc.Invoke(ctx, ItemService_ListEfforts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) CreateEffort(ctx context.Context, in *CreateEffortRequest, opts ...grpc.CallOption) (*Effort, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Effort)
+	err := c.cc.Invoke(ctx, ItemService_CreateEffort_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) RenameEffort(ctx context.Context, in *RenameEffortRequest, opts ...grpc.CallOption) (*Effort, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Effort)
+	err := c.cc.Invoke(ctx, ItemService_RenameEffort_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) DeleteEffort(ctx context.Context, in *DeleteEffortRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ItemService_DeleteEffort_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ItemServiceServer is the server API for ItemService service.
 // All implementations must embed UnimplementedItemServiceServer
 // for forward compatibility.
@@ -182,6 +249,9 @@ type ItemServiceServer interface {
 	// UpdateItemLabels attaches and detaches labels on an item. Labels being
 	// added are created on the fly when they do not exist yet.
 	UpdateItemLabels(context.Context, *UpdateItemLabelsRequest) (*Item, error)
+	// SetItemEffort attaches an effort to an item by name, or clears it when the
+	// name is empty. The effort must already exist; unknown names are reported.
+	SetItemEffort(context.Context, *SetItemEffortRequest) (*Item, error)
 	// ListLabels returns every known label ordered by name.
 	ListLabels(context.Context, *ListLabelsRequest) (*ListLabelsResponse, error)
 	// CreateLabel creates a label explicitly and reports a name that is already
@@ -191,6 +261,15 @@ type ItemServiceServer interface {
 	RenameLabel(context.Context, *RenameLabelRequest) (*Label, error)
 	// DeleteLabel removes a label that is no longer attached to any item.
 	DeleteLabel(context.Context, *DeleteLabelRequest) (*emptypb.Empty, error)
+	// ListEfforts returns every known effort ordered by name.
+	ListEfforts(context.Context, *ListEffortsRequest) (*ListEffortsResponse, error)
+	// CreateEffort creates an effort explicitly and reports a name that is
+	// already taken rather than returning the existing effort.
+	CreateEffort(context.Context, *CreateEffortRequest) (*Effort, error)
+	// RenameEffort changes the name of an existing effort.
+	RenameEffort(context.Context, *RenameEffortRequest) (*Effort, error)
+	// DeleteEffort removes an effort that is no longer attached to any item.
+	DeleteEffort(context.Context, *DeleteEffortRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedItemServiceServer()
 }
 
@@ -216,6 +295,9 @@ func (UnimplementedItemServiceServer) SetItemDone(context.Context, *SetItemDoneR
 func (UnimplementedItemServiceServer) UpdateItemLabels(context.Context, *UpdateItemLabelsRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateItemLabels not implemented")
 }
+func (UnimplementedItemServiceServer) SetItemEffort(context.Context, *SetItemEffortRequest) (*Item, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetItemEffort not implemented")
+}
 func (UnimplementedItemServiceServer) ListLabels(context.Context, *ListLabelsRequest) (*ListLabelsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListLabels not implemented")
 }
@@ -227,6 +309,18 @@ func (UnimplementedItemServiceServer) RenameLabel(context.Context, *RenameLabelR
 }
 func (UnimplementedItemServiceServer) DeleteLabel(context.Context, *DeleteLabelRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteLabel not implemented")
+}
+func (UnimplementedItemServiceServer) ListEfforts(context.Context, *ListEffortsRequest) (*ListEffortsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListEfforts not implemented")
+}
+func (UnimplementedItemServiceServer) CreateEffort(context.Context, *CreateEffortRequest) (*Effort, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateEffort not implemented")
+}
+func (UnimplementedItemServiceServer) RenameEffort(context.Context, *RenameEffortRequest) (*Effort, error) {
+	return nil, status.Error(codes.Unimplemented, "method RenameEffort not implemented")
+}
+func (UnimplementedItemServiceServer) DeleteEffort(context.Context, *DeleteEffortRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteEffort not implemented")
 }
 func (UnimplementedItemServiceServer) mustEmbedUnimplementedItemServiceServer() {}
 func (UnimplementedItemServiceServer) testEmbeddedByValue()                     {}
@@ -339,6 +433,24 @@ func _ItemService_UpdateItemLabels_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ItemService_SetItemEffort_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetItemEffortRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).SetItemEffort(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_SetItemEffort_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).SetItemEffort(ctx, req.(*SetItemEffortRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ItemService_ListLabels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListLabelsRequest)
 	if err := dec(in); err != nil {
@@ -411,6 +523,78 @@ func _ItemService_DeleteLabel_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ItemService_ListEfforts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListEffortsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).ListEfforts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_ListEfforts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).ListEfforts(ctx, req.(*ListEffortsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_CreateEffort_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateEffortRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).CreateEffort(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_CreateEffort_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).CreateEffort(ctx, req.(*CreateEffortRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_RenameEffort_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenameEffortRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).RenameEffort(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_RenameEffort_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).RenameEffort(ctx, req.(*RenameEffortRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_DeleteEffort_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteEffortRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).DeleteEffort(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_DeleteEffort_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).DeleteEffort(ctx, req.(*DeleteEffortRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ItemService_ServiceDesc is the grpc.ServiceDesc for ItemService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -439,6 +623,10 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ItemService_UpdateItemLabels_Handler,
 		},
 		{
+			MethodName: "SetItemEffort",
+			Handler:    _ItemService_SetItemEffort_Handler,
+		},
+		{
 			MethodName: "ListLabels",
 			Handler:    _ItemService_ListLabels_Handler,
 		},
@@ -453,6 +641,22 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteLabel",
 			Handler:    _ItemService_DeleteLabel_Handler,
+		},
+		{
+			MethodName: "ListEfforts",
+			Handler:    _ItemService_ListEfforts_Handler,
+		},
+		{
+			MethodName: "CreateEffort",
+			Handler:    _ItemService_CreateEffort_Handler,
+		},
+		{
+			MethodName: "RenameEffort",
+			Handler:    _ItemService_RenameEffort_Handler,
+		},
+		{
+			MethodName: "DeleteEffort",
+			Handler:    _ItemService_DeleteEffort_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

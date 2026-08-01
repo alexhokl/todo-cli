@@ -98,9 +98,12 @@ the `tsnet` state across restarts.
 Every `database.*` function takes a `userID uint` parameter and scopes queries
 with `Where("user_id = ?", userID)`. `findItem` and `findLabel` are scoped the
 same way, so cross-user access is reported as `ErrNotFound` rather than leaking
-existence. `List`, `Label`, and `Item` each carry a `UserID` foreign key; `List`
-and `Label` use per-user composite unique indexes (`idx_list_user`,
-`idx_label_user`), so two users can each own a label named "work".
+existence. `List`, `Label`, `Effort`, and `Item` each carry a `UserID` foreign
+key; `List`, `Label`, and `Effort` use per-user composite unique indexes
+(`idx_list_user`, `idx_label_user`, `idx_effort_user`), so two users can each
+own a label named "work". An item carries at most one effort via a nullable
+`EffortID` foreign key (belongs-to), unlike labels which use a many-to-many
+join table.
 
 The Tailscale interceptor depends on `github.com/alexhokl/privateserver`, which
 embeds a `tsnet.Server`. `*pserver.Server` implicitly satisfies the unexported

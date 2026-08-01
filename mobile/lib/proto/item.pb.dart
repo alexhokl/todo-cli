@@ -89,6 +89,73 @@ class Label extends $pb.GeneratedMessage {
   void clearName() => $_clearField(2);
 }
 
+/// Effort is a per-user named level of effort (e.g. "low", "medium", "high").
+/// An item carries at most one effort. Names are normalised like labels.
+class Effort extends $pb.GeneratedMessage {
+  factory Effort({
+    $core.int? id,
+    $core.String? name,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    return result;
+  }
+
+  Effort._();
+
+  factory Effort.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Effort.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Effort',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'name')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Effort clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Effort copyWith(void Function(Effort) updates) =>
+      super.copyWith((message) => updates(message as Effort)) as Effort;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static Effort create() => Effort._();
+  @$core.override
+  Effort createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static Effort getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Effort>(create);
+  static Effort? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get name => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set name($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasName() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearName() => $_clearField(2);
+}
+
 /// Item is a single todo item.
 class Item extends $pb.GeneratedMessage {
   factory Item({
@@ -100,6 +167,7 @@ class Item extends $pb.GeneratedMessage {
     $core.int? listId,
     $core.double? priority,
     $core.Iterable<Label>? labels,
+    Effort? effort,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -110,6 +178,7 @@ class Item extends $pb.GeneratedMessage {
     if (listId != null) result.listId = listId;
     if (priority != null) result.priority = priority;
     if (labels != null) result.labels.addAll(labels);
+    if (effort != null) result.effort = effort;
     return result;
   }
 
@@ -135,6 +204,7 @@ class Item extends $pb.GeneratedMessage {
     ..aI(6, _omitFieldNames ? '' : 'listId', fieldType: $pb.PbFieldType.OU3)
     ..aD(7, _omitFieldNames ? '' : 'priority')
     ..pPM<Label>(8, _omitFieldNames ? '' : 'labels', subBuilder: Label.create)
+    ..aOM<Effort>(9, _omitFieldNames ? '' : 'effort', subBuilder: Effort.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -225,6 +295,18 @@ class Item extends $pb.GeneratedMessage {
 
   @$pb.TagNumber(8)
   $pb.PbList<Label> get labels => $_getList(7);
+
+  /// effort is the single effort level attached to the item, if any.
+  @$pb.TagNumber(9)
+  Effort get effort => $_getN(8);
+  @$pb.TagNumber(9)
+  set effort(Effort value) => $_setField(9, value);
+  @$pb.TagNumber(9)
+  $core.bool hasEffort() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearEffort() => $_clearField(9);
+  @$pb.TagNumber(9)
+  Effort ensureEffort() => $_ensure(8);
 }
 
 class ListItemsRequest extends $pb.GeneratedMessage {
@@ -355,6 +437,7 @@ class CreateItemRequest extends $pb.GeneratedMessage {
     $2.Timestamp? dueDate,
     $core.int? listId,
     $core.Iterable<$core.String>? labels,
+    $core.String? effort,
   }) {
     final result = create();
     if (title != null) result.title = title;
@@ -362,6 +445,7 @@ class CreateItemRequest extends $pb.GeneratedMessage {
     if (dueDate != null) result.dueDate = dueDate;
     if (listId != null) result.listId = listId;
     if (labels != null) result.labels.addAll(labels);
+    if (effort != null) result.effort = effort;
     return result;
   }
 
@@ -384,6 +468,7 @@ class CreateItemRequest extends $pb.GeneratedMessage {
         subBuilder: $2.Timestamp.create)
     ..aI(4, _omitFieldNames ? '' : 'listId', fieldType: $pb.PbFieldType.OU3)
     ..pPS(5, _omitFieldNames ? '' : 'labels')
+    ..aOS(6, _omitFieldNames ? '' : 'effort')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -446,6 +531,17 @@ class CreateItemRequest extends $pb.GeneratedMessage {
   /// labels are created on the fly when they do not exist yet.
   @$pb.TagNumber(5)
   $pb.PbList<$core.String> get labels => $_getList(4);
+
+  /// effort is the name of an existing effort to attach to the item. An empty
+  /// string leaves the item without an effort. Unknown names are reported.
+  @$pb.TagNumber(6)
+  $core.String get effort => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set effort($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasEffort() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearEffort() => $_clearField(6);
 }
 
 enum MoveItemRequest_Anchor { beforeId, afterId, top, bottom, notSet }
@@ -994,6 +1090,335 @@ class DeleteLabelRequest extends $pb.GeneratedMessage {
   static DeleteLabelRequest getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DeleteLabelRequest>(create);
   static DeleteLabelRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class SetItemEffortRequest extends $pb.GeneratedMessage {
+  factory SetItemEffortRequest({
+    $core.int? id,
+    $core.String? effort,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (effort != null) result.effort = effort;
+    return result;
+  }
+
+  SetItemEffortRequest._();
+
+  factory SetItemEffortRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory SetItemEffortRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetItemEffortRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'effort')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetItemEffortRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetItemEffortRequest copyWith(void Function(SetItemEffortRequest) updates) =>
+      super.copyWith((message) => updates(message as SetItemEffortRequest))
+          as SetItemEffortRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static SetItemEffortRequest create() => SetItemEffortRequest._();
+  @$core.override
+  SetItemEffortRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static SetItemEffortRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetItemEffortRequest>(create);
+  static SetItemEffortRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  /// effort names an existing effort to attach. An empty string clears the
+  /// item's effort. Unknown names are reported rather than being created.
+  @$pb.TagNumber(2)
+  $core.String get effort => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set effort($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasEffort() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEffort() => $_clearField(2);
+}
+
+class ListEffortsRequest extends $pb.GeneratedMessage {
+  factory ListEffortsRequest() => create();
+
+  ListEffortsRequest._();
+
+  factory ListEffortsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListEffortsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListEffortsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListEffortsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListEffortsRequest copyWith(void Function(ListEffortsRequest) updates) =>
+      super.copyWith((message) => updates(message as ListEffortsRequest))
+          as ListEffortsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListEffortsRequest create() => ListEffortsRequest._();
+  @$core.override
+  ListEffortsRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListEffortsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListEffortsRequest>(create);
+  static ListEffortsRequest? _defaultInstance;
+}
+
+class ListEffortsResponse extends $pb.GeneratedMessage {
+  factory ListEffortsResponse({
+    $core.Iterable<Effort>? efforts,
+  }) {
+    final result = create();
+    if (efforts != null) result.efforts.addAll(efforts);
+    return result;
+  }
+
+  ListEffortsResponse._();
+
+  factory ListEffortsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListEffortsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListEffortsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..pPM<Effort>(1, _omitFieldNames ? '' : 'efforts',
+        subBuilder: Effort.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListEffortsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListEffortsResponse copyWith(void Function(ListEffortsResponse) updates) =>
+      super.copyWith((message) => updates(message as ListEffortsResponse))
+          as ListEffortsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListEffortsResponse create() => ListEffortsResponse._();
+  @$core.override
+  ListEffortsResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListEffortsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListEffortsResponse>(create);
+  static ListEffortsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<Effort> get efforts => $_getList(0);
+}
+
+class CreateEffortRequest extends $pb.GeneratedMessage {
+  factory CreateEffortRequest({
+    $core.String? name,
+  }) {
+    final result = create();
+    if (name != null) result.name = name;
+    return result;
+  }
+
+  CreateEffortRequest._();
+
+  factory CreateEffortRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CreateEffortRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateEffortRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'name')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateEffortRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateEffortRequest copyWith(void Function(CreateEffortRequest) updates) =>
+      super.copyWith((message) => updates(message as CreateEffortRequest))
+          as CreateEffortRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateEffortRequest create() => CreateEffortRequest._();
+  @$core.override
+  CreateEffortRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CreateEffortRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateEffortRequest>(create);
+  static CreateEffortRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get name => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set name($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasName() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearName() => $_clearField(1);
+}
+
+class RenameEffortRequest extends $pb.GeneratedMessage {
+  factory RenameEffortRequest({
+    $core.int? id,
+    $core.String? name,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    return result;
+  }
+
+  RenameEffortRequest._();
+
+  factory RenameEffortRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory RenameEffortRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RenameEffortRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'name')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RenameEffortRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RenameEffortRequest copyWith(void Function(RenameEffortRequest) updates) =>
+      super.copyWith((message) => updates(message as RenameEffortRequest))
+          as RenameEffortRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RenameEffortRequest create() => RenameEffortRequest._();
+  @$core.override
+  RenameEffortRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static RenameEffortRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RenameEffortRequest>(create);
+  static RenameEffortRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get name => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set name($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasName() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearName() => $_clearField(2);
+}
+
+class DeleteEffortRequest extends $pb.GeneratedMessage {
+  factory DeleteEffortRequest({
+    $core.int? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  DeleteEffortRequest._();
+
+  factory DeleteEffortRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteEffortRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteEffortRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteEffortRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteEffortRequest copyWith(void Function(DeleteEffortRequest) updates) =>
+      super.copyWith((message) => updates(message as DeleteEffortRequest))
+          as DeleteEffortRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteEffortRequest create() => DeleteEffortRequest._();
+  @$core.override
+  DeleteEffortRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteEffortRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteEffortRequest>(create);
+  static DeleteEffortRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get id => $_getIZ(0);

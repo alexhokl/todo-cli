@@ -149,6 +149,20 @@ func (s *ItemServer) CreateItem(ctx context.Context, req *proto.CreateItemReques
 		}
 		item.Labels = labels
 
+		// An effort name, if supplied, must resolve to an existing effort;
+		// unlike labels it is not created on the fly so the effort catalog
+		// stays an explicit step.
+		if req.GetEffort() != "" {
+			effort, err := database.FindEffortByName(tx, userID, req.GetEffort())
+			if err != nil {
+				return err
+			}
+			item.EffortID = &effort.ID
+			// Set the association so the returned item carries the effort
+			// without a second fetch (labels are populated the same way).
+			item.Effort = effort
+		}
+
 		return tx.Create(&item).Error
 	})
 	if err != nil {
@@ -252,15 +266,19 @@ func mapDatabaseError(err error) error {
 		return nil
 	case errors.Is(err, database.ErrItemNotFound):
 		return status.Error(codes.NotFound, err.Error())
-	case errors.Is(err, database.ErrLabelNotFound):
+	case errors.Is(err, database.ErrLabelNotFound),
+		errors.Is(err, database.ErrEffortNotFound):
 		return status.Error(codes.NotFound, err.Error())
-	case errors.Is(err, database.ErrLabelExists):
+	case errors.Is(err, database.ErrLabelExists),
+		errors.Is(err, database.ErrEffortExists):
 		return status.Error(codes.AlreadyExists, err.Error())
-	case errors.Is(err, database.ErrLabelNameEmpty):
+	case errors.Is(err, database.ErrLabelNameEmpty),
+		errors.Is(err, database.ErrEffortNameEmpty):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, database.ErrItemCompleted),
 		errors.Is(err, database.ErrAnchorCompleted),
-		errors.Is(err, database.ErrLabelInUse):
+		errors.Is(err, database.ErrLabelInUse),
+		errors.Is(err, database.ErrEffortInUse):
 		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, database.ErrAnchorUntriaged):
 		return status.Error(codes.InvalidArgument, err.Error())
@@ -311,6 +329,13 @@ func toProtoItem(item database.Item) (*proto.Item, error) {
 		return nil, err
 	}
 	result.Labels = labels
+
+	if item.Effort != nil {
+		result.Effort, err = toProtoEffort(*item.Effort)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return result, nil
 }

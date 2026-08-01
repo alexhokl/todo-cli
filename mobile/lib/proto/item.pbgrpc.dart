@@ -79,6 +79,15 @@ class ItemServiceClient extends $grpc.Client {
     return $createUnaryCall(_$updateItemLabels, request, options: options);
   }
 
+  /// SetItemEffort attaches an effort to an item by name, or clears it when the
+  /// name is empty. The effort must already exist; unknown names are reported.
+  $grpc.ResponseFuture<$0.Item> setItemEffort(
+    $0.SetItemEffortRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$setItemEffort, request, options: options);
+  }
+
   /// ListLabels returns every known label ordered by name.
   $grpc.ResponseFuture<$0.ListLabelsResponse> listLabels(
     $0.ListLabelsRequest request, {
@@ -112,6 +121,39 @@ class ItemServiceClient extends $grpc.Client {
     return $createUnaryCall(_$deleteLabel, request, options: options);
   }
 
+  /// ListEfforts returns every known effort ordered by name.
+  $grpc.ResponseFuture<$0.ListEffortsResponse> listEfforts(
+    $0.ListEffortsRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$listEfforts, request, options: options);
+  }
+
+  /// CreateEffort creates an effort explicitly and reports a name that is
+  /// already taken rather than returning the existing effort.
+  $grpc.ResponseFuture<$0.Effort> createEffort(
+    $0.CreateEffortRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$createEffort, request, options: options);
+  }
+
+  /// RenameEffort changes the name of an existing effort.
+  $grpc.ResponseFuture<$0.Effort> renameEffort(
+    $0.RenameEffortRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$renameEffort, request, options: options);
+  }
+
+  /// DeleteEffort removes an effort that is no longer attached to any item.
+  $grpc.ResponseFuture<$1.Empty> deleteEffort(
+    $0.DeleteEffortRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$deleteEffort, request, options: options);
+  }
+
   // method descriptors
 
   static final _$listItems =
@@ -137,6 +179,11 @@ class ItemServiceClient extends $grpc.Client {
           '/item.ItemService/UpdateItemLabels',
           ($0.UpdateItemLabelsRequest value) => value.writeToBuffer(),
           $0.Item.fromBuffer);
+  static final _$setItemEffort =
+      $grpc.ClientMethod<$0.SetItemEffortRequest, $0.Item>(
+          '/item.ItemService/SetItemEffort',
+          ($0.SetItemEffortRequest value) => value.writeToBuffer(),
+          $0.Item.fromBuffer);
   static final _$listLabels =
       $grpc.ClientMethod<$0.ListLabelsRequest, $0.ListLabelsResponse>(
           '/item.ItemService/ListLabels',
@@ -156,6 +203,26 @@ class ItemServiceClient extends $grpc.Client {
       $grpc.ClientMethod<$0.DeleteLabelRequest, $1.Empty>(
           '/item.ItemService/DeleteLabel',
           ($0.DeleteLabelRequest value) => value.writeToBuffer(),
+          $1.Empty.fromBuffer);
+  static final _$listEfforts =
+      $grpc.ClientMethod<$0.ListEffortsRequest, $0.ListEffortsResponse>(
+          '/item.ItemService/ListEfforts',
+          ($0.ListEffortsRequest value) => value.writeToBuffer(),
+          $0.ListEffortsResponse.fromBuffer);
+  static final _$createEffort =
+      $grpc.ClientMethod<$0.CreateEffortRequest, $0.Effort>(
+          '/item.ItemService/CreateEffort',
+          ($0.CreateEffortRequest value) => value.writeToBuffer(),
+          $0.Effort.fromBuffer);
+  static final _$renameEffort =
+      $grpc.ClientMethod<$0.RenameEffortRequest, $0.Effort>(
+          '/item.ItemService/RenameEffort',
+          ($0.RenameEffortRequest value) => value.writeToBuffer(),
+          $0.Effort.fromBuffer);
+  static final _$deleteEffort =
+      $grpc.ClientMethod<$0.DeleteEffortRequest, $1.Empty>(
+          '/item.ItemService/DeleteEffort',
+          ($0.DeleteEffortRequest value) => value.writeToBuffer(),
           $1.Empty.fromBuffer);
 }
 
@@ -201,6 +268,14 @@ abstract class ItemServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.UpdateItemLabelsRequest.fromBuffer(value),
         ($0.Item value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.SetItemEffortRequest, $0.Item>(
+        'SetItemEffort',
+        setItemEffort_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.SetItemEffortRequest.fromBuffer(value),
+        ($0.Item value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.ListLabelsRequest, $0.ListLabelsResponse>(
         'ListLabels',
         listLabels_Pre,
@@ -231,6 +306,39 @@ abstract class ItemServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) =>
             $0.DeleteLabelRequest.fromBuffer(value),
+        ($1.Empty value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.ListEffortsRequest, $0.ListEffortsResponse>(
+            'ListEfforts',
+            listEfforts_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.ListEffortsRequest.fromBuffer(value),
+            ($0.ListEffortsResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.CreateEffortRequest, $0.Effort>(
+        'CreateEffort',
+        createEffort_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.CreateEffortRequest.fromBuffer(value),
+        ($0.Effort value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.RenameEffortRequest, $0.Effort>(
+        'RenameEffort',
+        renameEffort_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.RenameEffortRequest.fromBuffer(value),
+        ($0.Effort value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.DeleteEffortRequest, $1.Empty>(
+        'DeleteEffort',
+        deleteEffort_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.DeleteEffortRequest.fromBuffer(value),
         ($1.Empty value) => value.writeToBuffer()));
   }
 
@@ -274,6 +382,14 @@ abstract class ItemServiceBase extends $grpc.Service {
   $async.Future<$0.Item> updateItemLabels(
       $grpc.ServiceCall call, $0.UpdateItemLabelsRequest request);
 
+  $async.Future<$0.Item> setItemEffort_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.SetItemEffortRequest> $request) async {
+    return setItemEffort($call, await $request);
+  }
+
+  $async.Future<$0.Item> setItemEffort(
+      $grpc.ServiceCall call, $0.SetItemEffortRequest request);
+
   $async.Future<$0.ListLabelsResponse> listLabels_Pre($grpc.ServiceCall $call,
       $async.Future<$0.ListLabelsRequest> $request) async {
     return listLabels($call, await $request);
@@ -305,4 +421,36 @@ abstract class ItemServiceBase extends $grpc.Service {
 
   $async.Future<$1.Empty> deleteLabel(
       $grpc.ServiceCall call, $0.DeleteLabelRequest request);
+
+  $async.Future<$0.ListEffortsResponse> listEfforts_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.ListEffortsRequest> $request) async {
+    return listEfforts($call, await $request);
+  }
+
+  $async.Future<$0.ListEffortsResponse> listEfforts(
+      $grpc.ServiceCall call, $0.ListEffortsRequest request);
+
+  $async.Future<$0.Effort> createEffort_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.CreateEffortRequest> $request) async {
+    return createEffort($call, await $request);
+  }
+
+  $async.Future<$0.Effort> createEffort(
+      $grpc.ServiceCall call, $0.CreateEffortRequest request);
+
+  $async.Future<$0.Effort> renameEffort_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.RenameEffortRequest> $request) async {
+    return renameEffort($call, await $request);
+  }
+
+  $async.Future<$0.Effort> renameEffort(
+      $grpc.ServiceCall call, $0.RenameEffortRequest request);
+
+  $async.Future<$1.Empty> deleteEffort_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.DeleteEffortRequest> $request) async {
+    return deleteEffort($call, await $request);
+  }
+
+  $async.Future<$1.Empty> deleteEffort(
+      $grpc.ServiceCall call, $0.DeleteEffortRequest request);
 }

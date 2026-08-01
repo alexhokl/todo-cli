@@ -22,7 +22,7 @@ func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
 	}
 
 	writer := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	if _, err := fmt.Fprintln(writer, "#\tID\tTITLE\tLABELS\tLIST\tDUE"); err != nil {
+	if _, err := fmt.Fprintln(writer, "#\tID\tTITLE\tLABELS\tEFFORT\tLIST\tDUE"); err != nil {
 		return fmt.Errorf("failed to write output: %w", err)
 	}
 
@@ -44,8 +44,8 @@ func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
 
 		if _, err := fmt.Fprintf(
 			writer,
-			"%s\t%d\t%s\t%s\t%s\t%s\n",
-			order, item.GetId(), item.GetTitle(), joinLabelNames(item), list, due,
+			"%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+			order, item.GetId(), item.GetTitle(), joinLabelNames(item), effortName(item), list, due,
 		); err != nil {
 			return fmt.Errorf("failed to write output: %w", err)
 		}
@@ -73,11 +73,22 @@ func joinLabelNames(item *proto.Item) string {
 	return strings.Join(names, ",")
 }
 
+// effortName renders the item's effort name, or a dash when it carries none.
+func effortName(item *proto.Item) string {
+	if item.GetEffort() == nil {
+		return "-"
+	}
+	return item.GetEffort().GetName()
+}
+
 // writeItemLine renders a single item as a one line confirmation.
 func writeItemLine(out io.Writer, item *proto.Item) error {
 	details := []string{fmt.Sprintf("id %d", item.GetId())}
 	if len(item.GetLabels()) > 0 {
 		details = append(details, fmt.Sprintf("labels %s", joinLabelNames(item)))
+	}
+	if item.GetEffort() != nil {
+		details = append(details, fmt.Sprintf("effort %s", item.GetEffort().GetName()))
 	}
 	if item.ListId != nil {
 		details = append(details, fmt.Sprintf("list %d", item.GetListId()))

@@ -113,7 +113,6 @@ func TestCreateItemLeavesItemUntriaged(t *testing.T) {
 			t.Fatalf("failed to create %q: %v", title, err)
 		}
 	}
-
 	// Newly created items are untriaged: they carry no priority and are
 	// excluded from the default active listing.
 	response, err := server.ListItems(ctx, &proto.ListItemsRequest{})
@@ -144,6 +143,36 @@ func TestCreateItemRequiresTitle(t *testing.T) {
 	_, err := server.CreateItem(authenticatedContext(), &proto.CreateItemRequest{})
 	if got := status.Code(err); got != codes.InvalidArgument {
 		t.Errorf("expected %v but got %v (%v)", codes.InvalidArgument, got, err)
+	}
+}
+
+func TestCreateItemWithEffort(t *testing.T) {
+	server := setupItemServer(t)
+	if _, err := server.CreateEffort(authenticatedContext(), &proto.CreateEffortRequest{Name: "high"}); err != nil {
+		t.Fatalf("failed to create the effort: %v", err)
+	}
+
+	high := "High"
+	item, err := server.CreateItem(authenticatedContext(), &proto.CreateItemRequest{
+		Title:  "task",
+		Effort: &high,
+	})
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if item.GetEffort() == nil || item.GetEffort().GetName() != "high" {
+		t.Errorf("expected effort high but got %v", item.GetEffort())
+	}
+
+	// An unknown effort name is reported rather than being created.
+	unknown := "unknown"
+	unknownReq := &proto.CreateItemRequest{
+		Title:  "task2",
+		Effort: &unknown,
+	}
+	_, err = server.CreateItem(authenticatedContext(), unknownReq)
+	if got := status.Code(err); got != codes.NotFound {
+		t.Errorf("expected %v but got %v (%v)", codes.NotFound, got, err)
 	}
 }
 

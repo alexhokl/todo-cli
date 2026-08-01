@@ -45,14 +45,19 @@ func TestParseID(t *testing.T) {
 func TestItemCommandsRequireService(t *testing.T) {
 	commands := map[string]bool{
 		"update priority": requiresService(moveItemCmd),
-		"list items":      requiresService(listItemsCmd),
-		"create item":     requiresService(createItemCmd),
-		"update done":     requiresService(completeItemCmd),
-		"update item":     requiresService(updateItemCmd),
-		"list labels":     requiresService(listLabelsCmd),
-		"create label":    requiresService(createLabelCmd),
-		"update label":    requiresService(renameLabelCmd),
-		"delete label":    requiresService(deleteLabelCmd),
+		"list items":       requiresService(listItemsCmd),
+		"create item":      requiresService(createItemCmd),
+		"update done":      requiresService(completeItemCmd),
+		"update item":      requiresService(updateItemCmd),
+		"update todo effort": requiresService(setItemEffortCmd),
+		"list labels":      requiresService(listLabelsCmd),
+		"create label":     requiresService(createLabelCmd),
+		"update label":     requiresService(renameLabelCmd),
+		"delete label":     requiresService(deleteLabelCmd),
+		"list efforts":     requiresService(listEffortsCmd),
+		"create effort":    requiresService(createEffortCmd),
+		"update effort":    requiresService(renameEffortCmd),
+		"delete effort":    requiresService(deleteEffortCmd),
 	}
 
 	for name, required := range commands {

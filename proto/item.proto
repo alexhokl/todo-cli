@@ -24,6 +24,9 @@ service ItemService {
   // UpdateItemLabels attaches and detaches labels on an item. Labels being
   // added are created on the fly when they do not exist yet.
   rpc UpdateItemLabels(UpdateItemLabelsRequest) returns (Item);
+  // SetItemEffort attaches an effort to an item by name, or clears it when the
+  // name is empty. The effort must already exist; unknown names are reported.
+  rpc SetItemEffort(SetItemEffortRequest) returns (Item);
 
   // ListLabels returns every known label ordered by name.
   rpc ListLabels(ListLabelsRequest) returns (ListLabelsResponse);
@@ -34,11 +37,28 @@ service ItemService {
   rpc RenameLabel(RenameLabelRequest) returns (Label);
   // DeleteLabel removes a label that is no longer attached to any item.
   rpc DeleteLabel(DeleteLabelRequest) returns (google.protobuf.Empty);
+
+  // ListEfforts returns every known effort ordered by name.
+  rpc ListEfforts(ListEffortsRequest) returns (ListEffortsResponse);
+  // CreateEffort creates an effort explicitly and reports a name that is
+  // already taken rather than returning the existing effort.
+  rpc CreateEffort(CreateEffortRequest) returns (Effort);
+  // RenameEffort changes the name of an existing effort.
+  rpc RenameEffort(RenameEffortRequest) returns (Effort);
+  // DeleteEffort removes an effort that is no longer attached to any item.
+  rpc DeleteEffort(DeleteEffortRequest) returns (google.protobuf.Empty);
 }
 
 // Label is a tag that can be attached to any number of items. Names are
 // normalised to lower case with surrounding whitespace removed.
 message Label {
+  uint32 id = 1;
+  string name = 2;
+}
+
+// Effort is a per-user named level of effort (e.g. "low", "medium", "high").
+// An item carries at most one effort. Names are normalised like labels.
+message Effort {
   uint32 id = 1;
   string name = 2;
 }
@@ -56,6 +76,8 @@ message Item {
   // carry no priority and are excluded from the default listing.
   optional double priority = 7;
   repeated Label labels = 8;
+  // effort is the single effort level attached to the item, if any.
+  Effort effort = 9;
 }
 
 // ItemView narrows ListItems to a single bucket. ITEM_VIEW_UNSPECIFIED keeps
@@ -95,6 +117,9 @@ message CreateItemRequest {
   optional uint32 list_id = 4;
   // labels are created on the fly when they do not exist yet.
   repeated string labels = 5;
+  // effort is the name of an existing effort to attach to the item. An empty
+  // string leaves the item without an effort. Unknown names are reported.
+  optional string effort = 6;
 }
 
 message MoveItemRequest {
@@ -152,5 +177,31 @@ message RenameLabelRequest {
 }
 
 message DeleteLabelRequest {
+  uint32 id = 1;
+}
+
+message SetItemEffortRequest {
+  uint32 id = 1;
+  // effort names an existing effort to attach. An empty string clears the
+  // item's effort. Unknown names are reported rather than being created.
+  string effort = 2;
+}
+
+message ListEffortsRequest {}
+
+message ListEffortsResponse {
+  repeated Effort efforts = 1;
+}
+
+message CreateEffortRequest {
+  string name = 1;
+}
+
+message RenameEffortRequest {
+  uint32 id = 1;
+  string name = 2;
+}
+
+message DeleteEffortRequest {
   uint32 id = 1;
 }
