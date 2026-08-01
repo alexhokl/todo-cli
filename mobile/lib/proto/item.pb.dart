@@ -156,6 +156,74 @@ class Effort extends $pb.GeneratedMessage {
   void clearName() => $_clearField(2);
 }
 
+/// Blocker is a free-form description of a single blocking reason on an item.
+/// An item can carry several blockers. The description is stored verbatim: no
+/// normalisation is applied and duplicates are allowed.
+class Blocker extends $pb.GeneratedMessage {
+  factory Blocker({
+    $core.int? id,
+    $core.String? description,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (description != null) result.description = description;
+    return result;
+  }
+
+  Blocker._();
+
+  factory Blocker.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Blocker.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Blocker',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'description')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Blocker clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Blocker copyWith(void Function(Blocker) updates) =>
+      super.copyWith((message) => updates(message as Blocker)) as Blocker;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static Blocker create() => Blocker._();
+  @$core.override
+  Blocker createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static Blocker getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Blocker>(create);
+  static Blocker? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get description => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set description($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDescription() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDescription() => $_clearField(2);
+}
+
 /// Item is a single todo item.
 class Item extends $pb.GeneratedMessage {
   factory Item({
@@ -168,6 +236,7 @@ class Item extends $pb.GeneratedMessage {
     $core.double? priority,
     $core.Iterable<Label>? labels,
     Effort? effort,
+    $core.Iterable<Blocker>? blockers,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -179,6 +248,7 @@ class Item extends $pb.GeneratedMessage {
     if (priority != null) result.priority = priority;
     if (labels != null) result.labels.addAll(labels);
     if (effort != null) result.effort = effort;
+    if (blockers != null) result.blockers.addAll(blockers);
     return result;
   }
 
@@ -205,6 +275,8 @@ class Item extends $pb.GeneratedMessage {
     ..aD(7, _omitFieldNames ? '' : 'priority')
     ..pPM<Label>(8, _omitFieldNames ? '' : 'labels', subBuilder: Label.create)
     ..aOM<Effort>(9, _omitFieldNames ? '' : 'effort', subBuilder: Effort.create)
+    ..pPM<Blocker>(10, _omitFieldNames ? '' : 'blockers',
+        subBuilder: Blocker.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -307,6 +379,10 @@ class Item extends $pb.GeneratedMessage {
   void clearEffort() => $_clearField(9);
   @$pb.TagNumber(9)
   Effort ensureEffort() => $_ensure(8);
+
+  /// blockers are the distinct blocking reasons attached to the item.
+  @$pb.TagNumber(10)
+  $pb.PbList<Blocker> get blockers => $_getList(9);
 }
 
 class ListItemsRequest extends $pb.GeneratedMessage {
@@ -1419,6 +1495,295 @@ class DeleteEffortRequest extends $pb.GeneratedMessage {
   static DeleteEffortRequest getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DeleteEffortRequest>(create);
   static DeleteEffortRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class ListBlockersRequest extends $pb.GeneratedMessage {
+  factory ListBlockersRequest({
+    $core.int? itemId,
+  }) {
+    final result = create();
+    if (itemId != null) result.itemId = itemId;
+    return result;
+  }
+
+  ListBlockersRequest._();
+
+  factory ListBlockersRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListBlockersRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListBlockersRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'itemId', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListBlockersRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListBlockersRequest copyWith(void Function(ListBlockersRequest) updates) =>
+      super.copyWith((message) => updates(message as ListBlockersRequest))
+          as ListBlockersRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListBlockersRequest create() => ListBlockersRequest._();
+  @$core.override
+  ListBlockersRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListBlockersRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListBlockersRequest>(create);
+  static ListBlockersRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get itemId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set itemId($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasItemId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearItemId() => $_clearField(1);
+}
+
+class ListBlockersResponse extends $pb.GeneratedMessage {
+  factory ListBlockersResponse({
+    $core.Iterable<Blocker>? blockers,
+  }) {
+    final result = create();
+    if (blockers != null) result.blockers.addAll(blockers);
+    return result;
+  }
+
+  ListBlockersResponse._();
+
+  factory ListBlockersResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListBlockersResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListBlockersResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..pPM<Blocker>(1, _omitFieldNames ? '' : 'blockers',
+        subBuilder: Blocker.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListBlockersResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListBlockersResponse copyWith(void Function(ListBlockersResponse) updates) =>
+      super.copyWith((message) => updates(message as ListBlockersResponse))
+          as ListBlockersResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListBlockersResponse create() => ListBlockersResponse._();
+  @$core.override
+  ListBlockersResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListBlockersResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListBlockersResponse>(create);
+  static ListBlockersResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<Blocker> get blockers => $_getList(0);
+}
+
+class CreateBlockerRequest extends $pb.GeneratedMessage {
+  factory CreateBlockerRequest({
+    $core.int? itemId,
+    $core.String? description,
+  }) {
+    final result = create();
+    if (itemId != null) result.itemId = itemId;
+    if (description != null) result.description = description;
+    return result;
+  }
+
+  CreateBlockerRequest._();
+
+  factory CreateBlockerRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CreateBlockerRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateBlockerRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'itemId', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'description')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateBlockerRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateBlockerRequest copyWith(void Function(CreateBlockerRequest) updates) =>
+      super.copyWith((message) => updates(message as CreateBlockerRequest))
+          as CreateBlockerRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateBlockerRequest create() => CreateBlockerRequest._();
+  @$core.override
+  CreateBlockerRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CreateBlockerRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateBlockerRequest>(create);
+  static CreateBlockerRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get itemId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set itemId($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasItemId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearItemId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get description => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set description($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDescription() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDescription() => $_clearField(2);
+}
+
+class UpdateBlockerRequest extends $pb.GeneratedMessage {
+  factory UpdateBlockerRequest({
+    $core.int? id,
+    $core.String? description,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (description != null) result.description = description;
+    return result;
+  }
+
+  UpdateBlockerRequest._();
+
+  factory UpdateBlockerRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateBlockerRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateBlockerRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'description')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateBlockerRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateBlockerRequest copyWith(void Function(UpdateBlockerRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateBlockerRequest))
+          as UpdateBlockerRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateBlockerRequest create() => UpdateBlockerRequest._();
+  @$core.override
+  UpdateBlockerRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateBlockerRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateBlockerRequest>(create);
+  static UpdateBlockerRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get description => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set description($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDescription() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDescription() => $_clearField(2);
+}
+
+class DeleteBlockerRequest extends $pb.GeneratedMessage {
+  factory DeleteBlockerRequest({
+    $core.int? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  DeleteBlockerRequest._();
+
+  factory DeleteBlockerRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteBlockerRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteBlockerRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteBlockerRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteBlockerRequest copyWith(void Function(DeleteBlockerRequest) updates) =>
+      super.copyWith((message) => updates(message as DeleteBlockerRequest))
+          as DeleteBlockerRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteBlockerRequest create() => DeleteBlockerRequest._();
+  @$core.override
+  DeleteBlockerRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteBlockerRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteBlockerRequest>(create);
+  static DeleteBlockerRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get id => $_getIZ(0);

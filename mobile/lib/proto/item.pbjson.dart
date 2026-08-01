@@ -59,6 +59,20 @@ const Effort$json = {
 final $typed_data.Uint8List effortDescriptor = $convert.base64Decode(
     'CgZFZmZvcnQSDgoCaWQYASABKA1SAmlkEhIKBG5hbWUYAiABKAlSBG5hbWU=');
 
+@$core.Deprecated('Use blockerDescriptor instead')
+const Blocker$json = {
+  '1': 'Blocker',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+    {'1': 'description', '3': 2, '4': 1, '5': 9, '10': 'description'},
+  ],
+};
+
+/// Descriptor for `Blocker`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List blockerDescriptor = $convert.base64Decode(
+    'CgdCbG9ja2VyEg4KAmlkGAEgASgNUgJpZBIgCgtkZXNjcmlwdGlvbhgCIAEoCVILZGVzY3JpcH'
+    'Rpb24=');
+
 @$core.Deprecated('Use itemDescriptor instead')
 const Item$json = {
   '1': 'Item',
@@ -111,6 +125,14 @@ const Item$json = {
       '6': '.item.Effort',
       '10': 'effort'
     },
+    {
+      '1': 'blockers',
+      '3': 10,
+      '4': 3,
+      '5': 11,
+      '6': '.item.Blocker',
+      '10': 'blockers'
+    },
   ],
   '8': [
     {'1': '_due_date'},
@@ -126,8 +148,8 @@ final $typed_data.Uint8List itemDescriptor = $convert.base64Decode(
     'BSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSABSB2R1ZURhdGWIAQESHAoHbGlzdF'
     '9pZBgGIAEoDUgBUgZsaXN0SWSIAQESHwoIcHJpb3JpdHkYByABKAFIAlIIcHJpb3JpdHmIAQES'
     'IwoGbGFiZWxzGAggAygLMgsuaXRlbS5MYWJlbFIGbGFiZWxzEiQKBmVmZm9ydBgJIAEoCzIMLm'
-    'l0ZW0uRWZmb3J0UgZlZmZvcnRCCwoJX2R1ZV9kYXRlQgoKCF9saXN0X2lkQgsKCV9wcmlvcml0'
-    'eQ==');
+    'l0ZW0uRWZmb3J0UgZlZmZvcnQSKQoIYmxvY2tlcnMYCiADKAsyDS5pdGVtLkJsb2NrZXJSCGJs'
+    'b2NrZXJzQgsKCV9kdWVfZGF0ZUIKCghfbGlzdF9pZEILCglfcHJpb3JpdHk=');
 
 @$core.Deprecated('Use listItemsRequestDescriptor instead')
 const ListItemsRequest$json = {
@@ -418,3 +440,76 @@ const DeleteEffortRequest$json = {
 /// Descriptor for `DeleteEffortRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List deleteEffortRequestDescriptor = $convert
     .base64Decode('ChNEZWxldGVFZmZvcnRSZXF1ZXN0Eg4KAmlkGAEgASgNUgJpZA==');
+
+@$core.Deprecated('Use listBlockersRequestDescriptor instead')
+const ListBlockersRequest$json = {
+  '1': 'ListBlockersRequest',
+  '2': [
+    {'1': 'item_id', '3': 1, '4': 1, '5': 13, '10': 'itemId'},
+  ],
+};
+
+/// Descriptor for `ListBlockersRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listBlockersRequestDescriptor =
+    $convert.base64Decode(
+        'ChNMaXN0QmxvY2tlcnNSZXF1ZXN0EhcKB2l0ZW1faWQYASABKA1SBml0ZW1JZA==');
+
+@$core.Deprecated('Use listBlockersResponseDescriptor instead')
+const ListBlockersResponse$json = {
+  '1': 'ListBlockersResponse',
+  '2': [
+    {
+      '1': 'blockers',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.item.Blocker',
+      '10': 'blockers'
+    },
+  ],
+};
+
+/// Descriptor for `ListBlockersResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listBlockersResponseDescriptor = $convert.base64Decode(
+    'ChRMaXN0QmxvY2tlcnNSZXNwb25zZRIpCghibG9ja2VycxgBIAMoCzINLml0ZW0uQmxvY2tlcl'
+    'IIYmxvY2tlcnM=');
+
+@$core.Deprecated('Use createBlockerRequestDescriptor instead')
+const CreateBlockerRequest$json = {
+  '1': 'CreateBlockerRequest',
+  '2': [
+    {'1': 'item_id', '3': 1, '4': 1, '5': 13, '10': 'itemId'},
+    {'1': 'description', '3': 2, '4': 1, '5': 9, '10': 'description'},
+  ],
+};
+
+/// Descriptor for `CreateBlockerRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List createBlockerRequestDescriptor = $convert.base64Decode(
+    'ChRDcmVhdGVCbG9ja2VyUmVxdWVzdBIXCgdpdGVtX2lkGAEgASgNUgZpdGVtSWQSIAoLZGVzY3'
+    'JpcHRpb24YAiABKAlSC2Rlc2NyaXB0aW9u');
+
+@$core.Deprecated('Use updateBlockerRequestDescriptor instead')
+const UpdateBlockerRequest$json = {
+  '1': 'UpdateBlockerRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+    {'1': 'description', '3': 2, '4': 1, '5': 9, '10': 'description'},
+  ],
+};
+
+/// Descriptor for `UpdateBlockerRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List updateBlockerRequestDescriptor = $convert.base64Decode(
+    'ChRVcGRhdGVCbG9ja2VyUmVxdWVzdBIOCgJpZBgBIAEoDVICaWQSIAoLZGVzY3JpcHRpb24YAi'
+    'ABKAlSC2Rlc2NyaXB0aW9u');
+
+@$core.Deprecated('Use deleteBlockerRequestDescriptor instead')
+const DeleteBlockerRequest$json = {
+  '1': 'DeleteBlockerRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `DeleteBlockerRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteBlockerRequestDescriptor = $convert
+    .base64Decode('ChREZWxldGVCbG9ja2VyUmVxdWVzdBIOCgJpZBgBIAEoDVICaWQ=');

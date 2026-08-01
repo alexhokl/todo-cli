@@ -154,6 +154,39 @@ class ItemServiceClient extends $grpc.Client {
     return $createUnaryCall(_$deleteEffort, request, options: options);
   }
 
+  /// ListBlockers returns every blocker attached to the given item, ordered by
+  /// identifier.
+  $grpc.ResponseFuture<$0.ListBlockersResponse> listBlockers(
+    $0.ListBlockersRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$listBlockers, request, options: options);
+  }
+
+  /// CreateBlocker attaches a new blocker to an item.
+  $grpc.ResponseFuture<$0.Blocker> createBlocker(
+    $0.CreateBlockerRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$createBlocker, request, options: options);
+  }
+
+  /// UpdateBlocker changes the description of an existing blocker.
+  $grpc.ResponseFuture<$0.Blocker> updateBlocker(
+    $0.UpdateBlockerRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$updateBlocker, request, options: options);
+  }
+
+  /// DeleteBlocker removes a blocker.
+  $grpc.ResponseFuture<$1.Empty> deleteBlocker(
+    $0.DeleteBlockerRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$deleteBlocker, request, options: options);
+  }
+
   // method descriptors
 
   static final _$listItems =
@@ -223,6 +256,26 @@ class ItemServiceClient extends $grpc.Client {
       $grpc.ClientMethod<$0.DeleteEffortRequest, $1.Empty>(
           '/item.ItemService/DeleteEffort',
           ($0.DeleteEffortRequest value) => value.writeToBuffer(),
+          $1.Empty.fromBuffer);
+  static final _$listBlockers =
+      $grpc.ClientMethod<$0.ListBlockersRequest, $0.ListBlockersResponse>(
+          '/item.ItemService/ListBlockers',
+          ($0.ListBlockersRequest value) => value.writeToBuffer(),
+          $0.ListBlockersResponse.fromBuffer);
+  static final _$createBlocker =
+      $grpc.ClientMethod<$0.CreateBlockerRequest, $0.Blocker>(
+          '/item.ItemService/CreateBlocker',
+          ($0.CreateBlockerRequest value) => value.writeToBuffer(),
+          $0.Blocker.fromBuffer);
+  static final _$updateBlocker =
+      $grpc.ClientMethod<$0.UpdateBlockerRequest, $0.Blocker>(
+          '/item.ItemService/UpdateBlocker',
+          ($0.UpdateBlockerRequest value) => value.writeToBuffer(),
+          $0.Blocker.fromBuffer);
+  static final _$deleteBlocker =
+      $grpc.ClientMethod<$0.DeleteBlockerRequest, $1.Empty>(
+          '/item.ItemService/DeleteBlocker',
+          ($0.DeleteBlockerRequest value) => value.writeToBuffer(),
           $1.Empty.fromBuffer);
 }
 
@@ -340,6 +393,39 @@ abstract class ItemServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.DeleteEffortRequest.fromBuffer(value),
         ($1.Empty value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.ListBlockersRequest, $0.ListBlockersResponse>(
+            'ListBlockers',
+            listBlockers_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.ListBlockersRequest.fromBuffer(value),
+            ($0.ListBlockersResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.CreateBlockerRequest, $0.Blocker>(
+        'CreateBlocker',
+        createBlocker_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.CreateBlockerRequest.fromBuffer(value),
+        ($0.Blocker value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.UpdateBlockerRequest, $0.Blocker>(
+        'UpdateBlocker',
+        updateBlocker_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.UpdateBlockerRequest.fromBuffer(value),
+        ($0.Blocker value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.DeleteBlockerRequest, $1.Empty>(
+        'DeleteBlocker',
+        deleteBlocker_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.DeleteBlockerRequest.fromBuffer(value),
+        ($1.Empty value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.ListItemsResponse> listItems_Pre($grpc.ServiceCall $call,
@@ -453,4 +539,37 @@ abstract class ItemServiceBase extends $grpc.Service {
 
   $async.Future<$1.Empty> deleteEffort(
       $grpc.ServiceCall call, $0.DeleteEffortRequest request);
+
+  $async.Future<$0.ListBlockersResponse> listBlockers_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.ListBlockersRequest> $request) async {
+    return listBlockers($call, await $request);
+  }
+
+  $async.Future<$0.ListBlockersResponse> listBlockers(
+      $grpc.ServiceCall call, $0.ListBlockersRequest request);
+
+  $async.Future<$0.Blocker> createBlocker_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.CreateBlockerRequest> $request) async {
+    return createBlocker($call, await $request);
+  }
+
+  $async.Future<$0.Blocker> createBlocker(
+      $grpc.ServiceCall call, $0.CreateBlockerRequest request);
+
+  $async.Future<$0.Blocker> updateBlocker_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.UpdateBlockerRequest> $request) async {
+    return updateBlocker($call, await $request);
+  }
+
+  $async.Future<$0.Blocker> updateBlocker(
+      $grpc.ServiceCall call, $0.UpdateBlockerRequest request);
+
+  $async.Future<$1.Empty> deleteBlocker_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.DeleteBlockerRequest> $request) async {
+    return deleteBlocker($call, await $request);
+  }
+
+  $async.Future<$1.Empty> deleteBlocker(
+      $grpc.ServiceCall call, $0.DeleteBlockerRequest request);
 }

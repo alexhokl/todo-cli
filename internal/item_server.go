@@ -267,13 +267,15 @@ func mapDatabaseError(err error) error {
 	case errors.Is(err, database.ErrItemNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	case errors.Is(err, database.ErrLabelNotFound),
-		errors.Is(err, database.ErrEffortNotFound):
+		errors.Is(err, database.ErrEffortNotFound),
+		errors.Is(err, database.ErrBlockerNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	case errors.Is(err, database.ErrLabelExists),
 		errors.Is(err, database.ErrEffortExists):
 		return status.Error(codes.AlreadyExists, err.Error())
 	case errors.Is(err, database.ErrLabelNameEmpty),
-		errors.Is(err, database.ErrEffortNameEmpty):
+		errors.Is(err, database.ErrEffortNameEmpty),
+		errors.Is(err, database.ErrBlockerDescriptionEmpty):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, database.ErrItemCompleted),
 		errors.Is(err, database.ErrAnchorCompleted),
@@ -336,6 +338,12 @@ func toProtoItem(item database.Item) (*proto.Item, error) {
 			return nil, err
 		}
 	}
+
+	blockers, err := toProtoBlockers(item.Blockers)
+	if err != nil {
+		return nil, err
+	}
+	result.Blockers = blockers
 
 	return result, nil
 }

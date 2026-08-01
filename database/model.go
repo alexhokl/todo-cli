@@ -83,4 +83,27 @@ type Item struct {
 	// a belongs-to rather than a many-to-many and there is no join table.
 	EffortID *uint
 	Effort   *Effort `gorm:"foreignKey:EffortID"`
+	// Blockers are the distinct blocking reasons attached to this item. The
+	// relationship is one-to-many (an item can carry several blockers), so the
+	// foreign key lives on Blocker. Each Blocker also carries a denormalised
+	// UserID so queries can scope directly without joining items.
+	Blockers []Blocker `gorm:"foreignKey:ItemID"`
+}
+
+// Blocker is a free-form description of a single blocking reason on an item.
+// Unlike Label and Effort, the description is not normalised or unique: two
+// blockers can share the same wording. An item can carry several blockers.
+// Each Blocker carries its own UserID (denormalised from the parent Item) so
+// cross-user access can be rejected without joining items, mirroring the
+// convention applied to every other owned record.
+type Blocker struct {
+	gorm.Model
+	// Description is a free-form note describing the nature of the blockage
+	// (e.g. "waiting on legal review"). It is stored verbatim: no trimming or
+	// lower casing is applied, and duplicates are allowed.
+	Description string `gorm:"not null"`
+	ItemID      uint   `gorm:"not null;index"`
+	Item        *Item  `gorm:"foreignKey:ItemID"`
+	UserID      uint   `gorm:"not null;index"`
+	User        User   `gorm:"foreignKey:UserID"`
 }

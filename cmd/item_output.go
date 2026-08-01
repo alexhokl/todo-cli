@@ -22,7 +22,7 @@ func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
 	}
 
 	writer := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	if _, err := fmt.Fprintln(writer, "#\tID\tTITLE\tLABELS\tEFFORT\tLIST\tDUE"); err != nil {
+	if _, err := fmt.Fprintln(writer, "#\tID\tTITLE\tLABELS\tEFFORT\tBLOCKERS\tLIST\tDUE"); err != nil {
 		return fmt.Errorf("failed to write output: %w", err)
 	}
 
@@ -44,8 +44,8 @@ func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
 
 		if _, err := fmt.Fprintf(
 			writer,
-			"%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
-			order, item.GetId(), item.GetTitle(), joinLabelNames(item), effortName(item), list, due,
+			"%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			order, item.GetId(), item.GetTitle(), joinLabelNames(item), effortName(item), joinBlockerDescriptions(item), list, due,
 		); err != nil {
 			return fmt.Errorf("failed to write output: %w", err)
 		}
@@ -81,6 +81,19 @@ func effortName(item *proto.Item) string {
 	return item.GetEffort().GetName()
 }
 
+// joinBlockerDescriptions renders the item's blockers as a single
+// semicolon-separated cell, or a dash when the item carries none.
+func joinBlockerDescriptions(item *proto.Item) string {
+	if len(item.GetBlockers()) == 0 {
+		return "-"
+	}
+	descriptions := make([]string, 0, len(item.GetBlockers()))
+	for _, blocker := range item.GetBlockers() {
+		descriptions = append(descriptions, blocker.GetDescription())
+	}
+	return strings.Join(descriptions, "; ")
+}
+
 // writeItemLine renders a single item as a one line confirmation.
 func writeItemLine(out io.Writer, item *proto.Item) error {
 	details := []string{fmt.Sprintf("id %d", item.GetId())}
@@ -89,6 +102,9 @@ func writeItemLine(out io.Writer, item *proto.Item) error {
 	}
 	if item.GetEffort() != nil {
 		details = append(details, fmt.Sprintf("effort %s", item.GetEffort().GetName()))
+	}
+	if len(item.GetBlockers()) > 0 {
+		details = append(details, fmt.Sprintf("blockers %d", len(item.GetBlockers())))
 	}
 	if item.ListId != nil {
 		details = append(details, fmt.Sprintf("list %d", item.GetListId()))

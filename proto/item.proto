@@ -47,6 +47,16 @@ service ItemService {
   rpc RenameEffort(RenameEffortRequest) returns (Effort);
   // DeleteEffort removes an effort that is no longer attached to any item.
   rpc DeleteEffort(DeleteEffortRequest) returns (google.protobuf.Empty);
+
+  // ListBlockers returns every blocker attached to the given item, ordered by
+  // identifier.
+  rpc ListBlockers(ListBlockersRequest) returns (ListBlockersResponse);
+  // CreateBlocker attaches a new blocker to an item.
+  rpc CreateBlocker(CreateBlockerRequest) returns (Blocker);
+  // UpdateBlocker changes the description of an existing blocker.
+  rpc UpdateBlocker(UpdateBlockerRequest) returns (Blocker);
+  // DeleteBlocker removes a blocker.
+  rpc DeleteBlocker(DeleteBlockerRequest) returns (google.protobuf.Empty);
 }
 
 // Label is a tag that can be attached to any number of items. Names are
@@ -61,6 +71,14 @@ message Label {
 message Effort {
   uint32 id = 1;
   string name = 2;
+}
+
+// Blocker is a free-form description of a single blocking reason on an item.
+// An item can carry several blockers. The description is stored verbatim: no
+// normalisation is applied and duplicates are allowed.
+message Blocker {
+  uint32 id = 1;
+  string description = 2;
 }
 
 // Item is a single todo item.
@@ -78,6 +96,8 @@ message Item {
   repeated Label labels = 8;
   // effort is the single effort level attached to the item, if any.
   Effort effort = 9;
+  // blockers are the distinct blocking reasons attached to the item.
+  repeated Blocker blockers = 10;
 }
 
 // ItemView narrows ListItems to a single bucket. ITEM_VIEW_UNSPECIFIED keeps
@@ -203,5 +223,27 @@ message RenameEffortRequest {
 }
 
 message DeleteEffortRequest {
+  uint32 id = 1;
+}
+
+message ListBlockersRequest {
+  uint32 item_id = 1;
+}
+
+message ListBlockersResponse {
+  repeated Blocker blockers = 1;
+}
+
+message CreateBlockerRequest {
+  uint32 item_id = 1;
+  string description = 2;
+}
+
+message UpdateBlockerRequest {
+  uint32 id = 1;
+  string description = 2;
+}
+
+message DeleteBlockerRequest {
   uint32 id = 1;
 }

@@ -34,6 +34,10 @@ const (
 	ItemService_CreateEffort_FullMethodName     = "/item.ItemService/CreateEffort"
 	ItemService_RenameEffort_FullMethodName     = "/item.ItemService/RenameEffort"
 	ItemService_DeleteEffort_FullMethodName     = "/item.ItemService/DeleteEffort"
+	ItemService_ListBlockers_FullMethodName     = "/item.ItemService/ListBlockers"
+	ItemService_CreateBlocker_FullMethodName    = "/item.ItemService/CreateBlocker"
+	ItemService_UpdateBlocker_FullMethodName    = "/item.ItemService/UpdateBlocker"
+	ItemService_DeleteBlocker_FullMethodName    = "/item.ItemService/DeleteBlocker"
 )
 
 // ItemServiceClient is the client API for ItemService service.
@@ -78,6 +82,15 @@ type ItemServiceClient interface {
 	RenameEffort(ctx context.Context, in *RenameEffortRequest, opts ...grpc.CallOption) (*Effort, error)
 	// DeleteEffort removes an effort that is no longer attached to any item.
 	DeleteEffort(ctx context.Context, in *DeleteEffortRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// ListBlockers returns every blocker attached to the given item, ordered by
+	// identifier.
+	ListBlockers(ctx context.Context, in *ListBlockersRequest, opts ...grpc.CallOption) (*ListBlockersResponse, error)
+	// CreateBlocker attaches a new blocker to an item.
+	CreateBlocker(ctx context.Context, in *CreateBlockerRequest, opts ...grpc.CallOption) (*Blocker, error)
+	// UpdateBlocker changes the description of an existing blocker.
+	UpdateBlocker(ctx context.Context, in *UpdateBlockerRequest, opts ...grpc.CallOption) (*Blocker, error)
+	// DeleteBlocker removes a blocker.
+	DeleteBlocker(ctx context.Context, in *DeleteBlockerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type itemServiceClient struct {
@@ -228,6 +241,46 @@ func (c *itemServiceClient) DeleteEffort(ctx context.Context, in *DeleteEffortRe
 	return out, nil
 }
 
+func (c *itemServiceClient) ListBlockers(ctx context.Context, in *ListBlockersRequest, opts ...grpc.CallOption) (*ListBlockersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListBlockersResponse)
+	err := c.cc.Invoke(ctx, ItemService_ListBlockers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) CreateBlocker(ctx context.Context, in *CreateBlockerRequest, opts ...grpc.CallOption) (*Blocker, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Blocker)
+	err := c.cc.Invoke(ctx, ItemService_CreateBlocker_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) UpdateBlocker(ctx context.Context, in *UpdateBlockerRequest, opts ...grpc.CallOption) (*Blocker, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Blocker)
+	err := c.cc.Invoke(ctx, ItemService_UpdateBlocker_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) DeleteBlocker(ctx context.Context, in *DeleteBlockerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ItemService_DeleteBlocker_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ItemServiceServer is the server API for ItemService service.
 // All implementations must embed UnimplementedItemServiceServer
 // for forward compatibility.
@@ -270,6 +323,15 @@ type ItemServiceServer interface {
 	RenameEffort(context.Context, *RenameEffortRequest) (*Effort, error)
 	// DeleteEffort removes an effort that is no longer attached to any item.
 	DeleteEffort(context.Context, *DeleteEffortRequest) (*emptypb.Empty, error)
+	// ListBlockers returns every blocker attached to the given item, ordered by
+	// identifier.
+	ListBlockers(context.Context, *ListBlockersRequest) (*ListBlockersResponse, error)
+	// CreateBlocker attaches a new blocker to an item.
+	CreateBlocker(context.Context, *CreateBlockerRequest) (*Blocker, error)
+	// UpdateBlocker changes the description of an existing blocker.
+	UpdateBlocker(context.Context, *UpdateBlockerRequest) (*Blocker, error)
+	// DeleteBlocker removes a blocker.
+	DeleteBlocker(context.Context, *DeleteBlockerRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedItemServiceServer()
 }
 
@@ -321,6 +383,18 @@ func (UnimplementedItemServiceServer) RenameEffort(context.Context, *RenameEffor
 }
 func (UnimplementedItemServiceServer) DeleteEffort(context.Context, *DeleteEffortRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteEffort not implemented")
+}
+func (UnimplementedItemServiceServer) ListBlockers(context.Context, *ListBlockersRequest) (*ListBlockersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListBlockers not implemented")
+}
+func (UnimplementedItemServiceServer) CreateBlocker(context.Context, *CreateBlockerRequest) (*Blocker, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateBlocker not implemented")
+}
+func (UnimplementedItemServiceServer) UpdateBlocker(context.Context, *UpdateBlockerRequest) (*Blocker, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateBlocker not implemented")
+}
+func (UnimplementedItemServiceServer) DeleteBlocker(context.Context, *DeleteBlockerRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteBlocker not implemented")
 }
 func (UnimplementedItemServiceServer) mustEmbedUnimplementedItemServiceServer() {}
 func (UnimplementedItemServiceServer) testEmbeddedByValue()                     {}
@@ -595,6 +669,78 @@ func _ItemService_DeleteEffort_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ItemService_ListBlockers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListBlockersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).ListBlockers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_ListBlockers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).ListBlockers(ctx, req.(*ListBlockersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_CreateBlocker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateBlockerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).CreateBlocker(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_CreateBlocker_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).CreateBlocker(ctx, req.(*CreateBlockerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_UpdateBlocker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBlockerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).UpdateBlocker(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_UpdateBlocker_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).UpdateBlocker(ctx, req.(*UpdateBlockerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_DeleteBlocker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteBlockerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).DeleteBlocker(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_DeleteBlocker_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).DeleteBlocker(ctx, req.(*DeleteBlockerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ItemService_ServiceDesc is the grpc.ServiceDesc for ItemService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -657,6 +803,22 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteEffort",
 			Handler:    _ItemService_DeleteEffort_Handler,
+		},
+		{
+			MethodName: "ListBlockers",
+			Handler:    _ItemService_ListBlockers_Handler,
+		},
+		{
+			MethodName: "CreateBlocker",
+			Handler:    _ItemService_CreateBlocker_Handler,
+		},
+		{
+			MethodName: "UpdateBlocker",
+			Handler:    _ItemService_UpdateBlocker_Handler,
+		},
+		{
+			MethodName: "DeleteBlocker",
+			Handler:    _ItemService_DeleteBlocker_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
