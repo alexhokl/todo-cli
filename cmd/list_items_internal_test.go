@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/alexhokl/todo-cli/proto"
+	"github.com/spf13/cobra"
 )
 
 // resetListItemsOpts zeroes the package-level options so a test leaves no
@@ -103,5 +105,48 @@ func TestViewHeader(t *testing.T) {
 				t.Errorf("expected numbered %v but got %v", test.expectNumbered, numbered)
 			}
 		})
+	}
+}
+
+// TestListItemsSearchFlagBinding asserts the --search flag is registered on
+// the command, parses into listItemsOpts.Search, and defaults to the empty
+// no-op string. The gRPC request construction itself is not exercised here (it
+// would require a dial stub); instead the flag binding is verified directly.
+func TestListItemsSearchFlagBinding(t *testing.T) {
+	t.Cleanup(resetListItemsOpts)
+
+	flag := listItemsCmd.Flags().Lookup("search")
+	if flag == nil {
+		t.Fatalf("expected the --search flag to be registered")
+	}
+	if flag.DefValue != "" {
+		t.Errorf("expected the --search default to be empty but got %q", flag.DefValue)
+	}
+
+	// Parse a command line carrying the flag and confirm it lands on the
+	// options struct. A dummy RunE prevents execution of the real dial path.
+	cmd := &cobra.Command{
+		Use: "items",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
+	}
+	cmd.Flags().AddFlagSet(listItemsCmd.Flags())
+
+	if err := cmd.ParseFlags([]string{"--search", "milk"}); err != nil {
+		t.Fatalf("failed to parse the --search flag: %v", err)
+	}
+	// AddFlagSet shares the same flag pointers, so the parsed value is
+	// reflected on listItemsOpts.Search.
+	if listItemsOpts.Search != "milk" {
+		t.Errorf("expected listItemsOpts.Search to be %q but got %q", "milk", listItemsOpts.Search)
+	}
+}
+
+// TestListItemsSearchFlagInHelp asserts the long help documents --search so
+// users can discover it.
+func TestListItemsSearchFlagInHelp(t *testing.T) {
+	if !strings.Contains(listItemsCmd.Long, "--search") {
+		t.Errorf("expected the long help to mention --search but got: %s", listItemsCmd.Long)
 	}
 }

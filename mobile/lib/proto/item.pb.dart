@@ -514,10 +514,12 @@ class ListItemsRequest extends $pb.GeneratedMessage {
   factory ListItemsRequest({
     $core.Iterable<$core.String>? labels,
     ItemView? view,
+    $core.String? search,
   }) {
     final result = create();
     if (labels != null) result.labels.addAll(labels);
     if (view != null) result.view = view;
+    if (search != null) result.search = search;
     return result;
   }
 
@@ -537,6 +539,7 @@ class ListItemsRequest extends $pb.GeneratedMessage {
     ..pPS(1, _omitFieldNames ? '' : 'labels')
     ..aE<ItemView>(2, _omitFieldNames ? '' : 'view',
         enumValues: ItemView.values)
+    ..aOS(3, _omitFieldNames ? '' : 'search')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -573,6 +576,18 @@ class ListItemsRequest extends $pb.GeneratedMessage {
   $core.bool hasView() => $_has(1);
   @$pb.TagNumber(2)
   void clearView() => $_clearField(2);
+
+  /// search narrows the result to items whose title or description contains
+  /// the given substring (case-insensitive). An empty string applies no text
+  /// filter.
+  @$pb.TagNumber(3)
+  $core.String get search => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set search($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSearch() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSearch() => $_clearField(3);
 }
 
 class ListItemsResponse extends $pb.GeneratedMessage {

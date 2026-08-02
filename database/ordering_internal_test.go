@@ -832,3 +832,104 @@ func TestItemPriorityInvariantTriggerAllowsValid(t *testing.T) {
 		}
 	})
 }
+
+// TestListActiveSearch asserts the ItemFilter.Search clause narrows the active
+// triaged listing by a case-insensitive substring over the title or
+// description, and that an empty search string is a no-op.
+func TestListActiveSearch(t *testing.T) {
+	db := setupTestDB(t)
+	seedItems(t, db, "buy milk", "call mom", "ship it")
+
+	// "fix login" is matched only by its description.
+	if err := db.Model(&Item{}).Where("title = ?", "ship it").
+		UpdateColumn("description", "fix the login bug").Error; err != nil {
+		t.Fatalf("failed to set the description: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		search   string
+		expected []string
+	}{
+		{"empty is no-op", "", []string{"buy milk", "call mom", "ship it"}},
+		{"title substring", "mil", []string{"buy milk"}},
+		{"title case-insensitive", "BUY MILK", []string{"buy milk"}},
+		{"description substring", "login", []string{"ship it"}},
+		{"no match", "zzz", nil},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			items, err := ListActive(db, testUserID, ItemFilter{Search: test.search})
+			if err != nil {
+				t.Fatalf("expected no error but got %v", err)
+			}
+			titles := make([]string, 0, len(items))
+			for _, item := range items {
+				titles = append(titles, item.Title)
+			}
+			if !equalStrings(titles, test.expected) {
+				t.Errorf("expected %v but got %v", test.expected, titles)
+			}
+		})
+	}
+}
+
+// TestListItemsByViewSearch asserts the search filter applies within a single
+// bucket and combines with the view selection.
+func TestListItemsByViewSearch(t *testing.T) {
+	db := setupTestDB(t)
+	ids := seedItems(t, db, "buy milk", "call mom")
+
+	// Complete "call mom" so it lands in the done bucket.
+	if _, err := SetDone(db, testUserID, ids["call mom"], true); err != nil {
+		t.Fatalf("failed to complete the item: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		view     ItemView
+		search   string
+		expected []string
+	}{
+		{"triaged title match", ItemViewTriaged, "mil", []string{"buy milk"}},
+		{"done title match", ItemViewDone, "mom", []string{"call mom"}},
+		{"done no match", ItemViewDone, "mil", nil},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			items, err := ListItemsByView(db, testUserID, ItemFilter{View: test.view, Search: test.search})
+			if err != nil {
+				t.Fatalf("expected no error but got %v", err)
+			}
+			titles := make([]string, 0, len(items))
+			for _, item := range items {
+				titles = append(titles, item.Title)
+			}
+			if !equalStrings(titles, test.expected) {
+				t.Errorf("expected %v but got %v", test.expected, titles)
+			}
+		})
+	}
+}
+
+// TestListActiveSearchScopedPerUser asserts a matching item owned by another
+// user does not leak into the test user's search results.
+func TestListActiveSearchScopedPerUser(t *testing.T) {
+	db := setupTestDB(t)
+	seedItems(t, db, "mine")
+
+	other := Item{Title: "theirs milk", UserID: testUserID + 1}
+	if err := db.Create(&other).Error; err != nil {
+		t.Fatalf("failed to create the other user's item: %v", err)
+	}
+
+	items, err := ListActive(db, testUserID, ItemFilter{Search: "mil"})
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if len(items) != 0 {
+		t.Errorf("expected no matching items for the test user but got %v", items)
+	}
+}

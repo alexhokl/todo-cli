@@ -155,6 +155,10 @@ message ListItemsRequest {
   // view narrows the result to a single bucket. Leaving it unset returns both
   // the active and completed items as before.
   ItemView view = 2;
+  // search narrows the result to items whose title or description contains
+  // the given substring (case-insensitive). An empty string applies no text
+  // filter.
+  string search = 3;
 }
 
 message ListItemsResponse {

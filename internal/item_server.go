@@ -52,6 +52,7 @@ func (s *ItemServer) ListItems(ctx context.Context, req *proto.ListItemsRequest)
 	filter := database.ItemFilter{
 		Labels: req.GetLabels(),
 		View:   mapItemView(req.GetView()),
+		Search: req.GetSearch(),
 	}
 
 	if filter.View == database.ItemViewUnspecified {

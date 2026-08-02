@@ -201,13 +201,14 @@ const ListItemsRequest$json = {
   '2': [
     {'1': 'labels', '3': 1, '4': 3, '5': 9, '10': 'labels'},
     {'1': 'view', '3': 2, '4': 1, '5': 14, '6': '.item.ItemView', '10': 'view'},
+    {'1': 'search', '3': 3, '4': 1, '5': 9, '10': 'search'},
   ],
 };
 
 /// Descriptor for `ListItemsRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listItemsRequestDescriptor = $convert.base64Decode(
     'ChBMaXN0SXRlbXNSZXF1ZXN0EhYKBmxhYmVscxgBIAMoCVIGbGFiZWxzEiIKBHZpZXcYAiABKA'
-    '4yDi5pdGVtLkl0ZW1WaWV3UgR2aWV3');
+    '4yDi5pdGVtLkl0ZW1WaWV3UgR2aWV3EhYKBnNlYXJjaBgDIAEoCVIGc2VhcmNo');
 
 @$core.Deprecated('Use listItemsResponseDescriptor instead')
 const ListItemsResponse$json = {

@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -118,6 +119,10 @@ type ItemFilter struct {
 	// View narrows the listing to a single bucket. ItemViewUnspecified keeps
 	// the legacy two-bucket behaviour served by ListActive and ListCompleted.
 	View ItemView
+	// Search narrows the result to items whose title or description contains
+	// the given substring (case-insensitive). An empty string applies no text
+	// filter.
+	Search string
 }
 
 // ItemView selects a bucket of items. It mirrors the proto enum so the
@@ -134,6 +139,11 @@ const (
 
 // apply narrows a query to the items matching the filter.
 func (f ItemFilter) apply(db *gorm.DB) *gorm.DB {
+	if f.Search != "" {
+		pattern := "%" + strings.ToLower(f.Search) + "%"
+		db = db.Where("(LOWER(items.title) LIKE ? OR LOWER(items.description) LIKE ?)", pattern, pattern)
+	}
+
 	names := normaliseLabelNames(f.Labels)
 	if len(names) == 0 {
 		return db

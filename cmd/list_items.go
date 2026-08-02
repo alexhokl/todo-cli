@@ -12,6 +12,7 @@ type listItemsOptions struct {
 	Untriaged     bool
 	TimeSensitive bool
 	Done          bool
+	Search        string
 }
 
 var listItemsOpts listItemsOptions
@@ -33,12 +34,16 @@ select a single bucket instead of the default active view.
 
   --untriaged      not done and carrying no manual ordering rank yet
   --time-sensitive not done and carrying a due date
-  --done           completed items`,
+  --done           completed items
+
+--search narrows the result to items whose title or description contains the
+given substring (case-insensitive).`,
 	Example: `  todo list items
   todo list items --label urgent
   todo list items --label urgent --label work
   todo list items --untriaged
-  todo list items --time-sensitive`,
+  todo list items --time-sensitive
+  todo list items --search milk`,
 	Args:        cobra.NoArgs,
 	Annotations: map[string]string{annotationRequiresService: "true"},
 	RunE:        runListItems,
@@ -51,6 +56,7 @@ func init() {
 	listItemsCmd.Flags().BoolVar(&listItemsOpts.Untriaged, "untriaged", false, "Only show active items without a manual ordering rank")
 	listItemsCmd.Flags().BoolVar(&listItemsOpts.TimeSensitive, "time-sensitive", false, "Only show active items carrying a due date")
 	listItemsCmd.Flags().BoolVar(&listItemsOpts.Done, "done", false, "Only show completed items")
+	listItemsCmd.Flags().StringVar(&listItemsOpts.Search, "search", "", "Only show items whose title or description contains this substring (case-insensitive)")
 }
 
 func runListItems(cmd *cobra.Command, _ []string) error {
@@ -68,6 +74,7 @@ func runListItems(cmd *cobra.Command, _ []string) error {
 	response, err := proto.NewItemServiceClient(conn).ListItems(cmd.Context(), &proto.ListItemsRequest{
 		Labels: listItemsOpts.Labels,
 		View:   view,
+		Search: listItemsOpts.Search,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to list the items: %w", err)

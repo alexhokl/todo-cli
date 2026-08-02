@@ -475,7 +475,11 @@ type ListItemsRequest struct {
 	Labels []string `protobuf:"bytes,1,rep,name=labels,proto3" json:"labels,omitempty"`
 	// view narrows the result to a single bucket. Leaving it unset returns both
 	// the active and completed items as before.
-	View          ItemView `protobuf:"varint,2,opt,name=view,proto3,enum=item.ItemView" json:"view,omitempty"`
+	View ItemView `protobuf:"varint,2,opt,name=view,proto3,enum=item.ItemView" json:"view,omitempty"`
+	// search narrows the result to items whose title or description contains
+	// the given substring (case-insensitive). An empty string applies no text
+	// filter.
+	Search        string `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -522,6 +526,13 @@ func (x *ListItemsRequest) GetView() ItemView {
 		return x.View
 	}
 	return ItemView_ITEM_VIEW_UNSPECIFIED
+}
+
+func (x *ListItemsRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
 }
 
 type ListItemsResponse struct {
@@ -2126,10 +2137,11 @@ const file_proto_item_proto_rawDesc = "" +
 	"\t_due_dateB\n" +
 	"\n" +
 	"\b_list_idB\v\n" +
-	"\t_priority\"N\n" +
+	"\t_priority\"f\n" +
 	"\x10ListItemsRequest\x12\x16\n" +
 	"\x06labels\x18\x01 \x03(\tR\x06labels\x12\"\n" +
-	"\x04view\x18\x02 \x01(\x0e2\x0e.item.ItemViewR\x04view\"a\n" +
+	"\x04view\x18\x02 \x01(\x0e2\x0e.item.ItemViewR\x04view\x12\x16\n" +
+	"\x06search\x18\x03 \x01(\tR\x06search\"a\n" +
 	"\x11ListItemsResponse\x12\"\n" +
 	"\x06active\x18\x01 \x03(\v2\n" +
 	".item.ItemR\x06active\x12(\n" +

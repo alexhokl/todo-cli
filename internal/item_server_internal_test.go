@@ -527,6 +527,68 @@ func TestUserIDFromContextMissing(t *testing.T) {
 	}
 }
 
+func TestListItemsSearch(t *testing.T) {
+	server := setupItemServer(t)
+	// "ship it" is matched only by its description.
+	createItems(t, server, "buy milk", "call mom", "ship it")
+	if err := server.DB.Model(&database.Item{}).Where("title = ?", "ship it").
+		UpdateColumn("description", "fix the login bug").Error; err != nil {
+		t.Fatalf("failed to set the description: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		search   string
+		expected []string
+	}{
+		{"title substring", "mil", []string{"buy milk"}},
+		{"title case-insensitive", "BUY", []string{"buy milk"}},
+		{"description substring", "login", []string{"ship it"}},
+		{"no match", "zzz", nil},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			response, err := server.ListItems(authenticatedContext(), &proto.ListItemsRequest{Search: test.search})
+			if err != nil {
+				t.Fatalf("expected no error but got %v", err)
+			}
+			if len(response.GetCompleted()) != 0 {
+				t.Errorf("expected no completed items but got %v", response.GetCompleted())
+			}
+			titles := make([]string, 0, len(response.GetActive()))
+			for _, item := range response.GetActive() {
+				titles = append(titles, item.GetTitle())
+			}
+			if !equalStrings(titles, test.expected) {
+				t.Errorf("expected %v but got %v", test.expected, titles)
+			}
+		})
+	}
+}
+
+// TestListItemsSearchCombinesWithView asserts the search filter narrows within
+// a selected bucket rather than overriding the view.
+func TestListItemsSearchCombinesWithView(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "buy milk", "call mom")
+
+	if _, err := server.SetItemDone(authenticatedContext(), &proto.SetItemDoneRequest{Id: ids["call mom"], Done: true}); err != nil {
+		t.Fatalf("failed to complete the item: %v", err)
+	}
+
+	response, err := server.ListItems(authenticatedContext(), &proto.ListItemsRequest{
+		View:   proto.ItemView_ITEM_VIEW_DONE,
+		Search: "mom",
+	})
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if len(response.GetActive()) != 1 || response.GetActive()[0].GetTitle() != "call mom" {
+		t.Errorf("expected [call mom] in the done bucket but got %v", response.GetActive())
+	}
+}
+
 func TestListItemsRejectsUnauthenticated(t *testing.T) {
 	server := setupItemServer(t)
 	_, err := server.ListItems(context.Background(), &proto.ListItemsRequest{})
