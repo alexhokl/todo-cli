@@ -355,5 +355,15 @@
   "effortDeleted": "Effort deleted",
   "@effortDeleted": {
     "description": "Snackbar confirmation after an effort is deleted"
+  },
+  "reorderFailed": "Failed to reorder item: {error}",
+  "@reorderFailed": {
+    "description": "Snackbar message shown when reordering an item via drag-and-drop fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
   }
 }

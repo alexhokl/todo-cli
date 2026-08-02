@@ -12,13 +12,23 @@ import 'package:todo/widgets/item_list.dart';
 /// the fake overrides every method the page calls and never touches the gRPC
 /// channel lazily created by [ItemService._ensureInitialized].
 class _FakeItemService extends ItemService {
-  _FakeItemService({this.triaged = const [], this.completed = const []});
+  _FakeItemService({
+    this.triaged = const [],
+    this.completed = const [],
+    this.moveItemError,
+  });
 
   final List<Item> triaged;
   final List<Item> completed;
 
+  /// When non-null, the next [moveItem] call throws this [ItemException].
+  final ItemException? moveItemError;
+
   /// The views passed to each [listItems] call, in call order.
   final List<ItemView> viewsCalled = [];
+
+  /// Each recorded [moveItem] call: the moved id and the anchor arguments.
+  final List<({int id, int? beforeId, int? afterId})> moveCalls = [];
 
   @override
   Future<ListItemsResult> listItems({
@@ -32,6 +42,21 @@ class _FakeItemService extends ItemService {
       default:
         return ListItemsResult(active: List<Item>.from(triaged), completed: const []);
     }
+  }
+
+  @override
+  Future<Item> moveItem({
+    required int id,
+    int? beforeId,
+    int? afterId,
+    bool changeList = false,
+    int? listId,
+  }) async {
+    moveCalls.add((id: id, beforeId: beforeId, afterId: afterId));
+    if (moveItemError != null) {
+      throw moveItemError!;
+    }
+    return Item(id: id);
   }
 
   @override
@@ -275,6 +300,130 @@ void main() {
       expect(field.controller!.text, isEmpty);
       expect(find.text('old release'), findsOneWidget);
       expect(find.text('ship it'), findsNothing);
+    });
+  });
+
+  group('ItemList drag-and-drop reordering', () {
+    testWidgets(
+        'shows a drag handle on triaged items but not on other views',
+        (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 1, title: 'alpha')],
+        completed: [Item(id: 2, title: 'old release', done: true)],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Triaged view renders the drag handle.
+      expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
+
+      // Switch to the Completed view, which does not support reordering.
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilterChip, 'Completed'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.drag_indicator), findsNothing);
+    });
+
+    testWidgets('reordering down calls moveItem with beforeId anchor',
+        (tester) async {
+      final service = _FakeItemService(triaged: [
+        Item(id: 10, title: 'alpha'),
+        Item(id: 20, title: 'beta'),
+        Item(id: 30, title: 'gamma'),
+      ]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Drag the first tile below the third tile. The drag handle is at the
+      // left of each row; target the handle of item 0 and drop below item 2.
+      await tester.drag(
+        find.byIcon(Icons.drag_indicator).first,
+        const Offset(0, 250),
+      );
+      await tester.pumpAndSettle();
+
+      // The optimistic reorder moved alpha to the end, so the server should
+      // have been asked to place item 10 after item 30 (no beforeId).
+      expect(service.moveCalls, [
+        (id: 10, beforeId: null, afterId: 30),
+      ]);
+    });
+
+    testWidgets('reordering up calls moveItem with beforeId anchor',
+        (tester) async {
+      final service = _FakeItemService(triaged: [
+        Item(id: 10, title: 'alpha'),
+        Item(id: 20, title: 'beta'),
+        Item(id: 30, title: 'gamma'),
+      ]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Drag the last tile above the first tile.
+      await tester.drag(
+        find.byIcon(Icons.drag_indicator).last,
+        const Offset(0, -250),
+      );
+      await tester.pumpAndSettle();
+
+      // gamma moved to the top, so the server should have been asked to place
+      // item 30 before item 10 (no afterId).
+      expect(service.moveCalls, [
+        (id: 30, beforeId: 10, afterId: null),
+      ]);
+    });
+
+    testWidgets(
+        'a failed moveItem shows a SnackBar and reloads the list',
+        (tester) async {
+      final service = _FakeItemService(
+        triaged: [
+          Item(id: 10, title: 'alpha'),
+          Item(id: 20, title: 'beta'),
+        ],
+        moveItemError: ItemException('server unavailable'),
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.drag(
+        find.byIcon(Icons.drag_indicator).first,
+        const Offset(0, 150),
+      );
+      await tester.pumpAndSettle();
+
+      // The localised SnackBar is shown.
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to reorder item'), findsOneWidget);
+      // moveItem was attempted and the list was reloaded from the service,
+      // resetting the optimistic order.
+      expect(service.moveCalls, hasLength(1));
+      expect(service.viewsCalled, [ItemView.ITEM_VIEW_TRIAGED, ItemView.ITEM_VIEW_TRIAGED]);
+      expect(find.text('alpha'), findsOneWidget);
+      expect(find.text('beta'), findsOneWidget);
+    });
+
+    testWidgets('reordering is disabled while a search is active',
+        (tester) async {
+      final service = _FakeItemService(triaged: [
+        Item(id: 10, title: 'alpha'),
+        Item(id: 20, title: 'beta'),
+      ]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'alpha');
+      await tester.pump();
+
+      // Only the filtered item is shown and no drag handle is rendered.
+      expect(find.byIcon(Icons.drag_indicator), findsNothing);
     });
   });
 }

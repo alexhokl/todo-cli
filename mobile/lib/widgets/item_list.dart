@@ -235,6 +235,12 @@ class ItemListState extends State<ItemList> {
                 i.description.toLowerCase().contains(_query.toLowerCase()))
             .toList();
     final l10n = AppLocalizations.of(context)!;
+    // Reordering is only meaningful for the triaged view and only when no
+    // search filter is active: anchors sent to the server reference items that
+    // must be adjacent in the full ordering, which the filtered list cannot
+    // guarantee.
+    final canReorder =
+        _view == ItemView.ITEM_VIEW_TRIAGED && _query.isEmpty;
     return Column(
       children: [
         _buildChipBar(context),
@@ -249,29 +255,132 @@ class ItemListState extends State<ItemList> {
                 )
               : RefreshIndicator(
                   onRefresh: retryLoading,
-                  child: ListView.builder(
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      final done = item.done;
-                      return ListTile(
-                        leading: Icon(
-                          done
-                              ? Icons.check_circle_outline
-                              : Icons.circle_outlined,
+                  child: canReorder
+                      ? ReorderableListView.builder(
+                          itemCount: items.length,
+                          buildDefaultDragHandles: false,
+                          onReorderItem: (oldIndex, newIndex) =>
+                              _handleReorder(items, oldIndex, newIndex),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return _buildItemTile(
+                              context,
+                              item,
+                              index,
+                              reorderable: true,
+                            );
+                          },
+                        )
+                      : ListView.builder(
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return _buildItemTile(
+                              context,
+                              item,
+                              index,
+                              reorderable: false,
+                            );
+                          },
                         ),
-                        title: Text(item.title),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.comment_outlined),
-                          tooltip: AppLocalizations.of(context)!.comments,
-                          onPressed: () => _openComments(context, item),
-                        ),
-                      );
-                    },
-                  ),
                 ),
         ),
       ],
     );
+  }
+
+  /// Builds a single item row. When [reorderable] is true (triaged view) the
+  /// row is keyed by item id and prefixed with a drag handle wrapped in a
+  /// [ReorderableDragStartListener]; otherwise it is a plain [ListTile].
+  Widget _buildItemTile(
+    BuildContext context,
+    Item item,
+    int index, {
+    required bool reorderable,
+  }) {
+    final done = item.done;
+    final statusIcon = Icon(
+      done ? Icons.check_circle_outline : Icons.circle_outlined,
+    );
+    final commentsButton = IconButton(
+      icon: const Icon(Icons.comment_outlined),
+      tooltip: AppLocalizations.of(context)!.comments,
+      onPressed: () => _openComments(context, item),
+    );
+
+    if (!reorderable) {
+      return ListTile(
+        leading: statusIcon,
+        title: Text(item.title),
+        trailing: commentsButton,
+      );
+    }
+
+    return ReorderableDelayedDragStartListener(
+      index: index,
+      key: ValueKey(item.id),
+      child: ListTile(
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ReorderableDragStartListener(
+              index: index,
+              key: ValueKey('drag-handle-${item.id}'),
+              child: const Icon(Icons.drag_indicator),
+            ),
+            const SizedBox(width: 4),
+            statusIcon,
+          ],
+        ),
+        title: Text(item.title),
+        trailing: commentsButton,
+      ),
+    );
+  }
+
+  /// Handles a drag-and-drop reorder for the triaged view. The list is
+  /// optimistically reordered, then [ItemService.moveItem] is called with the
+  /// appropriate anchor. On failure a localised SnackBar is shown and the list
+  /// is reloaded from the server to revert the optimistic change.
+  ///
+  /// [newIndex] is already normalised (the item at [oldIndex] conceptually
+  /// removed) by [ReorderableListView.onReorderItem].
+  Future<void> _handleReorder(
+    List<Item> items,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    if (oldIndex == newIndex) return;
+
+    final moved = items[oldIndex];
+    final reordered = List<Item>.from(items);
+    reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, moved);
+
+    setState(() {
+      _items = reordered;
+    });
+
+    // Compute the anchor the server expects: insert before the item now at
+    // newIndex, or after the previous one when dropped at the end.
+    int? beforeId;
+    int? afterId;
+    if (newIndex >= reordered.length - 1) {
+      afterId = reordered[newIndex - 1].id;
+    } else {
+      beforeId = reordered[newIndex + 1].id;
+    }
+
+    try {
+      await _service!.moveItem(id: moved.id, beforeId: beforeId, afterId: afterId);
+    } on ItemException catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.reorderFailed(e.message))),
+        );
+      }
+      await _load();
+    }
   }
 }

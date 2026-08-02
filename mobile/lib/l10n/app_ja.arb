@@ -67,5 +67,6 @@
   "failedToDeleteEffort": "工数の削除に失敗しました: {error}",
   "effortCreated": "工数を作成しました",
   "effortRenamed": "工数を更新しました",
-  "effortDeleted": "工数を削除しました"
+  "effortDeleted": "工数を削除しました",
+  "reorderFailed": "アイテムの並び替えに失敗しました: {error}"
 }
