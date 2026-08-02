@@ -269,9 +269,6 @@ class ItemListState extends State<ItemList> {
                                   )
                               : null,
                         ),
-                        subtitle: item.description.isEmpty
-                            ? null
-                            : Text(item.description),
                         trailing: IconButton(
                           icon: const Icon(Icons.comment_outlined),
                           tooltip: AppLocalizations.of(context)!.comments,
