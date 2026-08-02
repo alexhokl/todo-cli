@@ -25,11 +25,117 @@ task install
 todo serve --port 8080 --database ~/.todo.db
 ```
 
-The server exposes gRPC server reflection, so it can be inspected with
-`grpcurl`:
+### Inspecting the API with grpcurl
+
+The server enables gRPC server reflection, so `grpcurl` needs no `-proto` or
+`-import-path` flags — services, methods, and message schemas are discovered
+from the running server. JSON request bodies use the proto field names in
+`snake_case`; enum values are accepted by name (e.g. `"ITEM_VIEW_DONE"`),
+and `google.protobuf.Timestamp` fields accept an RFC3339 string.
+
+Against `localhost` the dummy authentication interceptor is active (userID=1),
+so no auth metadata is required. Against a Tailscale-exposed server the
+caller's identity is resolved automatically from the peer IP — again, no
+auth metadata to pass.
+
+**Discovery** (no request body):
 
 ```sh
-grpcurl -plaintext localhost:8080 list
+grpcurl -plaintext localhost:8080 list                           # all services
+grpcurl -plaintext localhost:8080 list item.ItemService           # RPCs of ItemService
+grpcurl -plaintext localhost:8080 describe item.Item              # Item message fields
+grpcurl -plaintext localhost:8080 describe item.MoveItemRequest  # see the anchor oneof
+```
+
+**Calling RPCs** (curated to exercise every field shape):
+
+*Empty request:*
+
+```sh
+grpcurl -plaintext -d '{}' localhost:8080 item.ItemService/ListItems   # default (triaged active)
+```
+
+*Enum field:*
+
+```sh
+grpcurl -plaintext -d '{"view":"ITEM_VIEW_DONE"}' localhost:8080 item.ItemService/ListItems
+grpcurl -plaintext -d '{"view":"ITEM_VIEW_UNTRIAGED"}' localhost:8080 item.ItemService/ListItems
+```
+
+*Repeated string (label filter):*
+
+```sh
+grpcurl -plaintext -d '{"labels":["urgent","work"]}' localhost:8080 item.ItemService/ListItems
+```
+
+*Scalar + repeated + optional string:*
+
+```sh
+grpcurl -plaintext -d '{"title":"ship release","description":"draft changelog","labels":["urgent"]}' localhost:8080 item.ItemService/CreateItem
+grpcurl -plaintext -d '{"title":"release","effort":"high"}' localhost:8080 item.ItemService/CreateItem
+```
+
+*Well-known Timestamp (optional `due_date`):*
+
+```sh
+grpcurl -plaintext -d '{"title":"follow up","due_date":"2026-08-15T00:00:00Z"}' localhost:8080 item.ItemService/CreateItem
+```
+
+*Scalar id:*
+
+```sh
+grpcurl -plaintext -d '{"id":7}' localhost:8080 item.ItemService/GetItem
+```
+
+*Oneof anchor (MoveItem):*
+
+```sh
+grpcurl -plaintext -d '{"id":7,"top":true}' localhost:8080 item.ItemService/MoveItem        # triage to top
+grpcurl -plaintext -d '{"id":7,"after_id":3}' localhost:8080 item.ItemService/MoveItem     # relative (anchor must be triaged)
+```
+
+*Bool:*
+
+```sh
+grpcurl -plaintext -d '{"id":7,"done":true}' localhost:8080 item.ItemService/SetItemDone
+```
+
+*Add/remove repeated:*
+
+```sh
+grpcurl -plaintext -d '{"id":7,"add":["urgent"],"remove":["later"]}' localhost:8080 item.ItemService/UpdateItemLabels
+```
+
+*Empty-returning RPC (DeleteLabel → `google.protobuf.Empty`):*
+
+```sh
+grpcurl -plaintext -d '{"name":"urgent"}' localhost:8080 item.ItemService/CreateLabel
+grpcurl -plaintext -d '{"id":3}' localhost:8080 item.ItemService/DeleteLabel                # prints {}
+```
+
+*Comments:*
+
+```sh
+grpcurl -plaintext -d '{"item_id":7,"body":"drafted a reply"}' localhost:8080 item.ItemService/CreateComment
+grpcurl -plaintext -d '{"item_id":7}' localhost:8080 item.ItemService/ListComments
+```
+
+**Output formatting:**
+
+```sh
+grpcurl -plaintext -d '{}' -format json localhost:8080 item.ItemService/ListItems    # JSON instead of text
+grpcurl -plaintext -d '{}' -emit-defaults localhost:8080 item.ItemService/ListItems  # include default-valued fields
+```
+
+**TLS to a Tailscale-exposed server:**
+
+Drop `-plaintext` and use the tailnet hostname; the connection is secured by
+Tailscale's mTLS and the in-process `tsnet` node resolves the caller's
+Tailscale identity from the peer IP.
+
+```sh
+grpcurl todo.<tailnet>.ts.net:443 list
+grpcurl -d '{"id":7}' todo.<tailnet>.ts.net:443 item.ItemService/GetItem
 ```
 
 ### Authentication
