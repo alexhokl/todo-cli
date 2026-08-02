@@ -40,6 +40,10 @@ const (
 	ItemService_CreateBlocker_FullMethodName     = "/item.ItemService/CreateBlocker"
 	ItemService_UpdateBlocker_FullMethodName     = "/item.ItemService/UpdateBlocker"
 	ItemService_DeleteBlocker_FullMethodName     = "/item.ItemService/DeleteBlocker"
+	ItemService_ListComments_FullMethodName      = "/item.ItemService/ListComments"
+	ItemService_CreateComment_FullMethodName     = "/item.ItemService/CreateComment"
+	ItemService_UpdateComment_FullMethodName     = "/item.ItemService/UpdateComment"
+	ItemService_DeleteComment_FullMethodName     = "/item.ItemService/DeleteComment"
 )
 
 // ItemServiceClient is the client API for ItemService service.
@@ -98,6 +102,15 @@ type ItemServiceClient interface {
 	UpdateBlocker(ctx context.Context, in *UpdateBlockerRequest, opts ...grpc.CallOption) (*Blocker, error)
 	// DeleteBlocker removes a blocker.
 	DeleteBlocker(ctx context.Context, in *DeleteBlockerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// ListComments returns every comment attached to the given item, ordered by
+	// identifier (creation order).
+	ListComments(ctx context.Context, in *ListCommentsRequest, opts ...grpc.CallOption) (*ListCommentsResponse, error)
+	// CreateComment attaches a new comment to an item.
+	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*Comment, error)
+	// UpdateComment edits the body of an existing comment.
+	UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*Comment, error)
+	// DeleteComment removes a comment.
+	DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type itemServiceClient struct {
@@ -308,6 +321,46 @@ func (c *itemServiceClient) DeleteBlocker(ctx context.Context, in *DeleteBlocker
 	return out, nil
 }
 
+func (c *itemServiceClient) ListComments(ctx context.Context, in *ListCommentsRequest, opts ...grpc.CallOption) (*ListCommentsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCommentsResponse)
+	err := c.cc.Invoke(ctx, ItemService_ListComments_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*Comment, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Comment)
+	err := c.cc.Invoke(ctx, ItemService_CreateComment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) UpdateComment(ctx context.Context, in *UpdateCommentRequest, opts ...grpc.CallOption) (*Comment, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Comment)
+	err := c.cc.Invoke(ctx, ItemService_UpdateComment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ItemService_DeleteComment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ItemServiceServer is the server API for ItemService service.
 // All implementations must embed UnimplementedItemServiceServer
 // for forward compatibility.
@@ -364,6 +417,15 @@ type ItemServiceServer interface {
 	UpdateBlocker(context.Context, *UpdateBlockerRequest) (*Blocker, error)
 	// DeleteBlocker removes a blocker.
 	DeleteBlocker(context.Context, *DeleteBlockerRequest) (*emptypb.Empty, error)
+	// ListComments returns every comment attached to the given item, ordered by
+	// identifier (creation order).
+	ListComments(context.Context, *ListCommentsRequest) (*ListCommentsResponse, error)
+	// CreateComment attaches a new comment to an item.
+	CreateComment(context.Context, *CreateCommentRequest) (*Comment, error)
+	// UpdateComment edits the body of an existing comment.
+	UpdateComment(context.Context, *UpdateCommentRequest) (*Comment, error)
+	// DeleteComment removes a comment.
+	DeleteComment(context.Context, *DeleteCommentRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedItemServiceServer()
 }
 
@@ -433,6 +495,18 @@ func (UnimplementedItemServiceServer) UpdateBlocker(context.Context, *UpdateBloc
 }
 func (UnimplementedItemServiceServer) DeleteBlocker(context.Context, *DeleteBlockerRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteBlocker not implemented")
+}
+func (UnimplementedItemServiceServer) ListComments(context.Context, *ListCommentsRequest) (*ListCommentsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListComments not implemented")
+}
+func (UnimplementedItemServiceServer) CreateComment(context.Context, *CreateCommentRequest) (*Comment, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateComment not implemented")
+}
+func (UnimplementedItemServiceServer) UpdateComment(context.Context, *UpdateCommentRequest) (*Comment, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateComment not implemented")
+}
+func (UnimplementedItemServiceServer) DeleteComment(context.Context, *DeleteCommentRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteComment not implemented")
 }
 func (UnimplementedItemServiceServer) mustEmbedUnimplementedItemServiceServer() {}
 func (UnimplementedItemServiceServer) testEmbeddedByValue()                     {}
@@ -815,6 +889,78 @@ func _ItemService_DeleteBlocker_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ItemService_ListComments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCommentsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).ListComments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_ListComments_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).ListComments(ctx, req.(*ListCommentsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_CreateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).CreateComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_CreateComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).CreateComment(ctx, req.(*CreateCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_UpdateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).UpdateComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_UpdateComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).UpdateComment(ctx, req.(*UpdateCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_DeleteComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteCommentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).DeleteComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_DeleteComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).DeleteComment(ctx, req.(*DeleteCommentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ItemService_ServiceDesc is the grpc.ServiceDesc for ItemService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -901,6 +1047,22 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteBlocker",
 			Handler:    _ItemService_DeleteBlocker_Handler,
+		},
+		{
+			MethodName: "ListComments",
+			Handler:    _ItemService_ListComments_Handler,
+		},
+		{
+			MethodName: "CreateComment",
+			Handler:    _ItemService_CreateComment_Handler,
+		},
+		{
+			MethodName: "UpdateComment",
+			Handler:    _ItemService_UpdateComment_Handler,
+		},
+		{
+			MethodName: "DeleteComment",
+			Handler:    _ItemService_DeleteComment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

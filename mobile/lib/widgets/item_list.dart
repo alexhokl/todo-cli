@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
+import 'package:todo/widgets/comments_page.dart';
 import 'package:todo/widgets/settings_page.dart';
 
 /// Read-only list of todo items fetched from the gRPC server.
@@ -60,6 +61,15 @@ class ItemListState extends State<ItemList> {
     await _load();
   }
 
+  void _openComments(BuildContext context, Item item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CommentsPage(itemId: item.id, itemTitle: item.title),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _service?.dispose();
@@ -110,6 +120,11 @@ class ItemListState extends State<ItemList> {
                 title: Text(item.title),
                 subtitle:
                     item.description.isEmpty ? null : Text(item.description),
+                trailing: IconButton(
+                  icon: const Icon(Icons.comment_outlined),
+                  tooltip: AppLocalizations.of(context)!.comments,
+                  onPressed: () => _openComments(context, item),
+                ),
               ),
           ],
           if (completed.isNotEmpty) ...[
@@ -129,6 +144,11 @@ class ItemListState extends State<ItemList> {
                         decoration: TextDecoration.lineThrough,
                         color: Theme.of(context).disabledColor,
                       ),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.comment_outlined),
+                  tooltip: AppLocalizations.of(context)!.comments,
+                  onPressed: () => _openComments(context, item),
                 ),
               ),
           ],

@@ -236,6 +236,102 @@ class Blocker extends $pb.GeneratedMessage {
   void clearDescription() => $_clearField(2);
 }
 
+/// Comment is a single remark attached to an item. An item can carry several
+/// comments, ordered by creation. The body is stored verbatim: no
+/// normalisation is applied. The author is the username of the user that
+/// created the comment.
+class Comment extends $pb.GeneratedMessage {
+  factory Comment({
+    $core.int? id,
+    $core.String? body,
+    $2.Timestamp? createdAt,
+    $core.String? author,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (body != null) result.body = body;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (author != null) result.author = author;
+    return result;
+  }
+
+  Comment._();
+
+  factory Comment.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Comment.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Comment',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'body')
+    ..aOM<$2.Timestamp>(3, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $2.Timestamp.create)
+    ..aOS(4, _omitFieldNames ? '' : 'author')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Comment clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Comment copyWith(void Function(Comment) updates) =>
+      super.copyWith((message) => updates(message as Comment)) as Comment;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static Comment create() => Comment._();
+  @$core.override
+  Comment createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static Comment getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Comment>(create);
+  static Comment? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get body => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set body($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBody() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBody() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $2.Timestamp get createdAt => $_getN(2);
+  @$pb.TagNumber(3)
+  set createdAt($2.Timestamp value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCreatedAt() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCreatedAt() => $_clearField(3);
+  @$pb.TagNumber(3)
+  $2.Timestamp ensureCreatedAt() => $_ensure(2);
+
+  @$pb.TagNumber(4)
+  $core.String get author => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set author($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAuthor() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearAuthor() => $_clearField(4);
+}
+
 /// Item is a single todo item.
 class Item extends $pb.GeneratedMessage {
   factory Item({
@@ -250,6 +346,7 @@ class Item extends $pb.GeneratedMessage {
     Effort? effort,
     $core.Iterable<Blocker>? blockers,
     $core.Iterable<Item>? linkedItems,
+    $core.Iterable<Comment>? comments,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -263,6 +360,7 @@ class Item extends $pb.GeneratedMessage {
     if (effort != null) result.effort = effort;
     if (blockers != null) result.blockers.addAll(blockers);
     if (linkedItems != null) result.linkedItems.addAll(linkedItems);
+    if (comments != null) result.comments.addAll(comments);
     return result;
   }
 
@@ -293,6 +391,8 @@ class Item extends $pb.GeneratedMessage {
         subBuilder: Blocker.create)
     ..pPM<Item>(11, _omitFieldNames ? '' : 'linkedItems',
         subBuilder: Item.create)
+    ..pPM<Comment>(12, _omitFieldNames ? '' : 'comments',
+        subBuilder: Comment.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -404,6 +504,10 @@ class Item extends $pb.GeneratedMessage {
   /// symmetric, so a link from A to B appears on B as well.
   @$pb.TagNumber(11)
   $pb.PbList<Item> get linkedItems => $_getList(10);
+
+  /// comments are the remarks attached to the item, in creation order.
+  @$pb.TagNumber(12)
+  $pb.PbList<Comment> get comments => $_getList(11);
 }
 
 class ListItemsRequest extends $pb.GeneratedMessage {
@@ -1980,6 +2084,295 @@ class DeleteBlockerRequest extends $pb.GeneratedMessage {
   static DeleteBlockerRequest getDefault() => _defaultInstance ??=
       $pb.GeneratedMessage.$_defaultFor<DeleteBlockerRequest>(create);
   static DeleteBlockerRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class ListCommentsRequest extends $pb.GeneratedMessage {
+  factory ListCommentsRequest({
+    $core.int? itemId,
+  }) {
+    final result = create();
+    if (itemId != null) result.itemId = itemId;
+    return result;
+  }
+
+  ListCommentsRequest._();
+
+  factory ListCommentsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListCommentsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListCommentsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'itemId', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListCommentsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListCommentsRequest copyWith(void Function(ListCommentsRequest) updates) =>
+      super.copyWith((message) => updates(message as ListCommentsRequest))
+          as ListCommentsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListCommentsRequest create() => ListCommentsRequest._();
+  @$core.override
+  ListCommentsRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListCommentsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListCommentsRequest>(create);
+  static ListCommentsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get itemId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set itemId($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasItemId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearItemId() => $_clearField(1);
+}
+
+class ListCommentsResponse extends $pb.GeneratedMessage {
+  factory ListCommentsResponse({
+    $core.Iterable<Comment>? comments,
+  }) {
+    final result = create();
+    if (comments != null) result.comments.addAll(comments);
+    return result;
+  }
+
+  ListCommentsResponse._();
+
+  factory ListCommentsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ListCommentsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListCommentsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..pPM<Comment>(1, _omitFieldNames ? '' : 'comments',
+        subBuilder: Comment.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListCommentsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListCommentsResponse copyWith(void Function(ListCommentsResponse) updates) =>
+      super.copyWith((message) => updates(message as ListCommentsResponse))
+          as ListCommentsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ListCommentsResponse create() => ListCommentsResponse._();
+  @$core.override
+  ListCommentsResponse createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static ListCommentsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListCommentsResponse>(create);
+  static ListCommentsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<Comment> get comments => $_getList(0);
+}
+
+class CreateCommentRequest extends $pb.GeneratedMessage {
+  factory CreateCommentRequest({
+    $core.int? itemId,
+    $core.String? body,
+  }) {
+    final result = create();
+    if (itemId != null) result.itemId = itemId;
+    if (body != null) result.body = body;
+    return result;
+  }
+
+  CreateCommentRequest._();
+
+  factory CreateCommentRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory CreateCommentRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateCommentRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'itemId', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'body')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateCommentRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateCommentRequest copyWith(void Function(CreateCommentRequest) updates) =>
+      super.copyWith((message) => updates(message as CreateCommentRequest))
+          as CreateCommentRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateCommentRequest create() => CreateCommentRequest._();
+  @$core.override
+  CreateCommentRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static CreateCommentRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateCommentRequest>(create);
+  static CreateCommentRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get itemId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set itemId($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasItemId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearItemId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get body => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set body($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBody() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBody() => $_clearField(2);
+}
+
+class UpdateCommentRequest extends $pb.GeneratedMessage {
+  factory UpdateCommentRequest({
+    $core.int? id,
+    $core.String? body,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (body != null) result.body = body;
+    return result;
+  }
+
+  UpdateCommentRequest._();
+
+  factory UpdateCommentRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateCommentRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateCommentRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'body')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCommentRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateCommentRequest copyWith(void Function(UpdateCommentRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateCommentRequest))
+          as UpdateCommentRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateCommentRequest create() => UpdateCommentRequest._();
+  @$core.override
+  UpdateCommentRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateCommentRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateCommentRequest>(create);
+  static UpdateCommentRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get body => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set body($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBody() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBody() => $_clearField(2);
+}
+
+class DeleteCommentRequest extends $pb.GeneratedMessage {
+  factory DeleteCommentRequest({
+    $core.int? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  DeleteCommentRequest._();
+
+  factory DeleteCommentRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteCommentRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteCommentRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteCommentRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteCommentRequest copyWith(void Function(DeleteCommentRequest) updates) =>
+      super.copyWith((message) => updates(message as DeleteCommentRequest))
+          as DeleteCommentRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteCommentRequest create() => DeleteCommentRequest._();
+  @$core.override
+  DeleteCommentRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteCommentRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteCommentRequest>(create);
+  static DeleteCommentRequest? _defaultInstance;
 
   @$pb.TagNumber(1)
   $core.int get id => $_getIZ(0);

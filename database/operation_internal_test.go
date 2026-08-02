@@ -40,6 +40,7 @@ func TestAutoMigrate(t *testing.T) {
 		{"User", &User{}},
 		{"TailscaleAddress", &TailscaleAddress{}},
 		{"Effort", &Effort{}},
+		{"Comment", &Comment{}},
 	}
 
 	for _, test := range tests {

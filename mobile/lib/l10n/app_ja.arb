@@ -32,5 +32,20 @@
   "failedToDeleteLabel": "ラベルの削除に失敗しました: {error}",
   "labelCreated": "ラベルを作成しました",
   "labelRenamed": "ラベルを更新しました",
-  "labelDeleted": "ラベルを削除しました"
+  "labelDeleted": "ラベルを削除しました",
+  "comments": "コメント",
+  "addComment": "コメントを追加",
+  "editComment": "コメントを編集",
+  "commentBody": "本文",
+  "enterCommentBody": "コメントを入力",
+  "noComments": "コメントがありません",
+  "failedToLoadComments": "コメントの読み込みに失敗しました: {error}",
+  "failedToCreateComment": "コメントの作成に失敗しました: {error}",
+  "failedToUpdateComment": "コメントの更新に失敗しました: {error}",
+  "failedToDeleteComment": "コメントの削除に失敗しました: {error}",
+  "commentCreated": "コメントを追加しました",
+  "commentUpdated": "コメントを更新しました",
+  "commentDeleted": "コメントを削除しました",
+  "confirmDeleteComment": "このコメントを削除しますか？",
+  "enterCommentBodyError": "コメントを入力してください"
 }

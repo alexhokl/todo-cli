@@ -13,6 +13,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&Label{},
 		&Effort{},
 		&Blocker{},
+		&Comment{},
 		&Item{},
 	); err != nil {
 		return err

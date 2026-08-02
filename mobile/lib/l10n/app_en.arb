@@ -161,5 +161,89 @@
   "labelDeleted": "Label deleted",
   "@labelDeleted": {
     "description": "Snackbar confirmation after a label is deleted"
+  },
+  "comments": "Comments",
+  "@comments": {
+    "description": "Page title for the comments view on an item"
+  },
+  "addComment": "Add comment",
+  "@addComment": {
+    "description": "Tooltip and dialog title for creating a new comment"
+  },
+  "editComment": "Edit comment",
+  "@editComment": {
+    "description": "Dialog title for editing an existing comment"
+  },
+  "commentBody": "Body",
+  "@commentBody": {
+    "description": "Text field label for the comment body"
+  },
+  "enterCommentBody": "Enter a comment",
+  "@enterCommentBody": {
+    "description": "Hint text for the comment body field"
+  },
+  "noComments": "No comments",
+  "@noComments": {
+    "description": "Empty state message when there are no comments"
+  },
+  "failedToLoadComments": "Failed to load comments: {error}",
+  "@failedToLoadComments": {
+    "description": "Error message shown when listing comments fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToCreateComment": "Failed to create comment: {error}",
+  "@failedToCreateComment": {
+    "description": "Snackbar message shown when creating a comment fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToUpdateComment": "Failed to update comment: {error}",
+  "@failedToUpdateComment": {
+    "description": "Snackbar message shown when updating a comment fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToDeleteComment": "Failed to delete comment: {error}",
+  "@failedToDeleteComment": {
+    "description": "Snackbar message shown when deleting a comment fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "commentCreated": "Comment added",
+  "@commentCreated": {
+    "description": "Snackbar confirmation after a comment is created"
+  },
+  "commentUpdated": "Comment updated",
+  "@commentUpdated": {
+    "description": "Snackbar confirmation after a comment is updated"
+  },
+  "commentDeleted": "Comment deleted",
+  "@commentDeleted": {
+    "description": "Snackbar confirmation after a comment is deleted"
+  },
+  "confirmDeleteComment": "Delete this comment?",
+  "@confirmDeleteComment": {
+    "description": "Confirmation dialog prompt asking the user to confirm deleting a comment"
+  },
+  "enterCommentBodyError": "Enter a comment",
+  "@enterCommentBodyError": {
+    "description": "Validation error shown when the comment body is empty"
   }
 }

@@ -89,6 +89,11 @@ type Item struct {
 	// foreign key lives on Blocker. Each Blocker also carries a denormalised
 	// UserID so queries can scope directly without joining items.
 	Blockers []Blocker `gorm:"foreignKey:ItemID"`
+	// Comments are the remarks attached to this item, in creation order. The
+	// relationship is one-to-many (an item can carry several comments), so the
+	// foreign key lives on Comment. Each Comment also carries a denormalised
+	// UserID so queries can scope directly without joining items.
+	Comments []Comment `gorm:"foreignKey:ItemID"`
 	// LinkedItems are the items linked to this one. The relationship is
 	// symmetric (undirected): linking A to B also links B to A, stored as
 	// two join rows (A->B and B->A) so GORM's Preload reads correctly from
@@ -113,4 +118,24 @@ type Blocker struct {
 	Item        *Item  `gorm:"foreignKey:ItemID"`
 	UserID      uint   `gorm:"not null;index"`
 	User        User   `gorm:"foreignKey:UserID"`
+}
+
+// Comment is a single remark attached to an item. An item can carry several
+// comments, ordered by creation. Unlike Label and Effort, the body is not
+// normalised or unique: two comments can share the same wording. Each Comment
+// carries its own UserID (denormalised from the parent Item) so cross-user
+// access can be rejected without joining items, mirroring the convention
+// applied to Blocker and every other owned record. The author is resolved
+// from User via the UserID foreign key.
+type Comment struct {
+	gorm.Model
+	// Body is a free-form remark (e.g. "drafted a reply, waiting on review").
+	// It is stored verbatim: no trimming or lower casing is applied, and
+	// duplicates are allowed. Only the surrounding whitespace is trimmed at
+	// create/update time, the inner content is preserved.
+	Body   string `gorm:"not null"`
+	ItemID uint   `gorm:"not null;index"`
+	Item   *Item  `gorm:"foreignKey:ItemID"`
+	UserID uint   `gorm:"not null;index"`
+	User   User   `gorm:"foreignKey:UserID"`
 }

@@ -22,7 +22,7 @@ func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
 	}
 
 	writer := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	if _, err := fmt.Fprintln(writer, "#\tID\tTITLE\tLABELS\tEFFORT\tBLOCKERS\tLINKED\tLIST\tDUE"); err != nil {
+	if _, err := fmt.Fprintln(writer, "#\tID\tTITLE\tLABELS\tEFFORT\tBLOCKERS\tCOMMENTS\tLINKED\tLIST\tDUE"); err != nil {
 		return fmt.Errorf("failed to write output: %w", err)
 	}
 
@@ -44,8 +44,8 @@ func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
 
 		if _, err := fmt.Fprintf(
 			writer,
-			"%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			order, item.GetId(), item.GetTitle(), joinLabelNames(item), effortName(item), joinBlockerDescriptions(item), joinLinkedItemIDs(item), list, due,
+			"%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			order, item.GetId(), item.GetTitle(), joinLabelNames(item), effortName(item), joinBlockerDescriptions(item), commentCount(item), joinLinkedItemIDs(item), list, due,
 		); err != nil {
 			return fmt.Errorf("failed to write output: %w", err)
 		}
@@ -94,6 +94,16 @@ func joinBlockerDescriptions(item *proto.Item) string {
 	return strings.Join(descriptions, "; ")
 }
 
+// commentCount renders the number of comments on the item, or a dash when it
+// carries none. Bodies are not inlined because they are free-form and may be
+// long; the per-item table is kept narrow on purpose.
+func commentCount(item *proto.Item) string {
+	if len(item.GetComments()) == 0 {
+		return "-"
+	}
+	return fmt.Sprintf("%d", len(item.GetComments()))
+}
+
 // joinLinkedItemIDs renders the ids of the item's linked items as a single
 // comma-separated cell, or a dash when the item carries none.
 func joinLinkedItemIDs(item *proto.Item) string {
@@ -118,6 +128,9 @@ func writeItemLine(out io.Writer, item *proto.Item) error {
 	}
 	if len(item.GetBlockers()) > 0 {
 		details = append(details, fmt.Sprintf("blockers %d", len(item.GetBlockers())))
+	}
+	if len(item.GetComments()) > 0 {
+		details = append(details, fmt.Sprintf("comments %d", len(item.GetComments())))
 	}
 	if len(item.GetLinkedItems()) > 0 {
 		details = append(details, fmt.Sprintf("linked %s", joinLinkedItemIDs(item)))

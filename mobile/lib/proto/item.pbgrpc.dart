@@ -204,6 +204,39 @@ class ItemServiceClient extends $grpc.Client {
     return $createUnaryCall(_$deleteBlocker, request, options: options);
   }
 
+  /// ListComments returns every comment attached to the given item, ordered by
+  /// identifier (creation order).
+  $grpc.ResponseFuture<$0.ListCommentsResponse> listComments(
+    $0.ListCommentsRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$listComments, request, options: options);
+  }
+
+  /// CreateComment attaches a new comment to an item.
+  $grpc.ResponseFuture<$0.Comment> createComment(
+    $0.CreateCommentRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$createComment, request, options: options);
+  }
+
+  /// UpdateComment edits the body of an existing comment.
+  $grpc.ResponseFuture<$0.Comment> updateComment(
+    $0.UpdateCommentRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$updateComment, request, options: options);
+  }
+
+  /// DeleteComment removes a comment.
+  $grpc.ResponseFuture<$1.Empty> deleteComment(
+    $0.DeleteCommentRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$deleteComment, request, options: options);
+  }
+
   // method descriptors
 
   static final _$listItems =
@@ -303,6 +336,26 @@ class ItemServiceClient extends $grpc.Client {
       $grpc.ClientMethod<$0.DeleteBlockerRequest, $1.Empty>(
           '/item.ItemService/DeleteBlocker',
           ($0.DeleteBlockerRequest value) => value.writeToBuffer(),
+          $1.Empty.fromBuffer);
+  static final _$listComments =
+      $grpc.ClientMethod<$0.ListCommentsRequest, $0.ListCommentsResponse>(
+          '/item.ItemService/ListComments',
+          ($0.ListCommentsRequest value) => value.writeToBuffer(),
+          $0.ListCommentsResponse.fromBuffer);
+  static final _$createComment =
+      $grpc.ClientMethod<$0.CreateCommentRequest, $0.Comment>(
+          '/item.ItemService/CreateComment',
+          ($0.CreateCommentRequest value) => value.writeToBuffer(),
+          $0.Comment.fromBuffer);
+  static final _$updateComment =
+      $grpc.ClientMethod<$0.UpdateCommentRequest, $0.Comment>(
+          '/item.ItemService/UpdateComment',
+          ($0.UpdateCommentRequest value) => value.writeToBuffer(),
+          $0.Comment.fromBuffer);
+  static final _$deleteComment =
+      $grpc.ClientMethod<$0.DeleteCommentRequest, $1.Empty>(
+          '/item.ItemService/DeleteComment',
+          ($0.DeleteCommentRequest value) => value.writeToBuffer(),
           $1.Empty.fromBuffer);
 }
 
@@ -469,6 +522,39 @@ abstract class ItemServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) =>
             $0.DeleteBlockerRequest.fromBuffer(value),
         ($1.Empty value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.ListCommentsRequest, $0.ListCommentsResponse>(
+            'ListComments',
+            listComments_Pre,
+            false,
+            false,
+            ($core.List<$core.int> value) =>
+                $0.ListCommentsRequest.fromBuffer(value),
+            ($0.ListCommentsResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.CreateCommentRequest, $0.Comment>(
+        'CreateComment',
+        createComment_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.CreateCommentRequest.fromBuffer(value),
+        ($0.Comment value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.UpdateCommentRequest, $0.Comment>(
+        'UpdateComment',
+        updateComment_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.UpdateCommentRequest.fromBuffer(value),
+        ($0.Comment value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.DeleteCommentRequest, $1.Empty>(
+        'DeleteComment',
+        deleteComment_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) =>
+            $0.DeleteCommentRequest.fromBuffer(value),
+        ($1.Empty value) => value.writeToBuffer()));
   }
 
   $async.Future<$0.ListItemsResponse> listItems_Pre($grpc.ServiceCall $call,
@@ -631,4 +717,37 @@ abstract class ItemServiceBase extends $grpc.Service {
 
   $async.Future<$1.Empty> deleteBlocker(
       $grpc.ServiceCall call, $0.DeleteBlockerRequest request);
+
+  $async.Future<$0.ListCommentsResponse> listComments_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.ListCommentsRequest> $request) async {
+    return listComments($call, await $request);
+  }
+
+  $async.Future<$0.ListCommentsResponse> listComments(
+      $grpc.ServiceCall call, $0.ListCommentsRequest request);
+
+  $async.Future<$0.Comment> createComment_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.CreateCommentRequest> $request) async {
+    return createComment($call, await $request);
+  }
+
+  $async.Future<$0.Comment> createComment(
+      $grpc.ServiceCall call, $0.CreateCommentRequest request);
+
+  $async.Future<$0.Comment> updateComment_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.UpdateCommentRequest> $request) async {
+    return updateComment($call, await $request);
+  }
+
+  $async.Future<$0.Comment> updateComment(
+      $grpc.ServiceCall call, $0.UpdateCommentRequest request);
+
+  $async.Future<$1.Empty> deleteComment_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.DeleteCommentRequest> $request) async {
+    return deleteComment($call, await $request);
+  }
+
+  $async.Future<$1.Empty> deleteComment(
+      $grpc.ServiceCall call, $0.DeleteCommentRequest request);
 }

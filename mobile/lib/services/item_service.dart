@@ -239,6 +239,61 @@ class ItemService {
     }
   }
 
+  /// List every comment attached to an item, ordered by creation.
+  Future<List<Comment>> listComments(int itemId) async {
+    _ensureInitialized();
+
+    final request = ListCommentsRequest(itemId: itemId);
+
+    try {
+      final response = await _client!.listComments(request);
+      return response.comments.toList();
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Attach a new comment to an item. The body must be non-empty after
+  /// trimming; the server rejects an empty body.
+  Future<Comment> createComment({required int itemId, required String body}) async {
+    _ensureInitialized();
+
+    final request = CreateCommentRequest(itemId: itemId, body: body);
+
+    try {
+      return await _client!.createComment(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Edit the body of an existing comment. The body must be non-empty after
+  /// trimming; the server rejects an empty body.
+  Future<Comment> updateComment({required int id, required String body}) async {
+    _ensureInitialized();
+
+    final request = UpdateCommentRequest(id: id, body: body);
+
+    try {
+      return await _client!.updateComment(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Remove a comment.
+  Future<void> deleteComment(int id) async {
+    _ensureInitialized();
+
+    final request = DeleteCommentRequest(id: id);
+
+    try {
+      await _client!.deleteComment(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
   /// Close the gRPC channel.
   Future<void> dispose() async {
     await _channel?.shutdown();

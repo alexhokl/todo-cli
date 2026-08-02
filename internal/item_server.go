@@ -323,7 +323,8 @@ func mapDatabaseError(err error) error {
 		return status.Error(codes.NotFound, err.Error())
 	case errors.Is(err, database.ErrLabelNotFound),
 		errors.Is(err, database.ErrEffortNotFound),
-		errors.Is(err, database.ErrBlockerNotFound):
+		errors.Is(err, database.ErrBlockerNotFound),
+		errors.Is(err, database.ErrCommentNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	case errors.Is(err, database.ErrLabelExists),
 		errors.Is(err, database.ErrEffortExists):
@@ -332,6 +333,7 @@ func mapDatabaseError(err error) error {
 		errors.Is(err, database.ErrLabelColourInvalid),
 		errors.Is(err, database.ErrEffortNameEmpty),
 		errors.Is(err, database.ErrBlockerDescriptionEmpty),
+		errors.Is(err, database.ErrCommentBodyEmpty),
 		errors.Is(err, database.ErrItemLinkToSelf):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, database.ErrItemCompleted),
@@ -401,6 +403,12 @@ func toProtoItem(item database.Item) (*proto.Item, error) {
 		return nil, err
 	}
 	result.Blockers = blockers
+
+	comments, err := toProtoComments(item.Comments)
+	if err != nil {
+		return nil, err
+	}
+	result.Comments = comments
 
 	linkedItems, err := toProtoItems(item.LinkedItems)
 	if err != nil {

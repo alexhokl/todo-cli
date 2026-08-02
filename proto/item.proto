@@ -62,6 +62,16 @@ service ItemService {
   rpc UpdateBlocker(UpdateBlockerRequest) returns (Blocker);
   // DeleteBlocker removes a blocker.
   rpc DeleteBlocker(DeleteBlockerRequest) returns (google.protobuf.Empty);
+
+  // ListComments returns every comment attached to the given item, ordered by
+  // identifier (creation order).
+  rpc ListComments(ListCommentsRequest) returns (ListCommentsResponse);
+  // CreateComment attaches a new comment to an item.
+  rpc CreateComment(CreateCommentRequest) returns (Comment);
+  // UpdateComment edits the body of an existing comment.
+  rpc UpdateComment(UpdateCommentRequest) returns (Comment);
+  // DeleteComment removes a comment.
+  rpc DeleteComment(DeleteCommentRequest) returns (google.protobuf.Empty);
 }
 
 // Label is a tag that can be attached to any number of items. Names are
@@ -87,6 +97,17 @@ message Blocker {
   string description = 2;
 }
 
+// Comment is a single remark attached to an item. An item can carry several
+// comments, ordered by creation. The body is stored verbatim: no
+// normalisation is applied. The author is the username of the user that
+// created the comment.
+message Comment {
+  uint32 id = 1;
+  string body = 2;
+  google.protobuf.Timestamp created_at = 3;
+  string author = 4;
+}
+
 // Item is a single todo item.
 message Item {
   uint32 id = 1;
@@ -107,6 +128,8 @@ message Item {
   // linked_items are the items linked to this one. The relationship is
   // symmetric, so a link from A to B appears on B as well.
   repeated Item linked_items = 11;
+  // comments are the remarks attached to the item, in creation order.
+  repeated Comment comments = 12;
 }
 
 // ItemView narrows ListItems to a single bucket. ITEM_VIEW_UNSPECIFIED keeps
@@ -276,5 +299,27 @@ message UpdateBlockerRequest {
 }
 
 message DeleteBlockerRequest {
+  uint32 id = 1;
+}
+
+message ListCommentsRequest {
+  uint32 item_id = 1;
+}
+
+message ListCommentsResponse {
+  repeated Comment comments = 1;
+}
+
+message CreateCommentRequest {
+  uint32 item_id = 1;
+  string body = 2;
+}
+
+message UpdateCommentRequest {
+  uint32 id = 1;
+  string body = 2;
+}
+
+message DeleteCommentRequest {
   uint32 id = 1;
 }
