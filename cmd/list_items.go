@@ -19,8 +19,9 @@ var listItemsOpts listItemsOptions
 
 // listItemsCmd lists the items, active ones in their manual order.
 var listItemsCmd = &cobra.Command{
-	Use:   "items",
-	Short: "List items in their manual order",
+	Use:     "items",
+	Aliases: []string{"item"},
+	Short:   "List items in their manual order",
 	Long: `List items.
 
 Repeating --label narrows the result: only items carrying every one of the

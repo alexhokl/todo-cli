@@ -11,6 +11,7 @@ import (
 // listBlockersCmd lists every blocker attached to an item.
 var listBlockersCmd = &cobra.Command{
 	Use:         "blockers [item-id]",
+	Aliases:     []string{"blocker [item-id]"},
 	Short:       "List blockers on an item",
 	Args:        cobra.ExactArgs(1),
 	Annotations: map[string]string{annotationRequiresService: "true"},

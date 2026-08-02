@@ -11,6 +11,7 @@ import (
 // listEffortsCmd lists every known effort.
 var listEffortsCmd = &cobra.Command{
 	Use:         "efforts",
+	Aliases:     []string{"effort"},
 	Short:       "List efforts",
 	Args:        cobra.NoArgs,
 	Annotations: map[string]string{annotationRequiresService: "true"},

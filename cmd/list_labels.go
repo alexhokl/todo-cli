@@ -11,6 +11,7 @@ import (
 // listLabelsCmd lists every known label.
 var listLabelsCmd = &cobra.Command{
 	Use:         "labels",
+	Aliases:     []string{"label"},
 	Short:       "List labels",
 	Args:        cobra.NoArgs,
 	Annotations: map[string]string{annotationRequiresService: "true"},

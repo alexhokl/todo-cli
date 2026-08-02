@@ -12,6 +12,7 @@ import (
 // listCommentsCmd lists every comment attached to an item.
 var listCommentsCmd = &cobra.Command{
 	Use:         "comments [item-id]",
+	Aliases:     []string{"comment [item-id]"},
 	Short:       "List comments on an item",
 	Args:        cobra.ExactArgs(1),
 	Annotations: map[string]string{annotationRequiresService: "true"},
