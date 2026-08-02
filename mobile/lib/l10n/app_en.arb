@@ -269,5 +269,91 @@
   "enterCommentBodyError": "Enter a comment",
   "@enterCommentBodyError": {
     "description": "Validation error shown when the comment body is empty"
+  },
+  "efforts": "Efforts",
+  "@efforts": {
+    "description": "Menu item and page title for managing efforts"
+  },
+  "addEffort": "Add effort",
+  "@addEffort": {
+    "description": "Tooltip and dialog title for creating a new effort"
+  },
+  "editEffort": "Edit effort",
+  "@editEffort": {
+    "description": "Dialog title for editing an existing effort"
+  },
+  "effortName": "Name",
+  "@effortName": {
+    "description": "Text field label for the effort name"
+  },
+  "enterEffortName": "Enter a name",
+  "@enterEffortName": {
+    "description": "Hint text for the effort name field"
+  },
+  "confirmDeleteEffort": "Delete effort \"{name}\"?",
+  "@confirmDeleteEffort": {
+    "description": "Confirmation dialog prompt asking the user to confirm deleting an effort",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "description": "Name of the effort being deleted"
+      }
+    }
+  },
+  "noEfforts": "No efforts",
+  "@noEfforts": {
+    "description": "Empty state message when there are no efforts"
+  },
+  "failedToLoadEfforts": "Failed to load efforts: {error}",
+  "@failedToLoadEfforts": {
+    "description": "Error message shown when listing efforts fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToCreateEffort": "Failed to create effort: {error}",
+  "@failedToCreateEffort": {
+    "description": "Snackbar message shown when creating an effort fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToRenameEffort": "Failed to rename effort: {error}",
+  "@failedToRenameEffort": {
+    "description": "Snackbar message shown when renaming an effort fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToDeleteEffort": "Failed to delete effort: {error}",
+  "@failedToDeleteEffort": {
+    "description": "Snackbar message shown when deleting an effort fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "effortCreated": "Effort created",
+  "@effortCreated": {
+    "description": "Snackbar confirmation after an effort is created"
+  },
+  "effortRenamed": "Effort updated",
+  "@effortRenamed": {
+    "description": "Snackbar confirmation after an effort is renamed"
+  },
+  "effortDeleted": "Effort deleted",
+  "@effortDeleted": {
+    "description": "Snackbar confirmation after an effort is deleted"
   }
 }

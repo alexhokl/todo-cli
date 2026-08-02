@@ -249,6 +249,65 @@ class ItemService {
     }
   }
 
+  /// List every known effort ordered by name. Unlike labels, an effort has no
+  /// colour field and an item carries at most one effort via a belongs-to
+  /// foreign key rather than a many-to-many join table.
+  Future<List<Effort>> listEfforts() async {
+    _ensureInitialized();
+
+    final request = ListEffortsRequest();
+
+    try {
+      final response = await _client!.listEfforts(request);
+      return response.efforts.toList();
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Create an effort explicitly. Reports a name that is already taken rather
+  /// than returning the existing effort. The server rejects an empty name.
+  Future<Effort> createEffort(String name) async {
+    _ensureInitialized();
+
+    final request = CreateEffortRequest(name: name);
+
+    try {
+      return await _client!.createEffort(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Change the name of an existing effort. The server rejects a duplicate or
+  /// empty name.
+  Future<Effort> renameEffort(int id, {required String name}) async {
+    _ensureInitialized();
+
+    final request = RenameEffortRequest(id: id, name: name);
+
+    try {
+      return await _client!.renameEffort(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Remove an effort. The server rejects the request when the effort is still
+  /// referenced by any item; in that case the error message is surfaced to the
+  /// caller as an [ItemException].
+  Future<void> deleteEffort(int id) async {
+    _ensureInitialized();
+
+    final request = DeleteEffortRequest(id: id);
+
+    try {
+      await _client!.deleteEffort(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
   /// List every comment attached to an item, ordered by creation.
   Future<List<Comment>> listComments(int itemId) async {
     _ensureInitialized();

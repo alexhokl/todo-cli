@@ -53,5 +53,19 @@
   "commentUpdated": "コメントを更新しました",
   "commentDeleted": "コメントを削除しました",
   "confirmDeleteComment": "このコメントを削除しますか？",
-  "enterCommentBodyError": "コメントを入力してください"
+  "enterCommentBodyError": "コメントを入力してください",
+  "efforts": "工数",
+  "addEffort": "工数を追加",
+  "editEffort": "工数を編集",
+  "effortName": "名前",
+  "enterEffortName": "名前を入力",
+  "confirmDeleteEffort": "工数「{name}」を削除しますか？",
+  "noEfforts": "工数がありません",
+  "failedToLoadEfforts": "工数の読み込みに失敗しました: {error}",
+  "failedToCreateEffort": "工数の作成に失敗しました: {error}",
+  "failedToRenameEffort": "工数の更新に失敗しました: {error}",
+  "failedToDeleteEffort": "工数の削除に失敗しました: {error}",
+  "effortCreated": "工数を作成しました",
+  "effortRenamed": "工数を更新しました",
+  "effortDeleted": "工数を削除しました"
 }

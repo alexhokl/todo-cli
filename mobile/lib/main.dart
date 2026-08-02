@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
+import 'package:todo/widgets/efforts_page.dart';
 import 'package:todo/widgets/item_list.dart';
 import 'package:todo/widgets/labels_page.dart';
 import 'package:todo/widgets/settings_page.dart';
@@ -47,6 +48,11 @@ class _HomePageState extends State<HomePage> {
                   context,
                   MaterialPageRoute(builder: (_) => const LabelsPage()),
                 );
+              } else if (value == 'efforts') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const EffortsPage()),
+                );
               } else if (value == 'settings') {
                 Navigator.push(
                   context,
@@ -58,6 +64,10 @@ class _HomePageState extends State<HomePage> {
               PopupMenuItem(
                 value: 'labels',
                 child: Text(AppLocalizations.of(context)!.labels),
+              ),
+              PopupMenuItem(
+                value: 'efforts',
+                child: Text(AppLocalizations.of(context)!.efforts),
               ),
               PopupMenuItem(
                 value: 'settings',
