@@ -10,7 +10,6 @@ import (
 type listItemsOptions struct {
 	Labels        []string
 	Untriaged     bool
-	Triaged       bool
 	TimeSensitive bool
 	Done          bool
 }
@@ -24,15 +23,15 @@ var listItemsCmd = &cobra.Command{
 	Short:   "List items in their manual order",
 	Long: `List items.
 
+By default only active, triaged items are listed, in their manual order.
+
 Repeating --label narrows the result: only items carrying every one of the
 given labels are shown.
 
-At most one of --untriaged, --triaged, --time-sensitive, and --done may be
-given. They select a single bucket instead of the default active-plus-completed
-view.
+At most one of --untriaged, --time-sensitive, and --done may be given. They
+select a single bucket instead of the default active view.
 
   --untriaged      not done and carrying no manual ordering rank yet
-  --triaged        not done and already placed in the manual order
   --time-sensitive not done and carrying a due date
   --done           completed items`,
 	Example: `  todo list items
@@ -50,7 +49,6 @@ func init() {
 
 	listItemsCmd.Flags().StringArrayVar(&listItemsOpts.Labels, "label", nil, "Only show items carrying this label (repeatable)")
 	listItemsCmd.Flags().BoolVar(&listItemsOpts.Untriaged, "untriaged", false, "Only show active items without a manual ordering rank")
-	listItemsCmd.Flags().BoolVar(&listItemsOpts.Triaged, "triaged", false, "Only show active items already placed in the manual order")
 	listItemsCmd.Flags().BoolVar(&listItemsOpts.TimeSensitive, "time-sensitive", false, "Only show active items carrying a due date")
 	listItemsCmd.Flags().BoolVar(&listItemsOpts.Done, "done", false, "Only show completed items")
 }
@@ -77,38 +75,18 @@ func runListItems(cmd *cobra.Command, _ []string) error {
 
 	out := cmd.OutOrStdout()
 
-	if view == proto.ItemView_ITEM_VIEW_UNSPECIFIED {
-		if _, err := fmt.Fprintln(out, "Active:"); err != nil {
-			return fmt.Errorf("failed to write output: %w", err)
-		}
-		if err := writeItemTable(out, response.GetActive(), true); err != nil {
-			return err
-		}
-
-		if _, err := fmt.Fprintln(out, "\nCompleted:"); err != nil {
-			return fmt.Errorf("failed to write output: %w", err)
-		}
-
-		// Completed items are not part of the manual ordering, so they are listed
-		// by how recently they were updated and carry no ordinal.
-		return writeItemTable(out, response.GetCompleted(), false)
-	}
-
-	header, numbered := viewHeader(view)
-	if _, err := fmt.Fprintln(out, header); err != nil {
-		return fmt.Errorf("failed to write output: %w", err)
-	}
+	// The section header (e.g. "Items:", "Done:") is intentionally not
+	// printed: the column header row from writeItemTable is the first line
+	// of output for every view.
+	_, numbered := viewHeader(view)
 	return writeItemTable(out, response.GetActive(), numbered)
 }
 
 // resolveItemView maps the mutually exclusive view flags to a proto ItemView.
-// Setting none of them keeps the legacy two-bucket behaviour.
+// Setting none of them returns the default triaged active view.
 func resolveItemView() (proto.ItemView, error) {
 	set := 0
 	if listItemsOpts.Untriaged {
-		set++
-	}
-	if listItemsOpts.Triaged {
 		set++
 	}
 	if listItemsOpts.TimeSensitive {
@@ -118,31 +96,29 @@ func resolveItemView() (proto.ItemView, error) {
 		set++
 	}
 	if set > 1 {
-		return 0, fmt.Errorf("--untriaged, --triaged, --time-sensitive, and --done are mutually exclusive")
+		return 0, fmt.Errorf("--untriaged, --time-sensitive, and --done are mutually exclusive")
 	}
 
 	switch {
 	case listItemsOpts.Untriaged:
 		return proto.ItemView_ITEM_VIEW_UNTRIAGED, nil
-	case listItemsOpts.Triaged:
-		return proto.ItemView_ITEM_VIEW_TRIAGED, nil
 	case listItemsOpts.TimeSensitive:
 		return proto.ItemView_ITEM_VIEW_TIME_SENSITIVE, nil
 	case listItemsOpts.Done:
 		return proto.ItemView_ITEM_VIEW_DONE, nil
 	default:
-		return proto.ItemView_ITEM_VIEW_UNSPECIFIED, nil
+		return proto.ItemView_ITEM_VIEW_TRIAGED, nil
 	}
 }
 
 // viewHeader returns the section header and whether the table rows carry an
-// ordinal for the selected view.
+// ordinal for the selected view. The default (triaged) view renders as
+// "Items:" since it is the primary listing; the explicit buckets name
+// themselves.
 func viewHeader(view proto.ItemView) (string, bool) {
 	switch view {
 	case proto.ItemView_ITEM_VIEW_UNTRIAGED:
 		return "Untriaged:", true
-	case proto.ItemView_ITEM_VIEW_TRIAGED:
-		return "Triaged:", true
 	case proto.ItemView_ITEM_VIEW_TIME_SENSITIVE:
 		return "Time-sensitive:", true
 	case proto.ItemView_ITEM_VIEW_DONE:

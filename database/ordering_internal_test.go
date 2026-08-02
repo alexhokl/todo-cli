@@ -663,6 +663,8 @@ func TestGetItemNotFound(t *testing.T) {
 	}
 }
 
+func floatPtr(v float64) *float64 { return &v }
+
 func TestGetItemCrossUserIsNotFound(t *testing.T) {
 	db := setupTestDB(t)
 	ids := seedItems(t, db, "a")
@@ -671,4 +673,162 @@ func TestGetItemCrossUserIsNotFound(t *testing.T) {
 	if !errors.Is(err, ErrItemNotFound) {
 		t.Errorf("expected %v for a cross-user access but got %v", ErrItemNotFound, err)
 	}
+}
+
+// TestItemPriorityInvariant asserts that no application code path leaves a
+// completed item with a priority, which would otherwise leak the row into
+// both the active and completed listings. Each subtest exercises one writer
+// (CreateItem, MoveItem, SetDone, UpdateItemDueDate, UpdateItemLabels,
+// UpdateItemLinks) and checks the invariant both via the returned model and
+// via a direct SQL query against the table.
+func TestItemPriorityInvariant(t *testing.T) {
+	checkInvariant := func(t *testing.T, db *gorm.DB, id uint) {
+		t.Helper()
+		var item Item
+		if err := db.Select("done", "priority").First(&item, id).Error; err != nil {
+			t.Fatalf("failed to load the item %d: %v", id, err)
+		}
+		if item.Done && item.Priority != nil {
+			t.Errorf("invariant violated: done item %d carries priority %v", id, *item.Priority)
+		}
+	}
+
+	t.Run("create leaves priority nil", func(t *testing.T) {
+		db := setupTestDB(t)
+		item := Item{Title: "new", UserID: testUserID}
+		if err := db.Create(&item).Error; err != nil {
+			t.Fatalf("failed to create the item: %v", err)
+		}
+		if item.Priority != nil {
+			t.Errorf("expected no priority on a new item but got %v", *item.Priority)
+		}
+		checkInvariant(t, db, item.ID)
+	})
+
+	t.Run("move assigns priority only when active", func(t *testing.T) {
+		db := setupTestDB(t)
+		ids := seedItems(t, db, "a")
+		// Triaged active item: priority is set.
+		checkInvariant(t, db, ids["a"])
+	})
+
+	t.Run("complete clears priority", func(t *testing.T) {
+		db := setupTestDB(t)
+		ids := seedItems(t, db, "a")
+		completed, err := SetDone(db, testUserID, ids["a"], true)
+		if err != nil {
+			t.Fatalf("failed to complete the item: %v", err)
+		}
+		if completed.Priority != nil {
+			t.Errorf("expected the priority to be cleared but got %v", *completed.Priority)
+		}
+		checkInvariant(t, db, ids["a"])
+	})
+
+	t.Run("reopen leaves priority nil", func(t *testing.T) {
+		db := setupTestDB(t)
+		ids := seedItems(t, db, "a")
+		if _, err := SetDone(db, testUserID, ids["a"], true); err != nil {
+			t.Fatalf("failed to complete the item: %v", err)
+		}
+		reopened, err := SetDone(db, testUserID, ids["a"], false)
+		if err != nil {
+			t.Fatalf("failed to reopen the item: %v", err)
+		}
+		if reopened.Priority != nil {
+			t.Errorf("expected no priority after reopening but got %v", *reopened.Priority)
+		}
+		checkInvariant(t, db, ids["a"])
+	})
+
+	t.Run("update due date preserves invariant", func(t *testing.T) {
+		db := setupTestDB(t)
+		ids := seedItems(t, db, "a")
+		due := time.Now()
+		if _, err := UpdateItemDueDate(db, testUserID, ids["a"], &due); err != nil {
+			t.Fatalf("failed to update the due date: %v", err)
+		}
+		checkInvariant(t, db, ids["a"])
+	})
+
+	t.Run("update labels preserves invariant", func(t *testing.T) {
+		db := setupTestDB(t)
+		ids := seedItems(t, db, "a")
+		if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"work"}, nil); err != nil {
+			t.Fatalf("failed to update the labels: %v", err)
+		}
+		checkInvariant(t, db, ids["a"])
+	})
+
+	t.Run("update links preserves invariant", func(t *testing.T) {
+		db := setupTestDB(t)
+		ids := seedItems(t, db, "a", "b")
+		if _, err := UpdateItemLinks(db, testUserID, ids["a"], []uint{ids["b"]}, nil); err != nil {
+			t.Fatalf("failed to update the links: %v", err)
+		}
+		checkInvariant(t, db, ids["a"])
+		checkInvariant(t, db, ids["b"])
+	})
+
+	t.Run("move rejects a completed subject", func(t *testing.T) {
+		db := setupTestDB(t)
+		ids := seedItems(t, db, "a", "b")
+		if _, err := SetDone(db, testUserID, ids["a"], true); err != nil {
+			t.Fatalf("failed to complete the item: %v", err)
+		}
+		_, err := MoveItem(db, testUserID, ids["a"], MoveAnchor{TargetID: ids["b"], Before: true}, MoveOptions{})
+		if !errors.Is(err, ErrItemCompleted) {
+			t.Errorf("expected %v but got %v", ErrItemCompleted, err)
+		}
+		// The completed item must still satisfy the invariant.
+		checkInvariant(t, db, ids["a"])
+	})
+}
+
+// TestItemPriorityInvariantTriggerEnforced asserts the database trigger
+// created by AutoMigrate rejects a direct write that would violate the
+// "a done item must not carry a priority" invariant, so a stray UPDATE that
+// bypasses SetDone cannot silently corrupt the listings.
+func TestItemPriorityInvariantTriggerEnforced(t *testing.T) {
+	db := setupTestDB(t)
+	item := Item{Title: "guarded", UserID: testUserID}
+	if err := db.Create(&item).Error; err != nil {
+		t.Fatalf("failed to create the item: %v", err)
+	}
+
+	priority := 1.0
+	err := db.Model(&Item{}).
+		Where("id = ?", item.ID).
+		Updates(map[string]any{"done": true, "priority": &priority}).Error
+	if err == nil {
+		t.Fatalf("expected the trigger to reject a done item with a priority but the write succeeded")
+	}
+}
+
+// TestItemPriorityInvariantTriggerAllowsValid asserts the trigger does not
+// interfere with the legal writes: an active triaged item, a completed item
+// with no priority, and an untriaged active item.
+func TestItemPriorityInvariantTriggerAllowsValid(t *testing.T) {
+	db := setupTestDB(t)
+
+	t.Run("active with priority", func(t *testing.T) {
+		item := Item{Title: "triaged", UserID: testUserID, Priority: floatPtr(priorityStep)}
+		if err := db.Create(&item).Error; err != nil {
+			t.Fatalf("expected the trigger to allow an active triaged item but got %v", err)
+		}
+	})
+
+	t.Run("done without priority", func(t *testing.T) {
+		item := Item{Title: "done", UserID: testUserID, Done: true}
+		if err := db.Create(&item).Error; err != nil {
+			t.Fatalf("expected the trigger to allow a done item without priority but got %v", err)
+		}
+	})
+
+	t.Run("active without priority", func(t *testing.T) {
+		item := Item{Title: "untriaged", UserID: testUserID}
+		if err := db.Create(&item).Error; err != nil {
+			t.Fatalf("expected the trigger to allow an untriaged item but got %v", err)
+		}
+	})
 }
