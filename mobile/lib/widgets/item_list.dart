@@ -6,16 +6,29 @@ import 'package:todo/widgets/comments_page.dart';
 import 'package:todo/widgets/settings_page.dart';
 
 /// Read-only list of todo items fetched from the gRPC server.
+///
+/// A chip bar at the top selects the bucket shown (triaged by default,
+/// plus untriaged, time-sensitive, and completed). When [service] is null
+/// the page builds one lazily from the persisted backend configuration
+/// (the same seam used by [LabelsPage] and [CommentsPage]). Tests inject a
+/// fake service so they never touch the network or shared preferences.
 class ItemList extends StatefulWidget {
-  const ItemList({super.key});
+  const ItemList({super.key, this.service});
+
+  final ItemService? service;
 
   @override
   State<ItemList> createState() => ItemListState();
 }
 
 class ItemListState extends State<ItemList> {
-  List<Item>? _active;
-  List<Item>? _completed;
+  /// Currently selected bucket. Defaults to triaged active items.
+  ItemView _view = ItemView.ITEM_VIEW_TRIAGED;
+
+  /// Whether the chip bar is expanded to reveal all four bucket chips.
+  bool _chipsExpanded = false;
+
+  List<Item>? _items;
   String? _error;
   bool _isLoading = true;
   ItemService? _service;
@@ -23,6 +36,7 @@ class ItemListState extends State<ItemList> {
   @override
   void initState() {
     super.initState();
+    _service = widget.service;
     _load();
   }
 
@@ -32,12 +46,10 @@ class ItemListState extends State<ItemList> {
       _error = null;
     });
     try {
-      final config = await BackendConfig.load();
-      _service = ItemService(host: config.host, port: config.port);
-      final result = await _service!.listItems();
+      _service ??= await _buildService();
+      final result = await _service!.listItems(view: _view);
       setState(() {
-        _active = result.active;
-        _completed = result.completed;
+        _items = result.active;
         _isLoading = false;
       });
     } on ItemException catch (e) {
@@ -53,12 +65,24 @@ class ItemListState extends State<ItemList> {
     }
   }
 
+  Future<ItemService> _buildService() async {
+    final config = await BackendConfig.load();
+    return ItemService(host: config.host, port: config.port);
+  }
+
   Future<void> retryLoading() async {
     await _service?.dispose();
-    _service = null;
-    _active = null;
-    _completed = null;
+    _service = widget.service;
+    _items = null;
     await _load();
+  }
+
+  void _selectView(ItemView view) {
+    setState(() {
+      _view = view;
+      _chipsExpanded = false;
+    });
+    _load();
   }
 
   void _openComments(BuildContext context, Item item) {
@@ -74,6 +98,58 @@ class ItemListState extends State<ItemList> {
   void dispose() {
     _service?.dispose();
     super.dispose();
+  }
+
+  String _viewLabel(BuildContext context, ItemView view) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (view) {
+      case ItemView.ITEM_VIEW_TRIAGED:
+        return l10n.triaged;
+      case ItemView.ITEM_VIEW_UNTRIAGED:
+        return l10n.untriaged;
+      case ItemView.ITEM_VIEW_TIME_SENSITIVE:
+        return l10n.timeSensitive;
+      case ItemView.ITEM_VIEW_DONE:
+        return l10n.completed;
+      default:
+        return l10n.triaged;
+    }
+  }
+
+  Widget _buildChipBar(BuildContext context) {
+    final views = const [
+      ItemView.ITEM_VIEW_TRIAGED,
+      ItemView.ITEM_VIEW_UNTRIAGED,
+      ItemView.ITEM_VIEW_TIME_SENSITIVE,
+      ItemView.ITEM_VIEW_DONE,
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: _chipsExpanded
+            ? Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final v in views)
+                    FilterChip(
+                      label: Text(_viewLabel(context, v)),
+                      selected: _view == v,
+                      onSelected: (_) => _selectView(v),
+                    ),
+                ],
+              )
+            : ActionChip(
+                label: Text(_viewLabel(context, _view)),
+                avatar: const Icon(Icons.filter_list),
+                onPressed: () => setState(() => _chipsExpanded = true),
+              ),
+      ),
+    );
   }
 
   @override
@@ -97,63 +173,54 @@ class ItemListState extends State<ItemList> {
         ),
       );
     }
-    final active = _active ?? const <Item>[];
-    final completed = _completed ?? const <Item>[];
-    if (active.isEmpty && completed.isEmpty) {
-      return Center(child: Text(AppLocalizations.of(context)!.noItems));
-    }
-    return RefreshIndicator(
-      onRefresh: retryLoading,
-      child: ListView(
-        children: [
-          if (active.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                AppLocalizations.of(context)!.active,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            ),
-            for (final item in active)
-              ListTile(
-                leading: const Icon(Icons.circle_outlined),
-                title: Text(item.title),
-                subtitle:
-                    item.description.isEmpty ? null : Text(item.description),
-                trailing: IconButton(
-                  icon: const Icon(Icons.comment_outlined),
-                  tooltip: AppLocalizations.of(context)!.comments,
-                  onPressed: () => _openComments(context, item),
+    final items = _items ?? const <Item>[];
+    return Column(
+      children: [
+        _buildChipBar(context),
+        Expanded(
+          child: items.isEmpty
+              ? Center(
+                  child: Text(
+                    AppLocalizations.of(context)!.noItems,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: retryLoading,
+                  child: ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final done = item.done;
+                      return ListTile(
+                        leading: Icon(
+                          done
+                              ? Icons.check_circle_outline
+                              : Icons.circle_outlined,
+                        ),
+                        title: Text(
+                          item.title,
+                          style: done
+                              ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    decoration: TextDecoration.lineThrough,
+                                    color: Theme.of(context).disabledColor,
+                                  )
+                              : null,
+                        ),
+                        subtitle: item.description.isEmpty
+                            ? null
+                            : Text(item.description),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.comment_outlined),
+                          tooltip: AppLocalizations.of(context)!.comments,
+                          onPressed: () => _openComments(context, item),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-          ],
-          if (completed.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                AppLocalizations.of(context)!.completed,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            ),
-            for (final item in completed)
-              ListTile(
-                leading: const Icon(Icons.check_circle_outline),
-                title: Text(
-                  item.title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        decoration: TextDecoration.lineThrough,
-                        color: Theme.of(context).disabledColor,
-                      ),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.comment_outlined),
-                  tooltip: AppLocalizations.of(context)!.comments,
-                  onPressed: () => _openComments(context, item),
-                ),
-              ),
-          ],
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

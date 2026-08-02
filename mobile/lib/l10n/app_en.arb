@@ -28,6 +28,18 @@
   "@completed": {
     "description": "Section header for completed items"
   },
+  "triaged": "Triaged",
+  "@triaged": {
+    "description": "Chip label for the triaged active items view"
+  },
+  "untriaged": "Untriaged",
+  "@untriaged": {
+    "description": "Chip label for the untriaged active items view"
+  },
+  "timeSensitive": "Time-sensitive",
+  "@timeSensitive": {
+    "description": "Chip label for the time-sensitive active items view"
+  },
   "backendConfiguration": "Backend Configuration",
   "@backendConfiguration": {
     "description": "Settings section title for backend configuration"

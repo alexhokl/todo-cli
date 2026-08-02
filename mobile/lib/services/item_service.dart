@@ -55,13 +55,23 @@ class ItemService {
     }
   }
 
-  /// List items, optionally filtered by label names.
-  Future<ListItemsResult> listItems({List<String>? labels}) async {
+  /// List items, optionally filtered by label names and/or narrowed to a
+  /// single bucket via [view]. When [view] is null the server returns both
+  /// the active and completed buckets (legacy behaviour); when set, only
+  /// the matching bucket is returned, populated in [ListItemsResult.active]
+  /// with `completed` left empty.
+  Future<ListItemsResult> listItems({
+    List<String>? labels,
+    ItemView? view,
+  }) async {
     _ensureInitialized();
 
     final request = ListItemsRequest();
     if (labels != null && labels.isNotEmpty) {
       request.labels.addAll(labels);
+    }
+    if (view != null) {
+      request.view = view;
     }
 
     try {
