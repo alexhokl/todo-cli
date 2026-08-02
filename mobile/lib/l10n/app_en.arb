@@ -20,6 +20,18 @@
   "@noItems": {
     "description": "Empty state message when there are no todo items"
   },
+  "searchItems": "Search items",
+  "@searchItems": {
+    "description": "Hint text for the item list search field"
+  },
+  "noMatchingItems": "No matching items",
+  "@noMatchingItems": {
+    "description": "Empty state message when the search query matches no items"
+  },
+  "clearSearch": "Clear search",
+  "@clearSearch": {
+    "description": "Tooltip for the clear-search suffix icon in the item list search field"
+  },
   "active": "Active",
   "@active": {
     "description": "Section header for active (not done) items"

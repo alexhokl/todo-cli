@@ -33,6 +33,11 @@ class ItemListState extends State<ItemList> {
   bool _isLoading = true;
   ItemService? _service;
 
+  /// Current search query, trimmed. Empty means no filtering.
+  String _query = '';
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -81,8 +86,25 @@ class ItemListState extends State<ItemList> {
     setState(() {
       _view = view;
       _chipsExpanded = false;
+      _query = '';
+      _searchController.clear();
     });
+    _searchFocus.unfocus();
     _load();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _query = value.trim();
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _searchFocus.unfocus();
+    setState(() {
+      _query = '';
+    });
   }
 
   void _openComments(BuildContext context, Item item) {
@@ -96,6 +118,8 @@ class ItemListState extends State<ItemList> {
 
   @override
   void dispose() {
+    _searchController.dispose();
+    _searchFocus.dispose();
     _service?.dispose();
     super.dispose();
   }
@@ -152,6 +176,35 @@ class ItemListState extends State<ItemList> {
     );
   }
 
+  Widget _buildSearchBar(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocus,
+        onChanged: _onSearchChanged,
+        decoration: InputDecoration(
+          hintText: l10n.searchItems,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _query.isEmpty
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.clear),
+                  tooltip: l10n.clearSearch,
+                  onPressed: _clearSearch,
+                ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+          isDense: true,
+        ),
+        textInputAction: TextInputAction.search,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -173,15 +226,24 @@ class ItemListState extends State<ItemList> {
         ),
       );
     }
-    final items = _items ?? const <Item>[];
+    final all = _items ?? const <Item>[];
+    final items = _query.isEmpty
+        ? all
+        : all
+            .where((i) =>
+                i.title.toLowerCase().contains(_query.toLowerCase()) ||
+                i.description.toLowerCase().contains(_query.toLowerCase()))
+            .toList();
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       children: [
         _buildChipBar(context),
+        _buildSearchBar(context),
         Expanded(
           child: items.isEmpty
               ? Center(
                   child: Text(
-                    AppLocalizations.of(context)!.noItems,
+                    _query.isEmpty ? l10n.noItems : l10n.noMatchingItems,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 )

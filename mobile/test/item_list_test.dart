@@ -153,4 +153,128 @@ void main() {
       expect(titleText.style?.decoration, TextDecoration.lineThrough);
     });
   });
+
+  group('ItemList search box', () {
+    testWidgets('renders a search box directly under the chip bar', (tester) async {
+      final service = _FakeItemService(triaged: [Item(id: 1, title: 'ship it')]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // The search field is present with the localised hint.
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('Search items'), findsOneWidget);
+    });
+
+    testWidgets('filters items by title as the query is typed', (tester) async {
+      final service = _FakeItemService(triaged: [
+        Item(id: 1, title: 'ship release'),
+        Item(id: 2, title: 'write docs'),
+      ]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Both items are visible before searching.
+      expect(find.text('ship release'), findsOneWidget);
+      expect(find.text('write docs'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'ship');
+      await tester.pump();
+
+      // Only the matching title remains.
+      expect(find.text('ship release'), findsOneWidget);
+      expect(find.text('write docs'), findsNothing);
+    });
+
+    testWidgets('matches against the description as well as the title', (tester) async {
+      final service = _FakeItemService(triaged: [
+        Item(id: 1, title: 'alpha', description: 'fix the login bug'),
+        Item(id: 2, title: 'beta', description: 'polish the UI'),
+      ]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'login');
+      await tester.pump();
+
+      expect(find.text('alpha'), findsOneWidget);
+      expect(find.text('beta'), findsNothing);
+    });
+
+    testWidgets('matching is case-insensitive', (tester) async {
+      final service = _FakeItemService(triaged: [
+        Item(id: 1, title: 'Ship It'),
+      ]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'SHIP');
+      await tester.pump();
+
+      expect(find.text('Ship It'), findsOneWidget);
+    });
+
+    testWidgets('shows the no-matching-items empty state when the query yields nothing', (tester) async {
+      final service = _FakeItemService(triaged: [Item(id: 1, title: 'ship it')]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'zzz');
+      await tester.pump();
+
+      expect(find.text('No matching items'), findsOneWidget);
+      expect(find.text('ship it'), findsNothing);
+    });
+
+    testWidgets('clearing the query restores all items', (tester) async {
+      final service = _FakeItemService(triaged: [
+        Item(id: 1, title: 'ship it'),
+        Item(id: 2, title: 'write docs'),
+      ]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'ship');
+      await tester.pump();
+      expect(find.text('write docs'), findsNothing);
+
+      // Tap the clear suffix icon to reset the query.
+      await tester.tap(find.byIcon(Icons.clear));
+      await tester.pump();
+
+      expect(find.text('ship it'), findsOneWidget);
+      expect(find.text('write docs'), findsOneWidget);
+    });
+
+    testWidgets('switching the view clears the query', (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 1, title: 'ship it')],
+        completed: [Item(id: 2, title: 'old release', done: true)],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'ship');
+      await tester.pump();
+      expect(find.text('ship it'), findsOneWidget);
+
+      // Switch to the Completed view.
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilterChip, 'Completed'));
+      await tester.pumpAndSettle();
+
+      // The search field is empty again and the completed item is visible.
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.controller!.text, isEmpty);
+      expect(find.text('old release'), findsOneWidget);
+      expect(find.text('ship it'), findsNothing);
+    });
+  });
 }
