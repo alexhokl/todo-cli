@@ -92,7 +92,7 @@ func TestWriteItemTableIncludesLabels(t *testing.T) {
 		{Id: 2, Title: "b"},
 	}
 
-	if err := writeItemTable(&buffer, items, true); err != nil {
+	if err := writeItemTable(&buffer, items); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 
@@ -119,7 +119,7 @@ func TestWriteItemLineIncludesLabels(t *testing.T) {
 
 func TestWriteItemTableEmpty(t *testing.T) {
 	var buffer strings.Builder
-	if err := writeItemTable(&buffer, nil, true); err != nil {
+	if err := writeItemTable(&buffer, nil); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 	if buffer.String() != "  (none)\n" {
@@ -135,7 +135,7 @@ func TestWriteItemTableRendersDueDateAndList(t *testing.T) {
 		{Id: 1, Title: "a", DueDate: due, ListId: &listID},
 	}
 
-	if err := writeItemTable(&buffer, items, true); err != nil {
+	if err := writeItemTable(&buffer, items); err != nil {
 		t.Fatalf("expected no error but got %v", err)
 	}
 
@@ -147,28 +147,6 @@ func TestWriteItemTableRendersDueDateAndList(t *testing.T) {
 	}
 	if !strings.Contains(output, " 3 ") {
 		t.Errorf("expected the list id 3 to be rendered but got:\n%s", output)
-	}
-}
-
-func TestWriteItemTableUnnumberedShowsDash(t *testing.T) {
-	var buffer strings.Builder
-	items := []*proto.Item{{Id: 1, Title: "a"}}
-
-	if err := writeItemTable(&buffer, items, false); err != nil {
-		t.Fatalf("expected no error but got %v", err)
-	}
-
-	// The first data row should lead with a dash rather than an ordinal.
-	lines := strings.Split(strings.TrimRight(buffer.String(), "\n"), "\n")
-	if len(lines) < 2 {
-		t.Fatalf("expected at least a header and one row but got %d lines", len(lines))
-	}
-	if !strings.HasPrefix(lines[1], "-") {
-		t.Errorf("expected the unnumbered row to start with a dash but got %q", lines[1])
-	}
-	// A numbered row would lead with "1", so confirm it does not.
-	if strings.HasPrefix(lines[1], "1") {
-		t.Errorf("expected the unnumbered row not to start with an ordinal but got %q", lines[1])
 	}
 }
 

@@ -10,10 +10,10 @@ import (
 	"github.com/alexhokl/todo-cli/proto"
 )
 
-// writeItemTable renders items as an aligned table. Active items are shown in
-// their manual order, so the leading column is the priority in that order
-// rather than an identifier the user has to interpret.
-func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
+// writeItemTable renders items as an aligned table. Active items are returned
+// in their manual order, so the row order (not an explicit ordinal column)
+// reflects the priority ranking.
+func writeItemTable(out io.Writer, items []*proto.Item) error {
 	if len(items) == 0 {
 		if _, err := fmt.Fprintln(out, "  (none)"); err != nil {
 			return fmt.Errorf("failed to write output: %w", err)
@@ -22,16 +22,11 @@ func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
 	}
 
 	writer := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	if _, err := fmt.Fprintln(writer, "#\tID\tTITLE\tLABELS\tEFFORT\tBLOCKERS\tCOMMENTS\tLINKED\tLIST\tDUE"); err != nil {
+	if _, err := fmt.Fprintln(writer, "ID\tTITLE\tLABELS\tEFFORT\tBLOCKERS\tCOMMENTS\tLINKED\tLIST\tDUE"); err != nil {
 		return fmt.Errorf("failed to write output: %w", err)
 	}
 
-	for i, item := range items {
-		order := "-"
-		if numbered {
-			order = fmt.Sprintf("%d", i+1)
-		}
-
+	for _, item := range items {
 		list := "-"
 		if item.ListId != nil {
 			list = fmt.Sprintf("%d", item.GetListId())
@@ -44,8 +39,8 @@ func writeItemTable(out io.Writer, items []*proto.Item, numbered bool) error {
 
 		if _, err := fmt.Fprintf(
 			writer,
-			"%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			order, item.GetId(), item.GetTitle(), joinLabelNames(item), effortName(item), joinBlockerDescriptions(item), commentCount(item), joinLinkedItemIDs(item), list, due,
+			"%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			item.GetId(), item.GetTitle(), joinLabelNames(item), effortName(item), joinBlockerDescriptions(item), commentCount(item), joinLinkedItemIDs(item), list, due,
 		); err != nil {
 			return fmt.Errorf("failed to write output: %w", err)
 		}

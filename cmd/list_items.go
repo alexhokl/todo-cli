@@ -85,8 +85,7 @@ func runListItems(cmd *cobra.Command, _ []string) error {
 	// The section header (e.g. "Items:", "Done:") is intentionally not
 	// printed: the column header row from writeItemTable is the first line
 	// of output for every view.
-	_, numbered := viewHeader(view)
-	return writeItemTable(out, response.GetActive(), numbered)
+	return writeItemTable(out, response.GetActive())
 }
 
 // resolveItemView maps the mutually exclusive view flags to a proto ItemView.
@@ -115,22 +114,5 @@ func resolveItemView() (proto.ItemView, error) {
 		return proto.ItemView_ITEM_VIEW_DONE, nil
 	default:
 		return proto.ItemView_ITEM_VIEW_TRIAGED, nil
-	}
-}
-
-// viewHeader returns the section header and whether the table rows carry an
-// ordinal for the selected view. The default (triaged) view renders as
-// "Items:" since it is the primary listing; the explicit buckets name
-// themselves.
-func viewHeader(view proto.ItemView) (string, bool) {
-	switch view {
-	case proto.ItemView_ITEM_VIEW_UNTRIAGED:
-		return "Untriaged:", true
-	case proto.ItemView_ITEM_VIEW_TIME_SENSITIVE:
-		return "Time-sensitive:", true
-	case proto.ItemView_ITEM_VIEW_DONE:
-		return "Done:", false
-	default:
-		return "Items:", true
 	}
 }

@@ -81,33 +81,6 @@ func TestResolveItemView(t *testing.T) {
 	}
 }
 
-func TestViewHeader(t *testing.T) {
-	tests := []struct {
-		name          string
-		view          proto.ItemView
-		expectedHead  string
-		expectNumbered bool
-	}{
-		{"triaged default", proto.ItemView_ITEM_VIEW_TRIAGED, "Items:", true},
-		{"untriaged", proto.ItemView_ITEM_VIEW_UNTRIAGED, "Untriaged:", true},
-		{"time-sensitive", proto.ItemView_ITEM_VIEW_TIME_SENSITIVE, "Time-sensitive:", true},
-		{"done", proto.ItemView_ITEM_VIEW_DONE, "Done:", false},
-		{"unspecified falls back to items", proto.ItemView_ITEM_VIEW_UNSPECIFIED, "Items:", true},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			head, numbered := viewHeader(test.view)
-			if head != test.expectedHead {
-				t.Errorf("expected header %q but got %q", test.expectedHead, head)
-			}
-			if numbered != test.expectNumbered {
-				t.Errorf("expected numbered %v but got %v", test.expectNumbered, numbered)
-			}
-		})
-	}
-}
-
 // TestListItemsSearchFlagBinding asserts the --search flag is registered on
 // the command, parses into listItemsOpts.Search, and defaults to the empty
 // no-op string. The gRPC request construction itself is not exercised here (it
