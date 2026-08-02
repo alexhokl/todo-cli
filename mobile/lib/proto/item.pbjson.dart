@@ -275,6 +275,18 @@ final $typed_data.Uint8List createItemRequestDescriptor = $convert.base64Decode(
     'bGlua19pdGVtX2lkcxgHIAMoDVILbGlua0l0ZW1JZHNCCwoJX2R1ZV9kYXRlQgoKCF9saXN0X2'
     'lkQgkKB19lZmZvcnQ=');
 
+@$core.Deprecated('Use getItemRequestDescriptor instead')
+const GetItemRequest$json = {
+  '1': 'GetItemRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `GetItemRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getItemRequestDescriptor =
+    $convert.base64Decode('Cg5HZXRJdGVtUmVxdWVzdBIOCgJpZBgBIAEoDVICaWQ=');
+
 @$core.Deprecated('Use moveItemRequestDescriptor instead')
 const MoveItemRequest$json = {
   '1': 'MoveItemRequest',

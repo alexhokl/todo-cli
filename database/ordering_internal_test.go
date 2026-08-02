@@ -607,3 +607,68 @@ func priorityOf(t *testing.T, db *gorm.DB, id uint) *float64 {
 	}
 	return item.Priority
 }
+
+func TestGetItem(t *testing.T) {
+	db := setupTestDB(t)
+	ids := seedItems(t, db, "a", "b")
+
+	item, err := GetItem(db, testUserID, ids["a"])
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if item.ID != ids["a"] {
+		t.Errorf("expected id %d but got %d", ids["a"], item.ID)
+	}
+	if item.Title != "a" {
+		t.Errorf("expected title %q but got %q", "a", item.Title)
+	}
+	// seedItems triages via MoveItem with bottom, so the priority is set.
+	if item.Priority == nil {
+		t.Errorf("expected a priority but got nil")
+	}
+}
+
+func TestGetItemPreloadsAssociations(t *testing.T) {
+	db := setupTestDB(t)
+	ids := seedItems(t, db, "a")
+
+	if _, err := CreateLabel(db, testUserID, "urgent"); err != nil {
+		t.Fatalf("failed to create the label: %v", err)
+	}
+	if _, err := UpdateItemLabels(db, testUserID, ids["a"], []string{"urgent"}, nil); err != nil {
+		t.Fatalf("failed to attach the label: %v", err)
+	}
+	if _, err := CreateBlocker(db, testUserID, ids["a"], "waiting on review"); err != nil {
+		t.Fatalf("failed to create the blocker: %v", err)
+	}
+
+	item, err := GetItem(db, testUserID, ids["a"])
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if len(item.Labels) != 1 || item.Labels[0].Name != "urgent" {
+		t.Errorf("expected label urgent but got %v", item.Labels)
+	}
+	if len(item.Blockers) != 1 || item.Blockers[0].Description != "waiting on review" {
+		t.Errorf("expected one blocker but got %v", item.Blockers)
+	}
+}
+
+func TestGetItemNotFound(t *testing.T) {
+	db := setupTestDB(t)
+
+	_, err := GetItem(db, testUserID, 404)
+	if !errors.Is(err, ErrItemNotFound) {
+		t.Errorf("expected %v but got %v", ErrItemNotFound, err)
+	}
+}
+
+func TestGetItemCrossUserIsNotFound(t *testing.T) {
+	db := setupTestDB(t)
+	ids := seedItems(t, db, "a")
+
+	_, err := GetItem(db, testUserID+1, ids["a"])
+	if !errors.Is(err, ErrItemNotFound) {
+		t.Errorf("expected %v for a cross-user access but got %v", ErrItemNotFound, err)
+	}
+}

@@ -52,6 +52,14 @@ class ItemServiceClient extends $grpc.Client {
     return $createUnaryCall(_$createItem, request, options: options);
   }
 
+  /// GetItem returns a single item by identifier.
+  $grpc.ResponseFuture<$0.Item> getItem(
+    $0.GetItemRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$getItem, request, options: options);
+  }
+
   /// MoveItem places an item immediately before or after another item and
   /// optionally reassigns its list in the same operation.
   $grpc.ResponseFuture<$0.Item> moveItem(
@@ -248,6 +256,10 @@ class ItemServiceClient extends $grpc.Client {
       '/item.ItemService/CreateItem',
       ($0.CreateItemRequest value) => value.writeToBuffer(),
       $0.Item.fromBuffer);
+  static final _$getItem = $grpc.ClientMethod<$0.GetItemRequest, $0.Item>(
+      '/item.ItemService/GetItem',
+      ($0.GetItemRequest value) => value.writeToBuffer(),
+      $0.Item.fromBuffer);
   static final _$moveItem = $grpc.ClientMethod<$0.MoveItemRequest, $0.Item>(
       '/item.ItemService/MoveItem',
       ($0.MoveItemRequest value) => value.writeToBuffer(),
@@ -377,6 +389,13 @@ abstract class ItemServiceBase extends $grpc.Service {
         false,
         false,
         ($core.List<$core.int> value) => $0.CreateItemRequest.fromBuffer(value),
+        ($0.Item value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.GetItemRequest, $0.Item>(
+        'GetItem',
+        getItem_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.GetItemRequest.fromBuffer(value),
         ($0.Item value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.MoveItemRequest, $0.Item>(
         'MoveItem',
@@ -572,6 +591,14 @@ abstract class ItemServiceBase extends $grpc.Service {
 
   $async.Future<$0.Item> createItem(
       $grpc.ServiceCall call, $0.CreateItemRequest request);
+
+  $async.Future<$0.Item> getItem_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.GetItemRequest> $request) async {
+    return getItem($call, await $request);
+  }
+
+  $async.Future<$0.Item> getItem(
+      $grpc.ServiceCall call, $0.GetItemRequest request);
 
   $async.Future<$0.Item> moveItem_Pre($grpc.ServiceCall $call,
       $async.Future<$0.MoveItemRequest> $request) async {

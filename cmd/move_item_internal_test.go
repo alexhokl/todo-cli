@@ -46,6 +46,7 @@ func TestItemCommandsRequireService(t *testing.T) {
 	commands := map[string]bool{
 		"update priority":   requiresService(moveItemCmd),
 		"list items":        requiresService(listItemsCmd),
+		"get item":          requiresService(getItemCmd),
 		"create item":       requiresService(createItemCmd),
 		"update done":       requiresService(completeItemCmd),
 		"update item":       requiresService(updateItemCmd),

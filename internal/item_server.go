@@ -200,6 +200,34 @@ func (s *ItemServer) CreateItem(ctx context.Context, req *proto.CreateItemReques
 	return result, nil
 }
 
+// GetItem returns a single item by identifier.
+func (s *ItemServer) GetItem(ctx context.Context, req *proto.GetItemRequest) (*proto.Item, error) {
+	ctx, span := startSpan(ctx, "GetItem")
+	defer span.End()
+
+	if req.GetId() == 0 {
+		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+
+	userID, err := userIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	item, err := database.GetItem(s.DB.WithContext(ctx), userID, uint(req.GetId()))
+	if err != nil {
+		return nil, mapDatabaseError(err)
+	}
+
+	result, err := toProtoItem(*item)
+	if err != nil {
+		return nil, err
+	}
+
+	endSpanOk(span)
+	return result, nil
+}
+
 // MoveItem places an item immediately before or after another item, optionally
 // reassigning its list in the same operation.
 func (s *ItemServer) MoveItem(ctx context.Context, req *proto.MoveItemRequest) (*proto.Item, error) {

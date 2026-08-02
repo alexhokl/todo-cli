@@ -754,6 +754,61 @@ class CreateItemRequest extends $pb.GeneratedMessage {
   $pb.PbList<$core.int> get linkItemIds => $_getList(6);
 }
 
+/// GetItemRequest identifies a single item by id.
+class GetItemRequest extends $pb.GeneratedMessage {
+  factory GetItemRequest({
+    $core.int? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  GetItemRequest._();
+
+  factory GetItemRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetItemRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetItemRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetItemRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetItemRequest copyWith(void Function(GetItemRequest) updates) =>
+      super.copyWith((message) => updates(message as GetItemRequest))
+          as GetItemRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetItemRequest create() => GetItemRequest._();
+  @$core.override
+  GetItemRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static GetItemRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetItemRequest>(create);
+  static GetItemRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
 enum MoveItemRequest_Anchor { beforeId, afterId, top, bottom, notSet }
 
 class MoveItemRequest extends $pb.GeneratedMessage {

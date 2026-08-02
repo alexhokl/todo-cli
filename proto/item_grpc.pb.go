@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	ItemService_ListItems_FullMethodName         = "/item.ItemService/ListItems"
 	ItemService_CreateItem_FullMethodName        = "/item.ItemService/CreateItem"
+	ItemService_GetItem_FullMethodName           = "/item.ItemService/GetItem"
 	ItemService_MoveItem_FullMethodName          = "/item.ItemService/MoveItem"
 	ItemService_SetItemDone_FullMethodName       = "/item.ItemService/SetItemDone"
 	ItemService_UpdateItemLabels_FullMethodName  = "/item.ItemService/UpdateItemLabels"
@@ -58,6 +59,8 @@ type ItemServiceClient interface {
 	ListItems(ctx context.Context, in *ListItemsRequest, opts ...grpc.CallOption) (*ListItemsResponse, error)
 	// CreateItem appends a new item to the end of the manual order.
 	CreateItem(ctx context.Context, in *CreateItemRequest, opts ...grpc.CallOption) (*Item, error)
+	// GetItem returns a single item by identifier.
+	GetItem(ctx context.Context, in *GetItemRequest, opts ...grpc.CallOption) (*Item, error)
 	// MoveItem places an item immediately before or after another item and
 	// optionally reassigns its list in the same operation.
 	MoveItem(ctx context.Context, in *MoveItemRequest, opts ...grpc.CallOption) (*Item, error)
@@ -135,6 +138,16 @@ func (c *itemServiceClient) CreateItem(ctx context.Context, in *CreateItemReques
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Item)
 	err := c.cc.Invoke(ctx, ItemService_CreateItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) GetItem(ctx context.Context, in *GetItemRequest, opts ...grpc.CallOption) (*Item, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Item)
+	err := c.cc.Invoke(ctx, ItemService_GetItem_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -373,6 +386,8 @@ type ItemServiceServer interface {
 	ListItems(context.Context, *ListItemsRequest) (*ListItemsResponse, error)
 	// CreateItem appends a new item to the end of the manual order.
 	CreateItem(context.Context, *CreateItemRequest) (*Item, error)
+	// GetItem returns a single item by identifier.
+	GetItem(context.Context, *GetItemRequest) (*Item, error)
 	// MoveItem places an item immediately before or after another item and
 	// optionally reassigns its list in the same operation.
 	MoveItem(context.Context, *MoveItemRequest) (*Item, error)
@@ -441,6 +456,9 @@ func (UnimplementedItemServiceServer) ListItems(context.Context, *ListItemsReque
 }
 func (UnimplementedItemServiceServer) CreateItem(context.Context, *CreateItemRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateItem not implemented")
+}
+func (UnimplementedItemServiceServer) GetItem(context.Context, *GetItemRequest) (*Item, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetItem not implemented")
 }
 func (UnimplementedItemServiceServer) MoveItem(context.Context, *MoveItemRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method MoveItem not implemented")
@@ -561,6 +579,24 @@ func _ItemService_CreateItem_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ItemServiceServer).CreateItem(ctx, req.(*CreateItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_GetItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).GetItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_GetItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).GetItem(ctx, req.(*GetItemRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -975,6 +1011,10 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateItem",
 			Handler:    _ItemService_CreateItem_Handler,
+		},
+		{
+			MethodName: "GetItem",
+			Handler:    _ItemService_GetItem_Handler,
 		},
 		{
 			MethodName: "MoveItem",

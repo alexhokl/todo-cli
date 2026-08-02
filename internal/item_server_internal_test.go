@@ -630,3 +630,77 @@ func TestMapDatabaseError(t *testing.T) {
 		})
 	}
 }
+
+func TestGetItem(t *testing.T) {
+	server := setupItemServer(t)
+
+	ids := createItems(t, server, "a", "b")
+	ctx := authenticatedContext()
+
+	item, err := server.GetItem(ctx, &proto.GetItemRequest{Id: ids["a"]})
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if item.GetId() != ids["a"] {
+		t.Errorf("expected id %d but got %d", ids["a"], item.GetId())
+	}
+	if item.GetTitle() != "a" {
+		t.Errorf("expected title %q but got %q", "a", item.GetTitle())
+	}
+	// createItems triages via MoveItem with bottom, so the item carries a
+	// priority and is not untriaged.
+	if item.Priority == nil {
+		t.Errorf("expected a priority but got nil")
+	}
+}
+
+func TestGetItemErrorCodes(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
+
+	tests := []struct {
+		name     string
+		request  *proto.GetItemRequest
+		ctxFunc  func() context.Context
+		expected codes.Code
+	}{
+		{
+			name:     "missing id",
+			request:  &proto.GetItemRequest{},
+			ctxFunc:  authenticatedContext,
+			expected: codes.InvalidArgument,
+		},
+		{
+			name:     "unknown id",
+			request:  &proto.GetItemRequest{Id: ids["a"] + 1000},
+			ctxFunc:  authenticatedContext,
+			expected: codes.NotFound,
+		},
+		{
+			name: "unauthenticated",
+			request: &proto.GetItemRequest{Id: ids["a"]},
+			ctxFunc: func() context.Context { return context.Background() },
+			expected: codes.Unauthenticated,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := server.GetItem(test.ctxFunc(), test.request)
+			if got := status.Code(err); got != test.expected {
+				t.Errorf("expected %v but got %v (%v)", test.expected, got, err)
+			}
+		})
+	}
+}
+
+func TestGetItemCrossUserIsNotFound(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
+
+	otherCtx := context.WithValue(context.Background(), contextKeyUser{}, testUserID+1)
+	_, err := server.GetItem(otherCtx, &proto.GetItemRequest{Id: ids["a"]})
+	if got := status.Code(err); got != codes.NotFound {
+		t.Errorf("expected %v for a cross-user access but got %v (%v)", codes.NotFound, got, err)
+	}
+}

@@ -15,6 +15,8 @@ service ItemService {
   rpc ListItems(ListItemsRequest) returns (ListItemsResponse);
   // CreateItem appends a new item to the end of the manual order.
   rpc CreateItem(CreateItemRequest) returns (Item);
+  // GetItem returns a single item by identifier.
+  rpc GetItem(GetItemRequest) returns (Item);
   // MoveItem places an item immediately before or after another item and
   // optionally reassigns its list in the same operation.
   rpc MoveItem(MoveItemRequest) returns (Item);
@@ -176,6 +178,11 @@ message CreateItemRequest {
   // is symmetric. Unknown or cross-user ids are reported; self-links are
   // rejected.
   repeated uint32 link_item_ids = 7;
+}
+
+// GetItemRequest identifies a single item by id.
+message GetItemRequest {
+  uint32 id = 1;
 }
 
 message MoveItemRequest {

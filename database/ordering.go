@@ -454,6 +454,17 @@ func rebalance(tx *gorm.DB, userID uint) error {
 	return nil
 }
 
+// GetItem loads a single item by identifier, scoped to the caller. A missing
+// row or cross-user access is reported as ErrItemNotFound. Associations
+// (labels, effort, blockers, linked items, comments) are preloaded.
+func GetItem(db *gorm.DB, userID uint, id uint) (*Item, error) {
+	var item Item
+	if err := findItem(db, userID, id, &item); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
 // findItem loads an item by identifier, translating a missing row into
 // ErrItemNotFound. The query is scoped to the given user so cross-user access
 // is reported as not found rather than leaking existence.
