@@ -260,15 +260,7 @@ class ItemListState extends State<ItemList> {
                               ? Icons.check_circle_outline
                               : Icons.circle_outlined,
                         ),
-                        title: Text(
-                          item.title,
-                          style: done
-                              ? Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    decoration: TextDecoration.lineThrough,
-                                    color: Theme.of(context).disabledColor,
-                                  )
-                              : null,
-                        ),
+                        title: Text(item.title),
                         trailing: IconButton(
                           icon: const Icon(Icons.comment_outlined),
                           tooltip: AppLocalizations.of(context)!.comments,
