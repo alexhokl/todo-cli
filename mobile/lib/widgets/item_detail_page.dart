@@ -60,6 +60,8 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   bool _addingBlocker = false;
   String? _addBlockerError;
 
+  bool _isCompleting = false;
+
   /// All known labels (for the add-label picker), loaded alongside the item.
   List<Label>? _allLabels;
   String? _labelsError;
@@ -248,6 +250,46 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     _showSnackbar(l10n.failedToCreateBlocker(message));
   }
 
+  /// Optimistically marks the item as done (or reopens it) via
+  /// [ItemService.setItemDone]. On failure a SnackBar is shown and the item
+  /// is reloaded to revert the optimistic change. On success a confirmation
+  /// SnackBar is shown and the canonical state is refreshed. The server
+  /// clears the priority in both directions, so completing a triaged item
+  /// and reopening a completed item both land the item in the untriaged
+  /// bucket.
+  Future<void> _onSetDone(bool done) async {
+    final l10n = AppLocalizations.of(context)!;
+    // Optimistic: flip the local item's done flag immediately so the bottom
+    // button reflects the new state without waiting for the server round-trip.
+    final updated = _item!.deepCopy()..done = done;
+    setState(() {
+      _item = updated;
+      _isCompleting = true;
+    });
+    try {
+      await _service!.setItemDone(widget.itemId, done);
+      _showSnackbar(done ? l10n.itemCompleted : l10n.returnedToUntriaged);
+      // Refresh the canonical state (the server response is authoritative).
+      unawaited(_load());
+    } on ItemException catch (e) {
+      _showSnackbar(
+        done
+            ? l10n.failedToComplete(e.message)
+            : l10n.failedToReturnToUntriaged(e.message),
+      );
+      await _load();
+    } catch (e) {
+      _showSnackbar(
+        done
+            ? l10n.failedToComplete(e.toString())
+            : l10n.failedToReturnToUntriaged(e.toString()),
+      );
+      await _load();
+    } finally {
+      if (mounted) setState(() => _isCompleting = false);
+    }
+  }
+
   void _showSnackbar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -338,6 +380,15 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     }
 
     final item = _item!;
+    // The bottom action buttons are shown only for triaged (not done, has
+    // priority) and completed (done) items. Untriaged items show no bottom
+    // button. A triaged item shows two stacked, full-width buttons: a green
+    // Complete button and an orange Return-to-untriaged button. A done item
+    // shows a single orange Return-to-untriaged button. The untriage action
+    // reuses setItemDone(id, false); the server clears the priority as a
+    // side effect, dropping the item into the untriaged bucket.
+    final showComplete = !item.done && item.hasPriority();
+    final showReopen = item.done;
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -353,6 +404,47 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
         tooltip: l10n.editItem,
         child: const Icon(Icons.edit),
       ),
+      bottomNavigationBar: (showComplete || showReopen)
+          ? Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (showComplete)
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        key: const Key('complete-item-button'),
+                        onPressed:
+                            _isCompleting ? null : () => _onSetDone(true),
+                        icon: const Icon(Icons.check),
+                        label: Text(l10n.completeItem),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                      ),
+                    ),
+                  if (showComplete) const SizedBox(height: 8),
+                  if (showReopen || showComplete)
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        key: const Key('return-to-untriaged-button'),
+                        onPressed:
+                            _isCompleting ? null : () => _onSetDone(false),
+                        icon: const Icon(Icons.undo),
+                        label: Text(l10n.returnToUntriaged),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            )
+          : null,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

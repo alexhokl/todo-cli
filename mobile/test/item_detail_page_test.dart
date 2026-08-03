@@ -279,6 +279,25 @@ class _FakeItemService extends ItemService {
     return created;
   }
 
+  final List<({int id, bool done})> setItemDoneCalls = [];
+  ItemException? setItemDoneError;
+
+  @override
+  Future<Item> setItemDone(int id, bool done) async {
+    setItemDoneCalls.add((id: id, done: done));
+    if (setItemDoneError != null) {
+      throw setItemDoneError!;
+    }
+    // Reflect the change so a reload shows the new done state. The server
+    // also clears the priority on both directions, so mirror that here.
+    if (_item != null) {
+      final updated = _item!.deepCopy()..done = done;
+      updated.clearPriority();
+      _item = updated;
+    }
+    return _item ?? Item(id: id, done: done);
+  }
+
   @override
   Future<void> dispose() async {}
 }
@@ -1430,6 +1449,178 @@ void main() {
       expect(find.widgetWithText(AppBar, 'New title'), findsOneWidget);
       expect(service.updateItemCalls, hasLength(1));
       expect(service.updateItemCalls.single.title, 'New title');
+    });
+  });
+
+  group('ItemDetailPage completion', () {
+    testWidgets(
+        'shows a green Complete and an orange Return-to-untriaged button for a triaged item',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Triaged', priority: 10),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      final complete = find.byKey(const ValueKey('complete-item-button'));
+      expect(complete, findsOneWidget);
+      // The Complete button is filled and green.
+      final completeFilled = tester.widget<FilledButton>(complete);
+      expect(
+        completeFilled.style?.backgroundColor?.resolve(<WidgetState>{}),
+        Colors.green,
+      );
+      expect(find.text('Complete'), findsOneWidget);
+
+      // A triaged item also shows the orange Return-to-untriaged button
+      // stacked beneath the Complete button.
+      final untriage = find.byKey(const ValueKey('return-to-untriaged-button'));
+      expect(untriage, findsOneWidget);
+      final untriageFilled = tester.widget<FilledButton>(untriage);
+      expect(
+        untriageFilled.style?.backgroundColor?.resolve(<WidgetState>{}),
+        Colors.orange,
+      );
+      expect(find.text('Return to untriaged'), findsOneWidget);
+    });
+
+    testWidgets('does not show the Complete button for an untriaged item',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 1, title: 'Untriaged'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('complete-item-button')), findsNothing);
+      expect(find.byKey(const ValueKey('return-to-untriaged-button')),
+          findsNothing);
+      // No bottom navigation bar at all for an untriaged item.
+      expect(find.byType(BottomAppBar), findsNothing);
+    });
+
+    testWidgets(
+        'shows an orange Return to untriaged button for a completed (done) item',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Done', done: true),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      final button = find.byKey(const ValueKey('return-to-untriaged-button'));
+      expect(button, findsOneWidget);
+      // The Return-to-untriaged button is orange for done items too.
+      final filled = tester.widget<FilledButton>(button);
+      expect(
+        filled.style?.backgroundColor?.resolve(<WidgetState>{}),
+        Colors.orange,
+      );
+      expect(find.text('Return to untriaged'), findsOneWidget);
+      // The Complete button is not shown for a done item.
+      expect(find.byKey(const ValueKey('complete-item-button')), findsNothing);
+    });
+
+    testWidgets(
+        'tapping Complete calls setItemDone(id, true) and shows a confirmation',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 7, title: 'Triaged', priority: 5),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('complete-item-button')));
+      await tester.pumpAndSettle();
+
+      expect(service.setItemDoneCalls, [
+        (id: 7, done: true),
+      ]);
+      // A confirmation SnackBar is shown.
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Item completed'), findsOneWidget);
+      // After the optimistic update plus reload, the item is done so the
+      // Return-to-untriaged button replaces the Complete button.
+      expect(find.byKey(const ValueKey('complete-item-button')), findsNothing);
+      expect(find.byKey(const ValueKey('return-to-untriaged-button')),
+          findsOneWidget);
+    });
+
+    testWidgets(
+        'tapping Return to untriaged calls setItemDone(id, false) and shows a confirmation',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 7, title: 'Done', done: true),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('return-to-untriaged-button')));
+      await tester.pumpAndSettle();
+
+      expect(service.setItemDoneCalls, [
+        (id: 7, done: false),
+      ]);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Returned to untriaged'), findsOneWidget);
+      // After the optimistic update plus reload, the item is no longer done
+      // and has no priority, so no bottom button is shown.
+      expect(find.byKey(const ValueKey('return-to-untriaged-button')),
+          findsNothing);
+      expect(find.byKey(const ValueKey('complete-item-button')), findsNothing);
+    });
+
+    testWidgets(
+        'tapping Return to untriaged on a triaged item calls setItemDone(id, false) and drops it from the bottom bar',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 7, title: 'Triaged', priority: 5),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('return-to-untriaged-button')));
+      await tester.pumpAndSettle();
+
+      // The untriage action reuses setItemDone(id, false); the server clears
+      // the priority as a side effect.
+      expect(service.setItemDoneCalls, [
+        (id: 7, done: false),
+      ]);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Returned to untriaged'), findsOneWidget);
+      // After the optimistic update plus reload, the item is no longer done
+      // and has no priority, so neither bottom button is shown.
+      expect(find.byKey(const ValueKey('return-to-untriaged-button')),
+          findsNothing);
+      expect(find.byKey(const ValueKey('complete-item-button')), findsNothing);
+    });
+
+    testWidgets('shows an error SnackBar and reverts when completing fails',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 7, title: 'Triaged', priority: 5),
+      );
+      service.setItemDoneError = ItemException('server explosion');
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('complete-item-button')));
+      await tester.pumpAndSettle();
+
+      // The setItemDone call was attempted.
+      expect(service.setItemDoneCalls, [(id: 7, done: true)]);
+      // The failure SnackBar is shown with the localised message.
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to complete item'), findsOneWidget);
+      // After the reload reverts the optimistic change, the Complete button
+      // is shown again (the fake did not flip done because it threw).
+      expect(find.byKey(const ValueKey('complete-item-button')), findsOneWidget);
     });
   });
 }

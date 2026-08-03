@@ -111,5 +111,11 @@
   "enterBlockerDescription": "ブロックを入力",
   "enterBlockerDescriptionError": "ブロックを入力してください",
   "blockerCreated": "ブロックを追加しました",
-  "failedToCreateBlocker": "ブロックの作成に失敗しました: {error}"
+  "failedToCreateBlocker": "ブロックの作成に失敗しました: {error}",
+  "completeItem": "完了にする",
+  "returnToUntriaged": "未トリアージに戻す",
+  "itemCompleted": "アイテムを完了にしました",
+  "failedToComplete": "アイテムの完了に失敗しました: {error}",
+  "returnedToUntriaged": "未トリアージに戻しました",
+  "failedToReturnToUntriaged": "未トリアージへの戻しに失敗しました: {error}"
 }

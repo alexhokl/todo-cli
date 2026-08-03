@@ -597,5 +597,41 @@
         "description": "The underlying error message"
       }
     }
+  },
+  "completeItem": "Complete",
+  "@completeItem": {
+    "description": "Button label on the item details page that marks a triaged item as done"
+  },
+  "returnToUntriaged": "Return to untriaged",
+  "@returnToUntriaged": {
+    "description": "Button label on the item details page that reopens a completed item, returning it to the untriaged bucket"
+  },
+  "itemCompleted": "Item completed",
+  "@itemCompleted": {
+    "description": "SnackBar confirmation after an item is marked as done on the details page"
+  },
+  "failedToComplete": "Failed to complete item: {error}",
+  "@failedToComplete": {
+    "description": "SnackBar message shown when marking an item as done on the details page fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "returnedToUntriaged": "Returned to untriaged",
+  "@returnedToUntriaged": {
+    "description": "SnackBar confirmation after a completed item is reopened on the details page"
+  },
+  "failedToReturnToUntriaged": "Failed to return to untriaged: {error}",
+  "@failedToReturnToUntriaged": {
+    "description": "SnackBar message shown when reopening a completed item on the details page fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
   }
 }
