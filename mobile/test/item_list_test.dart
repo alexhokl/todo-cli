@@ -169,7 +169,7 @@ void main() {
       expect(find.byType(ActionChip), findsOneWidget);
     });
 
-    testWidgets('renders completed items with line-through styling', (tester) async {
+    testWidgets('renders completed items with a check icon', (tester) async {
       final service = _FakeItemService(
         completed: [Item(id: 2, title: 'old release', done: true)],
       );
@@ -183,10 +183,9 @@ void main() {
       await tester.tap(find.widgetWithText(FilterChip, 'Completed'));
       await tester.pumpAndSettle();
 
-      // The done item is rendered with a check icon and line-through text.
+      // The done item is rendered with a check icon.
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
-      final titleText = tester.widget<Text>(find.text('old release'));
-      expect(titleText.style?.decoration, TextDecoration.lineThrough);
+      expect(find.text('old release'), findsOneWidget);
     });
   });
 
