@@ -93,5 +93,8 @@
   "titleRequired": "タイトルは必須です",
   "enterDescription": "説明を入力",
   "save": "保存",
-  "failedToUpdateItem": "アイテムの更新に失敗しました: {error}"
+  "failedToUpdateItem": "アイテムの更新に失敗しました: {error}",
+  "addItem": "アイテムを追加",
+  "createItem": "アイテムを作成",
+  "failedToCreateItem": "アイテムの作成に失敗しました: {error}"
 }

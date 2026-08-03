@@ -489,5 +489,23 @@
         "description": "The underlying error message"
       }
     }
+  },
+  "addItem": "Add item",
+  "@addItem": {
+    "description": "Tooltip for the floating action button that opens the create item page"
+  },
+  "createItem": "Create item",
+  "@createItem": {
+    "description": "AppBar title for the create item page (create mode of EditItemPage)"
+  },
+  "failedToCreateItem": "Failed to create item: {error}",
+  "@failedToCreateItem": {
+    "description": "SnackBar message shown when creating an item on the edit page fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
   }
 }

@@ -5,14 +5,17 @@ import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/edit_item_page.dart';
 
-/// Minimal stand-in for [ItemService] that records [updateItem] calls and
-/// lets each test script the response. Extends the real service so the fake
-/// never touches the gRPC channel.
+/// Minimal stand-in for [ItemService] that records [updateItem] and
+/// [createItem] calls and lets each test script the responses. Extends the
+/// real service so the fake never touches the gRPC channel.
 class _FakeItemService extends ItemService {
-  _FakeItemService({this.updateItemError});
+  _FakeItemService({this.updateItemError, this.createItemError});
 
   final List<({int id, String title, String description})> updateItemCalls = [];
   final ItemException? updateItemError;
+
+  final List<({String title, String description})> createItemCalls = [];
+  final ItemException? createItemError;
 
   @override
   Future<Item> updateItem({
@@ -28,12 +31,25 @@ class _FakeItemService extends ItemService {
   }
 
   @override
+  Future<Item> createItem({
+    required String title,
+    String description = '',
+    List<String>? labels,
+  }) async {
+    createItemCalls.add((title: title, description: description));
+    if (createItemError != null) {
+      throw createItemError!;
+    }
+    return Item(id: 1, title: title, description: description);
+  }
+
+  @override
   Future<void> dispose() async {}
 }
 
 Widget _harness({
   required _FakeItemService service,
-  required int itemId,
+  int? itemId,
   String initialTitle = '',
   String initialDescription = '',
 }) {
@@ -136,6 +152,80 @@ void main() {
 
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.textContaining('Failed to update item'), findsOneWidget);
+      // The page stays open so the user can retry.
+      expect(find.byType(EditItemPage), findsOneWidget);
+    });
+  });
+
+  group('EditItemPage (create mode)', () {
+    testWidgets('shows the create title and empty fields', (tester) async {
+      final service = _FakeItemService();
+
+      await tester.pumpWidget(_harness(service: service));
+
+      // AppBar shows the create-mode title.
+      expect(find.widgetWithText(AppBar, 'Create item'), findsOneWidget);
+      // Both fields start empty.
+      final fields = tester.widgetList<TextField>(find.byType(TextField));
+      expect(fields.first.controller!.text, isEmpty);
+      expect(fields.last.controller!.text, isEmpty);
+    });
+
+    testWidgets('submitting with a valid title calls createItem and pops',
+        (tester) async {
+      final service = _FakeItemService();
+
+      await tester.pumpWidget(_harness(service: service));
+
+      await tester.enterText(find.byType(TextField).first, 'new item');
+      await tester.enterText(find.byType(TextField).last, 'a description');
+      await tester.pump();
+
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+
+      expect(service.createItemCalls, hasLength(1));
+      expect(service.createItemCalls.single.title, 'new item');
+      expect(service.createItemCalls.single.description, 'a description');
+      // updateItem is never called in create mode.
+      expect(service.updateItemCalls, isEmpty);
+      // The page popped after the create succeeded.
+      expect(find.byType(EditItemPage), findsNothing);
+    });
+
+    testWidgets('submitting an empty title shows an error and does not create',
+        (tester) async {
+      final service = _FakeItemService();
+
+      await tester.pumpWidget(_harness(service: service));
+
+      await tester.enterText(find.byType(TextField).first, '   ');
+      await tester.pump();
+
+      await tester.tap(find.byType(FilledButton));
+      await tester.pump();
+
+      expect(find.text('Title is required'), findsOneWidget);
+      expect(service.createItemCalls, isEmpty);
+      // The page is still on stage.
+      expect(find.byType(EditItemPage), findsOneWidget);
+    });
+
+    testWidgets('a failed create shows a SnackBar and stays open',
+        (tester) async {
+      final service =
+          _FakeItemService(createItemError: ItemException('server says no'));
+
+      await tester.pumpWidget(_harness(service: service));
+
+      await tester.enterText(find.byType(TextField).first, 'new item');
+      await tester.pump();
+
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to create item'), findsOneWidget);
       // The page stays open so the user can retry.
       expect(find.byType(EditItemPage), findsOneWidget);
     });

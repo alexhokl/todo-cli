@@ -82,7 +82,10 @@ class ItemListState extends State<ItemList> {
     await _load();
   }
 
-  void _selectView(ItemView view) {
+  /// Selects a bucket, collapses the chip bar, clears any active search, and
+  /// reloads the list for the new view. Public so [HomePage] can drive it via a
+  /// [GlobalKey] (e.g. to switch to the untriaged view after creating an item).
+  void selectView(ItemView view) {
     setState(() {
       _view = view;
       _chipsExpanded = false;
@@ -163,7 +166,7 @@ class ItemListState extends State<ItemList> {
                     FilterChip(
                       label: Text(_viewLabel(context, v)),
                       selected: _view == v,
-                      onSelected: (_) => _selectView(v),
+                      onSelected: (_) => selectView(v),
                     ),
                 ],
               )

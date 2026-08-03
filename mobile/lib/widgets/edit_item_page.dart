@@ -4,12 +4,16 @@ import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/settings_page.dart';
 
-/// Page that edits an item's title and description.
+/// Page that creates or edits an item's title and description.
 ///
-/// The current values are passed in ([initialTitle], [initialDescription]) so
-/// the fields render instantly without a [getItem] round-trip. On save the
-/// page calls [ItemService.updateItem] and pops with `true` so the caller
-/// (typically [ItemDetailPage]) can reload the canonical state.
+/// When [itemId] is null the page runs in **create mode**: it calls
+/// [ItemService.createItem] on submit and pops with `true` so the caller can
+/// switch to the untriaged view. When [itemId] is non-null the page runs in
+/// **edit mode**: the current values are passed in ([initialTitle],
+/// [initialDescription]) so the fields render instantly without a [getItem]
+/// round-trip, and on save the page calls [ItemService.updateItem] and pops
+/// with `true` so the caller (typically [ItemDetailPage]) can reload the
+/// canonical state.
 ///
 /// When [service] is null the page builds one lazily from the persisted
 /// backend configuration (the same seam used by [ItemDetailPage] and
@@ -18,13 +22,13 @@ import 'package:todo/widgets/settings_page.dart';
 class EditItemPage extends StatefulWidget {
   const EditItemPage({
     super.key,
-    required this.itemId,
-    required this.initialTitle,
-    required this.initialDescription,
+    this.itemId,
+    this.initialTitle = '',
+    this.initialDescription = '',
     this.service,
   });
 
-  final int itemId;
+  final int? itemId;
   final String initialTitle;
   final String initialDescription;
   final ItemService? service;
@@ -81,11 +85,15 @@ class _EditItemPageState extends State<EditItemPage> {
     });
     try {
       _service ??= await _buildService();
-      await _service!.updateItem(
-        id: widget.itemId,
-        title: title,
-        description: description,
-      );
+      if (widget.itemId == null) {
+        await _service!.createItem(title: title, description: description);
+      } else {
+        await _service!.updateItem(
+          id: widget.itemId!,
+          title: title,
+          description: description,
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } on ItemException catch (e) {
@@ -98,17 +106,21 @@ class _EditItemPageState extends State<EditItemPage> {
   void _handleFailure(AppLocalizations l10n, String message) {
     setState(() => _saving = false);
     if (!mounted) return;
+    final text = widget.itemId == null
+        ? l10n.failedToCreateItem(message)
+        : l10n.failedToUpdateItem(message);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.failedToUpdateItem(message))),
+      SnackBar(content: Text(text)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isCreate = widget.itemId == null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.editItem),
+        title: Text(isCreate ? l10n.createItem : l10n.editItem),
         actions: [
           FilledButton(
             onPressed: _saving ? null : _submit,

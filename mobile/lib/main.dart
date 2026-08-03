@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
+import 'package:todo/proto/item.pb.dart';
+import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/efforts_page.dart';
+import 'package:todo/widgets/edit_item_page.dart';
 import 'package:todo/widgets/item_list.dart';
 import 'package:todo/widgets/labels_page.dart';
 import 'package:todo/widgets/settings_page.dart';
@@ -25,16 +28,39 @@ class TodoApp extends StatelessWidget {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
+  const HomePage({super.key, required this.title, this.service});
+
   final String title;
+
+  /// Optional [ItemService] injected by tests. When null, [ItemList] and
+  /// [EditItemPage] each build one lazily from the persisted backend
+  /// configuration (production behaviour).
+  final ItemService? service;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  final GlobalKey<ItemListState> _itemListKey = GlobalKey<ItemListState>();
+
+  /// Opens [EditItemPage] in create mode. On a successful create, switches the
+  /// list to the untriaged view (where new items land) and reloads it.
+  Future<void> _createItem(BuildContext context) async {
+    final created = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditItemPage(service: widget.service),
+      ),
+    );
+    if (created == true) {
+      _itemListKey.currentState?.selectView(ItemView.ITEM_VIEW_UNTRIAGED);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -77,7 +103,12 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: const ItemList(),
+      body: ItemList(key: _itemListKey, service: widget.service),
+      floatingActionButton: FloatingActionButton(
+        tooltip: l10n.addItem,
+        onPressed: () => _createItem(context),
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
