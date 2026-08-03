@@ -149,12 +149,19 @@ class ItemService {
     }
   }
 
-  /// Move an item before or after another item, optionally reassigning its
-  /// list in the same operation.
+  /// Move an item before or after another item, to the top or bottom of the
+  /// manual ordering, optionally reassigning its list in the same operation.
+  ///
+  /// Exactly one of [beforeId], [afterId], [top], or [bottom] must be supplied.
+  /// The absolute anchors ([top], [bottom]) are the only way to triage an
+  /// untriaged item; the relative anchors require the target to already carry
+  /// a priority.
   Future<Item> moveItem({
     required int id,
     int? beforeId,
     int? afterId,
+    bool top = false,
+    bool bottom = false,
     bool changeList = false,
     int? listId,
   }) async {
@@ -163,6 +170,8 @@ class ItemService {
     final request = MoveItemRequest(id: id, changeList: changeList);
     if (beforeId != null) request.beforeId = beforeId;
     if (afterId != null) request.afterId = afterId;
+    if (top) request.top = true;
+    if (bottom) request.bottom = true;
     if (changeList && listId != null) request.listId = listId;
 
     try {

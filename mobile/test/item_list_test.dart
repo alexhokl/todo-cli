@@ -50,6 +50,8 @@ class _FakeItemService extends ItemService {
     required int id,
     int? beforeId,
     int? afterId,
+    bool top = false,
+    bool bottom = false,
     bool changeList = false,
     int? listId,
   }) async {

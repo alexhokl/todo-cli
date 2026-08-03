@@ -61,6 +61,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   String? _addBlockerError;
 
   bool _isCompleting = false;
+  bool _isPrioritising = false;
 
   /// All known labels (for the add-label picker), loaded alongside the item.
   List<Label>? _allLabels;
@@ -290,6 +291,42 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     }
   }
 
+  /// Triages an untriaged item to the top ([top] = true) or bottom
+  /// ([top] = false) of the manual ordering via [ItemService.moveItem]. The
+  /// priority is derived by the server, so there is no optimistic local
+  /// update -- the canonical state is refreshed on success. On failure an
+  /// error SnackBar is shown and the item is reloaded to revert any partial
+  /// state.
+  Future<void> _onTriage(bool top) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _isPrioritising = true);
+    try {
+      await _service!.moveItem(
+        id: widget.itemId,
+        top: top,
+        bottom: !top,
+      );
+      _showSnackbar(top ? l10n.madeTopPriority : l10n.madeLowPriority);
+      unawaited(_load());
+    } on ItemException catch (e) {
+      _showSnackbar(
+        top
+            ? l10n.failedToMakeTopPriority(e.message)
+            : l10n.failedToMakeLowPriority(e.message),
+      );
+      await _load();
+    } catch (e) {
+      _showSnackbar(
+        top
+            ? l10n.failedToMakeTopPriority(e.toString())
+            : l10n.failedToMakeLowPriority(e.toString()),
+      );
+      await _load();
+    } finally {
+      if (mounted) setState(() => _isPrioritising = false);
+    }
+  }
+
   void _showSnackbar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -381,14 +418,20 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
 
     final item = _item!;
     // The bottom action buttons are shown only for triaged (not done, has
-    // priority) and completed (done) items. Untriaged items show no bottom
-    // button. A triaged item shows two stacked, full-width buttons: a green
+    // priority), completed (done), and untriaged (not done, no priority)
+    // items. A triaged item shows two stacked, full-width buttons: a green
     // Complete button and an orange Return-to-untriaged button. A done item
-    // shows a single orange Return-to-untriaged button. The untriage action
-    // reuses setItemDone(id, false); the server clears the priority as a
-    // side effect, dropping the item into the untriaged bucket.
+    // shows a single orange Return-to-untriaged button. An untriaged item
+    // shows a green Make-top-priority button and a grey-green Make-low-priority
+    // button. The untriage action reuses setItemDone(id, false); the server
+    // clears the priority as a side effect, dropping the item into the
+    // untriaged bucket. The triage actions use moveItem with the top/bottom
+    // absolute anchors.
     final showComplete = !item.done && item.hasPriority();
     final showReopen = item.done;
+    // An untriaged item (not done, no priority) shows two triage buttons
+    // instead of the complete / return-to-untriaged buttons.
+    final showTriage = !item.done && !item.hasPriority();
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -404,12 +447,45 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
         tooltip: l10n.editItem,
         child: const Icon(Icons.edit),
       ),
-      bottomNavigationBar: (showComplete || showReopen)
+      bottomNavigationBar: (showComplete || showReopen || showTriage)
           ? Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (showTriage) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        key: const Key('make-top-priority-button'),
+                        onPressed: _isPrioritising
+                            ? null
+                            : () => _onTriage(true),
+                        icon: const Icon(Icons.arrow_upward),
+                        label: Text(l10n.makeTopPriority),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        key: const Key('make-low-priority-button'),
+                        onPressed: _isPrioritising
+                            ? null
+                            : () => _onTriage(false),
+                        icon: const Icon(Icons.arrow_downward),
+                        label: Text(l10n.makeLowPriority),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF8FBC8F),
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                      ),
+                    ),
+                  ],
                   if (showComplete)
                     SizedBox(
                       width: double.infinity,

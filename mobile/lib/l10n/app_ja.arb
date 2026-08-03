@@ -117,5 +117,11 @@
   "itemCompleted": "アイテムを完了にしました",
   "failedToComplete": "アイテムの完了に失敗しました: {error}",
   "returnedToUntriaged": "未トリアージに戻しました",
-  "failedToReturnToUntriaged": "未トリアージへの戻しに失敗しました: {error}"
+  "failedToReturnToUntriaged": "未トリアージへの戻しに失敗しました: {error}",
+  "makeTopPriority": "最優先にする",
+  "makeLowPriority": "最低優先にする",
+  "madeTopPriority": "優先度リストの先頭に移動しました",
+  "madeLowPriority": "優先度リストの末尾に移動しました",
+  "failedToMakeTopPriority": "最優先への設定に失敗しました: {error}",
+  "failedToMakeLowPriority": "最低優先への設定に失敗しました: {error}"
 }

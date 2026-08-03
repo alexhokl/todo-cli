@@ -633,5 +633,41 @@
         "description": "The underlying error message"
       }
     }
+  },
+  "makeTopPriority": "Make top priority",
+  "@makeTopPriority": {
+    "description": "Button label on the item details page that triages an untriaged item to the top of the manual ordering"
+  },
+  "makeLowPriority": "Make low priority",
+  "@makeLowPriority": {
+    "description": "Button label on the item details page that triages an untriaged item to the bottom of the manual ordering"
+  },
+  "madeTopPriority": "Moved to the top of the priority list",
+  "@madeTopPriority": {
+    "description": "SnackBar confirmation after an item is triaged to the top on the details page"
+  },
+  "madeLowPriority": "Moved to the bottom of the priority list",
+  "@madeLowPriority": {
+    "description": "SnackBar confirmation after an item is triaged to the bottom on the details page"
+  },
+  "failedToMakeTopPriority": "Failed to make top priority: {error}",
+  "@failedToMakeTopPriority": {
+    "description": "SnackBar message shown when triaging an item to the top on the details page fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToMakeLowPriority": "Failed to make low priority: {error}",
+  "@failedToMakeLowPriority": {
+    "description": "SnackBar message shown when triaging an item to the bottom on the details page fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
   }
 }

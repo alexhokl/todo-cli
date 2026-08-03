@@ -298,6 +298,32 @@ class _FakeItemService extends ItemService {
     return _item ?? Item(id: id, done: done);
   }
 
+  final List<({int id, bool top, bool bottom})> moveItemCalls = [];
+  ItemException? moveItemError;
+
+  @override
+  Future<Item> moveItem({
+    required int id,
+    int? beforeId,
+    int? afterId,
+    bool top = false,
+    bool bottom = false,
+    bool changeList = false,
+    int? listId,
+  }) async {
+    moveItemCalls.add((id: id, top: top, bottom: bottom));
+    if (moveItemError != null) {
+      throw moveItemError!;
+    }
+    // Reflect the triage so a reload shows the item as triaged (has priority),
+    // causing the triage buttons to disappear and the complete/untriage
+    // buttons to take their place.
+    if (_item != null) {
+      _item = _item!.deepCopy()..priority = top ? 10.0 : 1.0;
+    }
+    return _item ?? Item(id: id, priority: top ? 10.0 : 1.0);
+  }
+
   @override
   Future<void> dispose() async {}
 }
@@ -311,6 +337,20 @@ Widget _harness({required _FakeItemService service, required int itemId}) {
 }
 
 void main() {
+  // The detail page pins one or two full-width action buttons to the bottom
+  // of the screen via Scaffold.bottomNavigationBar. On the default 800x600
+  // test surface that bottom bar pushes lower body content (blockers, linked
+  // items, comments) below the fold, and ListView lazy-renders only the
+  // visible children -- so assertions on those sections would otherwise miss.
+  // A tall viewport keeps the whole page materialised without altering the
+  // production widget tree. The size is reset after each test.
+  setUp(() {
+    final view =
+        TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
+    view.physicalSize = const Size(800, 2400);
+    addTearDown(view.resetPhysicalSize);
+  });
+
   group('ItemDetailPage', () {
     testWidgets('shows a spinner while loading then the item title and body',
         (tester) async {
@@ -658,23 +698,19 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      // The description's copy button is at the top of the page.
-      expect(find.byIcon(Icons.copy), findsOneWidget);
+      // The description's copy button is at the top of the page. With the
+      // tall test viewport the whole page (including the comment) is
+      // materialised, so both copy buttons are present up front.
+      expect(find.byIcon(Icons.copy), findsNWidgets(2));
 
       // Tapping the description's copy button shows the confirmation SnackBar.
       await tester.tap(find.byIcon(Icons.copy).first);
       await tester.pump();
       expect(find.text('Copied to clipboard'), findsOneWidget);
 
-      // Scroll the comments section into view. The page content is taller than
-      // the viewport (and ListView lazily builds off-screen children), so the
-      // description's copy button unmounts as the comment's enters the view.
-      await tester.drag(find.byType(ListView), const Offset(0, -500));
-      await tester.pumpAndSettle();
-
-      // The comment's body is now rendered and a copy button for it is present.
+      // The comment's body is rendered with its own copy button.
       expect(find.text('remark'), findsOneWidget);
-      expect(find.byIcon(Icons.copy), findsOneWidget);
+      expect(find.byIcon(Icons.copy), findsNWidgets(2));
     });
 
     testWidgets('tapping a markdown link does not crash the page',
@@ -1621,6 +1657,120 @@ void main() {
       // After the reload reverts the optimistic change, the Complete button
       // is shown again (the fake did not flip done because it threw).
       expect(find.byKey(const ValueKey('complete-item-button')), findsOneWidget);
+    });
+  });
+
+  group('ItemDetailPage triage', () {
+    testWidgets(
+        'shows a green Make-top-priority and a grey-green Make-low-priority button for an untriaged item',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 1, title: 'Untriaged'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      final top = find.byKey(const ValueKey('make-top-priority-button'));
+      expect(top, findsOneWidget);
+      final topFilled = tester.widget<FilledButton>(top);
+      expect(
+        topFilled.style?.backgroundColor?.resolve(<WidgetState>{}),
+        Colors.green,
+      );
+      expect(find.text('Make top priority'), findsOneWidget);
+
+      final low = find.byKey(const ValueKey('make-low-priority-button'));
+      expect(low, findsOneWidget);
+      final lowFilled = tester.widget<FilledButton>(low);
+      expect(
+        lowFilled.style?.backgroundColor?.resolve(<WidgetState>{}),
+        const Color(0xFF8FBC8F),
+      );
+      expect(find.text('Make low priority'), findsOneWidget);
+
+      // The complete / return-to-untriaged buttons are not shown for an
+      // untriaged item.
+      expect(find.byKey(const ValueKey('complete-item-button')), findsNothing);
+      expect(find.byKey(const ValueKey('return-to-untriaged-button')),
+          findsNothing);
+    });
+
+    testWidgets('does not show triage buttons for a triaged item',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Triaged', priority: 10),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('make-top-priority-button')),
+          findsNothing);
+      expect(find.byKey(const ValueKey('make-low-priority-button')),
+          findsNothing);
+    });
+
+    testWidgets(
+        'tapping Make top priority calls moveItem(id, top: true) and shows a confirmation',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 7, title: 'Untriaged'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('make-top-priority-button')));
+      await tester.pumpAndSettle();
+
+      expect(service.moveItemCalls, [(id: 7, top: true, bottom: false)]);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('top of the priority list'), findsOneWidget);
+      // After the reload the item is triaged (has priority), so the triage
+      // buttons are replaced by the complete / return-to-untriaged buttons.
+      expect(find.byKey(const ValueKey('make-top-priority-button')),
+          findsNothing);
+      expect(find.byKey(const ValueKey('make-low-priority-button')),
+          findsNothing);
+      expect(find.byKey(const ValueKey('complete-item-button')), findsOneWidget);
+    });
+
+    testWidgets(
+        'tapping Make low priority calls moveItem(id, bottom: true) and shows a confirmation',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 7, title: 'Untriaged'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('make-low-priority-button')));
+      await tester.pumpAndSettle();
+
+      expect(service.moveItemCalls, [(id: 7, top: false, bottom: true)]);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('bottom of the priority list'), findsOneWidget);
+      // After the reload the item is triaged, so the triage buttons are gone.
+      expect(find.byKey(const ValueKey('make-low-priority-button')),
+          findsNothing);
+      expect(find.byKey(const ValueKey('make-top-priority-button')),
+          findsNothing);
+    });
+
+    testWidgets('shows an error SnackBar and keeps the buttons when triage fails',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 7, title: 'Untriaged'));
+      service.moveItemError = ItemException('server explosion');
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('make-top-priority-button')));
+      await tester.pumpAndSettle();
+
+      expect(service.moveItemCalls, [(id: 7, top: true, bottom: false)]);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to make top priority'), findsOneWidget);
+      // The triage buttons remain after the failure (the fake did not flip
+      // priority because it threw).
+      expect(find.byKey(const ValueKey('make-top-priority-button')),
+          findsOneWidget);
     });
   });
 }
