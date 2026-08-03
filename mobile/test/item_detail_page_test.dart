@@ -224,6 +224,9 @@ class _FakeItemService extends ItemService {
   final List<int> deleteBlockerCalls = [];
   ItemException? deleteBlockerError;
 
+  final List<({int itemId, String description})> createBlockerCalls = [];
+  ItemException? createBlockerError;
+
   @override
   Future<void> deleteBlocker({required int id}) async {
     deleteBlockerCalls.add(id);
@@ -236,6 +239,24 @@ class _FakeItemService extends ItemService {
         ..blockers.removeWhere((b) => b.id == id);
       _item = updated;
     }
+  }
+
+  @override
+  Future<Blocker> createBlocker({
+    required int itemId,
+    required String description,
+  }) async {
+    createBlockerCalls.add((itemId: itemId, description: description));
+    if (createBlockerError != null) {
+      throw createBlockerError!;
+    }
+    final nextId = (_item?.blockers.fold<int>(0, (m, b) => b.id > m ? b.id : m) ?? 0) + 1;
+    final created = Blocker(id: nextId, description: description);
+    // Reflect the change so a reload shows the new blocker.
+    if (_item != null) {
+      _item = _item!.deepCopy()..blockers.add(created);
+    }
+    return created;
   }
 
   @override
@@ -464,14 +485,16 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField), 'fresh');
+      await tester.enterText(find.byKey(const Key('add-comment-field')), 'fresh');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
 
       // createComment was called with the typed body.
       expect(service.createCommentCalls, [(itemId: 1, body: 'fresh')]);
       // The text field was cleared.
-      final field = tester.widget<TextField>(find.byType(TextField));
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('add-comment-field')),
+      );
       expect(field.controller!.text, isEmpty);
       // The new comment appears at the top (its card is above the old one).
       expect(find.text('fresh'), findsOneWidget);
@@ -495,12 +518,14 @@ void main() {
       // (the field's onSubmitted triggers the validation).
       await tester.drag(find.byType(ListView), const Offset(0, -500));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), '');
+      await tester.enterText(find.byKey(const Key('add-comment-field')), '');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
 
       // The validation error is shown (the field's errorText, not the hint).
-      final field = tester.widget<TextField>(find.byType(TextField));
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('add-comment-field')),
+      );
       expect(field.decoration!.errorText, 'Enter a comment');
       expect(service.createCommentCalls, isEmpty);
     });
@@ -614,13 +639,23 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      // One copy button for the description and one for the comment.
-      expect(find.byIcon(Icons.copy), findsNWidgets(2));
+      // The description's copy button is at the top of the page.
+      expect(find.byIcon(Icons.copy), findsOneWidget);
 
       // Tapping the description's copy button shows the confirmation SnackBar.
       await tester.tap(find.byIcon(Icons.copy).first);
       await tester.pump();
       expect(find.text('Copied to clipboard'), findsOneWidget);
+
+      // Scroll the comments section into view. The page content is taller than
+      // the viewport (and ListView lazily builds off-screen children), so the
+      // description's copy button unmounts as the comment's enters the view.
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      // The comment's body is now rendered and a copy button for it is present.
+      expect(find.text('remark'), findsOneWidget);
+      expect(find.byIcon(Icons.copy), findsOneWidget);
     });
 
     testWidgets('tapping a markdown link does not crash the page',
@@ -1124,6 +1159,93 @@ void main() {
       expect(service.deleteBlockerCalls, [10]);
       // getItem was called again to revert (initial load + reload on failure).
       expect(service.getItemCalls, [1, 1]);
+    });
+  });
+
+  group('ItemDetailPage add blocker', () {
+    testWidgets('typing and sending adds a blocker and refreshes the list',
+        (tester) async {
+      final item = Item(
+        id: 1,
+        title: 'Blocked',
+        blockers: [Blocker(id: 10, description: 'waiting on infra')],
+      );
+      final service = _FakeItemService(item: item);
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // The add-blocker field is present alongside the existing blocker row.
+      expect(find.byKey(const Key('add-blocker-field')), findsOneWidget);
+      expect(find.text('waiting on infra'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const Key('add-blocker-field')),
+        'missing spec',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      // createBlocker was called with the typed description.
+      expect(service.createBlockerCalls, [(itemId: 1, description: 'missing spec')]);
+      // The text field was cleared.
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('add-blocker-field')),
+      );
+      expect(field.controller!.text, isEmpty);
+      // The new blocker appears in the list alongside the existing one.
+      expect(find.text('missing spec'), findsOneWidget);
+      expect(find.text('waiting on infra'), findsOneWidget);
+      // A success SnackBar was shown.
+      expect(find.text('Blocker added'), findsOneWidget);
+      // getItem was called twice: initial load + reload after add.
+      expect(service.getItemCalls, [1, 1]);
+    });
+
+    testWidgets('submitting an empty description shows an error and does not add',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 1, title: 'Blocked'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // Submit with an empty field. The blockers section may be off-screen
+      // because the page content is taller than the viewport, so scroll it
+      // into view first, then use testTextInput to dispatch the done action
+      // (the field's onSubmitted triggers the validation).
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('add-blocker-field')), '');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      // The validation error is shown (the field's errorText, not the hint).
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('add-blocker-field')),
+      );
+      expect(field.decoration!.errorText, 'Enter a blocker');
+      expect(service.createBlockerCalls, isEmpty);
+    });
+
+    testWidgets('a failed create shows a SnackBar', (tester) async {
+      final service = _FakeItemService(item: Item(id: 1, title: 'Blocked'))
+        ..createBlockerError = ItemException('server says no');
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('add-blocker-field')),
+        'missing spec',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+
+      // The failure SnackBar is shown with the localised message.
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to create blocker'), findsOneWidget);
+      // createBlocker was attempted.
+      expect(service.createBlockerCalls, [(itemId: 1, description: 'missing spec')]);
     });
   });
 

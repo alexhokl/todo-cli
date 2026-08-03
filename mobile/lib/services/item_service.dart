@@ -213,6 +213,25 @@ class ItemService {
     }
   }
 
+  /// Attach a new blocker to an item. The description must be non-empty after
+  /// trimming; the server rejects an empty description. The server returns the
+  /// created [Blocker], but callers should reload the item to reflect the
+  /// canonical ordering on the preloaded blockers list.
+  Future<Blocker> createBlocker({
+    required int itemId,
+    required String description,
+  }) async {
+    _ensureInitialized();
+
+    final request = CreateBlockerRequest(itemId: itemId, description: description);
+
+    try {
+      return await _client!.createBlocker(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
   /// Removes a blocker by id. The server returns Empty, so callers must
   /// reload the item to reflect the updated blockers list.
   Future<void> deleteBlocker({required int id}) async {

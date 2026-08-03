@@ -107,5 +107,9 @@
   "blockerRemoved": "ブロックを削除しました",
   "linkedItemRemoved": "関連アイテムを削除しました",
   "failedToRemoveBlocker": "ブロックの削除に失敗しました: {error}",
-  "failedToRemoveLinkedItem": "関連アイテムの削除に失敗しました: {error}"
+  "failedToRemoveLinkedItem": "関連アイテムの削除に失敗しました: {error}",
+  "enterBlockerDescription": "ブロックを入力",
+  "enterBlockerDescriptionError": "ブロックを入力してください",
+  "blockerCreated": "ブロックを追加しました",
+  "failedToCreateBlocker": "ブロックの作成に失敗しました: {error}"
 }

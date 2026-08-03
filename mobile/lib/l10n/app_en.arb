@@ -566,6 +566,28 @@
       }
     }
   },
+  "enterBlockerDescription": "Enter a blocker",
+  "@enterBlockerDescription": {
+    "description": "Hint text for the add-blocker description field on the item details page"
+  },
+  "enterBlockerDescriptionError": "Enter a blocker",
+  "@enterBlockerDescriptionError": {
+    "description": "Validation error shown when the add-blocker description field is empty"
+  },
+  "blockerCreated": "Blocker added",
+  "@blockerCreated": {
+    "description": "SnackBar confirmation after a blocker is created on an item on the details page"
+  },
+  "failedToCreateBlocker": "Failed to create blocker: {error}",
+  "@failedToCreateBlocker": {
+    "description": "SnackBar message shown when creating a blocker on an item fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
   "failedToRemoveLinkedItem": "Failed to remove linked item: {error}",
   "@failedToRemoveLinkedItem": {
     "description": "SnackBar message shown when removing a linked item from an item fails",

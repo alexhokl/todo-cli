@@ -56,6 +56,10 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   bool _adding = false;
   String? _addError;
 
+  final TextEditingController _addBlockerController = TextEditingController();
+  bool _addingBlocker = false;
+  String? _addBlockerError;
+
   /// All known labels (for the add-label picker), loaded alongside the item.
   List<Label>? _allLabels;
   String? _labelsError;
@@ -207,6 +211,43 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     setState(() => _addError = l10n.failedToCreateComment(message));
   }
 
+  Future<void> _onAddBlocker() async {
+    final l10n = AppLocalizations.of(context)!;
+    final description = _addBlockerController.text.trim();
+    if (description.isEmpty) {
+      setState(() => _addBlockerError = l10n.enterBlockerDescriptionError);
+      return;
+    }
+    setState(() {
+      _addingBlocker = true;
+      _addBlockerError = null;
+    });
+    try {
+      await _service!.createBlocker(
+        itemId: widget.itemId,
+        description: description,
+      );
+      _addBlockerController.clear();
+      if (!mounted) return;
+      _showSnackbar(l10n.blockerCreated);
+      // Blockers come back preloaded on the item, so reload to refresh the
+      // canonical list.
+      unawaited(_load());
+    } on ItemException catch (e) {
+      _handleAddBlockerFailure(l10n, e.message);
+    } catch (e) {
+      _handleAddBlockerFailure(l10n, e.toString());
+    } finally {
+      if (mounted) setState(() => _addingBlocker = false);
+    }
+  }
+
+  void _handleAddBlockerFailure(AppLocalizations l10n, String message) {
+    setState(() => _addingBlocker = false);
+    if (!mounted) return;
+    _showSnackbar(l10n.failedToCreateBlocker(message));
+  }
+
   void _showSnackbar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -259,6 +300,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   @override
   void dispose() {
     _addController.dispose();
+    _addBlockerController.dispose();
     if (_ownsService) {
       _service?.dispose();
     }
@@ -387,6 +429,26 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                   ),
               ],
             ),
+          const SizedBox(height: 8),
+          // Inline add field at the bottom of the blockers section, mirroring
+          // the comments add field. Keyed so tests can target it unambiguously.
+          TextField(
+            key: const Key('add-blocker-field'),
+            controller: _addBlockerController,
+            decoration: InputDecoration(
+              hintText: l10n.enterBlockerDescription,
+              errorText: _addBlockerError,
+              border: const OutlineInputBorder(),
+              isDense: true,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.send),
+                onPressed: _addingBlocker ? null : _onAddBlocker,
+              ),
+            ),
+            textCapitalization: TextCapitalization.sentences,
+            onSubmitted: _addingBlocker ? null : (_) => _onAddBlocker(),
+            enabled: !_addingBlocker,
+          ),
           const SizedBox(height: 16),
           _sectionLabel(context, l10n.linkedItems),
           if (item.linkedItems.isEmpty)
@@ -434,8 +496,10 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionLabel(context, l10n.comments),
-        // Inline add field at the top of the section.
+        // Inline add field at the top of the section. Keyed so tests can
+        // target it unambiguously alongside the add-blocker field.
         TextField(
+          key: const Key('add-comment-field'),
           controller: _addController,
           decoration: InputDecoration(
             hintText: l10n.enterCommentBody,
