@@ -150,8 +150,8 @@ class ItemListState extends State<ItemList> {
 
   Widget _buildChipBar(BuildContext context) {
     final views = const [
-      ItemView.ITEM_VIEW_TRIAGED,
       ItemView.ITEM_VIEW_UNTRIAGED,
+      ItemView.ITEM_VIEW_TRIAGED,
       ItemView.ITEM_VIEW_TIME_SENSITIVE,
       ItemView.ITEM_VIEW_DONE,
     ];

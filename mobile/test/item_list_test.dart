@@ -126,6 +126,24 @@ void main() {
       expect(find.byType(ActionChip), findsNothing);
     });
 
+    testWidgets('renders Untriaged before Triaged in the expanded chip bar',
+        (tester) async {
+      final service = _FakeItemService(triaged: [Item(id: 1, title: 'ship it')]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+
+      // The FilterChips render in the order of the views list, so the
+      // Untriaged chip appears before the Triaged chip.
+      final chips = tester.widgetList<FilterChip>(find.byType(FilterChip)).toList();
+      expect(chips.length, 4);
+      final labels = chips.map((c) => (c.label as Text).data).toList();
+      expect(labels.indexOf('Untriaged'), lessThan(labels.indexOf('Triaged')));
+    });
+
     testWidgets('selecting the Completed chip switches the view and collapses the bar', (tester) async {
       final service = _FakeItemService(
         triaged: [Item(id: 1, title: 'ship it')],
