@@ -115,7 +115,11 @@ class ItemListState extends State<ItemList> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ItemDetailPage(itemId: item.id, service: _service),
+        builder: (_) => ItemDetailPage(
+          itemId: item.id,
+          service: _service,
+          onItemChanged: _load,
+        ),
       ),
     );
   }

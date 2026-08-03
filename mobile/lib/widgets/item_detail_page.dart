@@ -32,10 +32,17 @@ class ItemDetailPage extends StatefulWidget {
     super.key,
     required this.itemId,
     this.service,
+    this.onItemChanged,
   });
 
   final int itemId;
   final ItemService? service;
+
+  /// Invoked after a successful bottom-bar action (complete, return to
+  /// untriaged, make top/low priority) so the parent [ItemList] can reload
+  /// its current bucket. Not invoked for blocker/comment/label/effort/link
+  /// edits, which do not change the list's bucket or ordering.
+  final VoidCallback? onItemChanged;
 
   @override
   State<ItemDetailPage> createState() => _ItemDetailPageState();
@@ -272,6 +279,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
       _showSnackbar(done ? l10n.itemCompleted : l10n.returnedToUntriaged);
       // Refresh the canonical state (the server response is authoritative).
       unawaited(_load());
+      widget.onItemChanged?.call();
     } on ItemException catch (e) {
       _showSnackbar(
         done
@@ -308,6 +316,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
       );
       _showSnackbar(top ? l10n.madeTopPriority : l10n.madeLowPriority);
       unawaited(_load());
+      widget.onItemChanged?.call();
     } on ItemException catch (e) {
       _showSnackbar(
         top

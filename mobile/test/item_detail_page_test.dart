@@ -328,11 +328,21 @@ class _FakeItemService extends ItemService {
   Future<void> dispose() async {}
 }
 
-Widget _harness({required _FakeItemService service, required int itemId}) {
+Widget _harness({
+  required _FakeItemService service,
+  required int itemId,
+  VoidCallback? onItemChanged,
+}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(body: ItemDetailPage(itemId: itemId, service: service)),
+    home: Scaffold(
+      body: ItemDetailPage(
+        itemId: itemId,
+        service: service,
+        onItemChanged: onItemChanged,
+      ),
+    ),
   );
 }
 
@@ -1625,6 +1635,28 @@ void main() {
     });
 
     testWidgets(
+        'tapping Complete invokes onItemChanged once on a successful completion',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 7, title: 'Triaged', priority: 5),
+      );
+      var changedCalls = 0;
+
+      await tester.pumpWidget(_harness(
+        service: service,
+        itemId: 7,
+        onItemChanged: () => changedCalls++,
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('complete-item-button')));
+      await tester.pumpAndSettle();
+
+      // The parent-list refresh callback fires exactly once after success.
+      expect(changedCalls, 1);
+    });
+
+    testWidgets(
         'tapping Return to untriaged calls setItemDone(id, false) and shows a confirmation',
         (tester) async {
       final service = _FakeItemService(
@@ -1697,6 +1729,31 @@ void main() {
       // After the reload reverts the optimistic change, the Complete button
       // is shown again (the fake did not flip done because it threw).
       expect(find.byKey(const ValueKey('complete-item-button')), findsOneWidget);
+    });
+
+    testWidgets(
+        'a failed setItemDone does not invoke onItemChanged',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 7, title: 'Triaged', priority: 5),
+      );
+      service.setItemDoneError = ItemException('server explosion');
+      var changedCalls = 0;
+
+      await tester.pumpWidget(_harness(
+        service: service,
+        itemId: 7,
+        onItemChanged: () => changedCalls++,
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('complete-item-button')));
+      await tester.pumpAndSettle();
+
+      // The call was attempted but failed; the list-refresh callback must
+      // not fire (no change to refresh).
+      expect(service.setItemDoneCalls, [(id: 7, done: true)]);
+      expect(changedCalls, 0);
     });
   });
 
@@ -1811,6 +1868,47 @@ void main() {
       // priority because it threw).
       expect(find.byKey(const ValueKey('make-top-priority-button')),
           findsOneWidget);
+    });
+
+    testWidgets(
+        'tapping Make top priority invokes onItemChanged once on success',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 7, title: 'Untriaged'));
+      var changedCalls = 0;
+
+      await tester.pumpWidget(_harness(
+        service: service,
+        itemId: 7,
+        onItemChanged: () => changedCalls++,
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('make-top-priority-button')));
+      await tester.pumpAndSettle();
+
+      expect(service.moveItemCalls, [(id: 7, top: true, bottom: false)]);
+      expect(changedCalls, 1);
+    });
+
+    testWidgets(
+        'a failed triage does not invoke onItemChanged',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 7, title: 'Untriaged'));
+      service.moveItemError = ItemException('server explosion');
+      var changedCalls = 0;
+
+      await tester.pumpWidget(_harness(
+        service: service,
+        itemId: 7,
+        onItemChanged: () => changedCalls++,
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('make-top-priority-button')));
+      await tester.pumpAndSettle();
+
+      expect(service.moveItemCalls, [(id: 7, top: true, bottom: false)]);
+      expect(changedCalls, 0);
     });
   });
 }
