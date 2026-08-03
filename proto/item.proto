@@ -31,6 +31,8 @@ service ItemService {
   rpc UpdateItemLinks(UpdateItemLinksRequest) returns (Item);
   // UpdateItemDueDate sets or clears an item's due date.
   rpc UpdateItemDueDate(UpdateItemDueDateRequest) returns (Item);
+  // UpdateItem changes an item's title and description.
+  rpc UpdateItem(UpdateItemRequest) returns (Item);
   // SetItemEffort attaches an effort to an item by name, or clears it when the
   // name is empty. The effort must already exist; unknown names are reported.
   rpc SetItemEffort(SetItemEffortRequest) returns (Item);
@@ -242,6 +244,14 @@ message UpdateItemDueDateRequest {
   uint32 id = 1;
   // due_date sets the date when present; leaving it unset clears the date.
   optional google.protobuf.Timestamp due_date = 2;
+}
+
+// UpdateItemRequest changes the editable text fields of an item. The title
+// must be non-empty; an empty description clears the field.
+message UpdateItemRequest {
+  uint32 id = 1;
+  string title = 2;
+  string description = 3;
 }
 
 message ListLabelsRequest {}

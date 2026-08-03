@@ -16,6 +16,8 @@ type updateItemOptions struct {
 	RemoveLinks  []uint
 	DueDate      string
 	ClearDueDate bool
+	Title        string
+	Description  string
 }
 
 var updateItemOpts updateItemOptions
@@ -40,7 +42,10 @@ names are matched case insensitively and stored in lower case.
 
 Items linked with --add-link must already exist; the link is symmetric, so
 linking A to B also links B to A. Self-links and unknown or cross-user ids are
-rejected. --remove-link detaches the link on both sides.`,
+rejected. --remove-link detaches the link on both sides.
+
+The title must be non-empty; an empty title is rejected. The description is
+optional and stored verbatim; an empty string clears it.`,
 		Example: `  todo update item 7 --add-label urgent
   todo update item 7 --add-label urgent --add-label work
   todo update item 7 --remove-label later
@@ -48,7 +53,10 @@ rejected. --remove-link detaches the link on both sides.`,
   todo update item 7 --add-link 3 --add-link 5
   todo update item 7 --remove-link 3
   todo update item 7 --due-date 2026-08-15
-  todo update item 7 --clear-due-date`,
+  todo update item 7 --clear-due-date
+  todo update item 7 --title "new title"
+  todo update item 7 --description "new details"
+  todo update item 7 --title "renamed" --description ""`,
 		Args:        cobra.ExactArgs(1),
 		Annotations: map[string]string{annotationRequiresService: "true"},
 		RunE:        runUpdateItem,
@@ -61,9 +69,11 @@ rejected. --remove-link detaches the link on both sides.`,
 	flags.UintSliceVar(&updateItemOpts.RemoveLinks, "remove-link", nil, "ID of an item to unlink (repeatable)")
 	flags.StringVar(&updateItemOpts.DueDate, "due-date", "", "Due date of the item in YYYY-MM-DD format")
 	flags.BoolVar(&updateItemOpts.ClearDueDate, "clear-due-date", false, "Remove the due date from the item")
+	flags.StringVar(&updateItemOpts.Title, "title", "", "New title of the item")
+	flags.StringVar(&updateItemOpts.Description, "description", "", "New description of the item (empty string clears it)")
 
 	// Without at least one of these the command would have nothing to do.
-	cmd.MarkFlagsOneRequired("add-label", "remove-label", "add-link", "remove-link", "due-date", "clear-due-date")
+	cmd.MarkFlagsOneRequired("add-label", "remove-label", "add-link", "remove-link", "due-date", "clear-due-date", "title", "description")
 	cmd.MarkFlagsMutuallyExclusive("due-date", "clear-due-date")
 
 	return cmd
@@ -88,6 +98,38 @@ func runUpdateItem(cmd *cobra.Command, args []string) error {
 	client := proto.NewItemServiceClient(conn)
 	ctx := cmd.Context()
 	var item *proto.Item
+
+	// Title/description runs first so later mutations (labels, links) operate
+	// on the renamed item and their returned item carries the new title.
+	if cmd.Flags().Changed("title") || cmd.Flags().Changed("description") {
+		req := &proto.UpdateItemRequest{Id: id}
+		// The server requires a non-empty title and stores description
+		// verbatim. When only one of the two flags is set, fetch the current
+		// value of the other so the update leaves it unchanged.
+		if !cmd.Flags().Changed("title") || !cmd.Flags().Changed("description") {
+			current, err := client.GetItem(ctx, &proto.GetItemRequest{Id: id})
+			if err != nil {
+				return fmt.Errorf("failed to read the item before updating: %w", err)
+			}
+			if !cmd.Flags().Changed("title") {
+				req.Title = current.GetTitle()
+			}
+			if !cmd.Flags().Changed("description") {
+				req.Description = current.GetDescription()
+			}
+		}
+		if cmd.Flags().Changed("title") {
+			req.Title = updateItemOpts.Title
+		}
+		if cmd.Flags().Changed("description") {
+			req.Description = updateItemOpts.Description
+		}
+		item, err = client.UpdateItem(ctx, req)
+		if err != nil {
+			return fmt.Errorf("failed to update the item: %w", err)
+		}
+	}
+
 	if cmd.Flags().Changed("due-date") {
 		dueDate, err := parseDueDate(updateItemOpts.DueDate)
 		if err != nil {

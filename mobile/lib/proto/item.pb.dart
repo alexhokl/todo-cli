@@ -1263,6 +1263,86 @@ class UpdateItemDueDateRequest extends $pb.GeneratedMessage {
   $2.Timestamp ensureDueDate() => $_ensure(1);
 }
 
+/// UpdateItemRequest changes the editable text fields of an item. The title
+/// must be non-empty; an empty description clears the field.
+class UpdateItemRequest extends $pb.GeneratedMessage {
+  factory UpdateItemRequest({
+    $core.int? id,
+    $core.String? title,
+    $core.String? description,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    if (title != null) result.title = title;
+    if (description != null) result.description = description;
+    return result;
+  }
+
+  UpdateItemRequest._();
+
+  factory UpdateItemRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UpdateItemRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UpdateItemRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..aOS(2, _omitFieldNames ? '' : 'title')
+    ..aOS(3, _omitFieldNames ? '' : 'description')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateItemRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UpdateItemRequest copyWith(void Function(UpdateItemRequest) updates) =>
+      super.copyWith((message) => updates(message as UpdateItemRequest))
+          as UpdateItemRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UpdateItemRequest create() => UpdateItemRequest._();
+  @$core.override
+  UpdateItemRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static UpdateItemRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UpdateItemRequest>(create);
+  static UpdateItemRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get title => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set title($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTitle() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTitle() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get description => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set description($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDescription() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDescription() => $_clearField(3);
+}
+
 class ListLabelsRequest extends $pb.GeneratedMessage {
   factory ListLabelsRequest() => create();
 

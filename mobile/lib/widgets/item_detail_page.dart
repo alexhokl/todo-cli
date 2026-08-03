@@ -1,0 +1,712 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'package:todo/l10n/app_localizations.dart';
+import 'package:todo/proto/item.pb.dart';
+import 'package:todo/services/item_service.dart';
+import 'package:todo/widgets/edit_item_page.dart';
+import 'package:todo/widgets/settings_page.dart';
+
+/// Read-only details for a single todo item, with an inline comments list.
+///
+/// The page fetches a fresh [Item] via [ItemService.getItem] so the displayed
+/// data reflects the current server state rather than the (possibly stale)
+/// snapshot held by [ItemList]. Comments are fetched separately via
+/// [ItemService.listComments] (which preloads the author) and rendered
+/// inline, newest-first. A text field at the top of the comments section lets
+/// the user add a comment without leaving the page.
+///
+/// When [service] is null the page builds one lazily from the persisted backend
+/// configuration (the same seam used by [ItemList] and [CommentsPage]). Tests
+/// inject a fake service so they never touch the network or shared
+/// preferences.
+class ItemDetailPage extends StatefulWidget {
+  const ItemDetailPage({
+    super.key,
+    required this.itemId,
+    this.service,
+  });
+
+  final int itemId;
+  final ItemService? service;
+
+  @override
+  State<ItemDetailPage> createState() => _ItemDetailPageState();
+}
+
+class _ItemDetailPageState extends State<ItemDetailPage> {
+  ItemService? _service;
+  bool _ownsService = false;
+  Item? _item;
+  String? _error;
+  bool _isLoading = true;
+
+  List<Comment>? _comments;
+  bool _commentsLoading = false;
+  String? _commentsError;
+
+  final TextEditingController _addController = TextEditingController();
+  bool _adding = false;
+  String? _addError;
+
+  /// All known labels (for the add-label picker), loaded alongside the item.
+  List<Label>? _allLabels;
+  String? _labelsError;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = widget.service;
+    _ownsService = widget.service == null;
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      _service ??= await _buildService();
+      final item = await _service!.getItem(widget.itemId);
+      setState(() {
+        _item = item;
+        _isLoading = false;
+      });
+      // Fetch comments separately so authors are preloaded. A comment-load
+      // failure must not blank the whole page.
+      unawaited(_loadComments());
+      // Fetch the catalogue of known labels for the add-label picker. A
+      // load failure here must not blank the page either.
+      unawaited(_loadLabels());
+    } on ItemException catch (e) {
+      setState(() {
+        _error = e.message;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to load item: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadComments() async {
+    setState(() {
+      _commentsLoading = true;
+      _commentsError = null;
+    });
+    try {
+      final comments = await _service!.listComments(widget.itemId);
+      setState(() {
+        _comments = comments;
+        _commentsLoading = false;
+      });
+    } on ItemException catch (e) {
+      setState(() {
+        _commentsError = e.message;
+        _commentsLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _commentsError = 'Failed to load comments: $e';
+        _commentsLoading = false;
+      });
+    }
+  }
+
+  /// Loads the catalogue of all known labels for the add-label picker. A
+  /// failure is isolated so the rest of the page stays usable; the add-label
+  /// button surfaces the error when tapped.
+  Future<void> _loadLabels() async {
+    setState(() {
+      _labelsError = null;
+    });
+    try {
+      final labels = await _service!.listLabels();
+      setState(() {
+        _allLabels = labels;
+      });
+    } on ItemException catch (e) {
+      setState(() {
+        _labelsError = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        _labelsError = 'Failed to load labels: $e';
+      });
+    }
+  }
+
+  Future<void> _onAddComment() async {
+    final l10n = AppLocalizations.of(context)!;
+    final body = _addController.text.trim();
+    if (body.isEmpty) {
+      setState(() => _addError = l10n.enterCommentBodyError);
+      return;
+    }
+    setState(() {
+      _adding = true;
+      _addError = null;
+    });
+    try {
+      await _service!.createComment(itemId: widget.itemId, body: body);
+      _addController.clear();
+      if (!mounted) return;
+      _showSnackbar(l10n.commentCreated);
+      await _loadComments();
+    } on ItemException catch (e) {
+      _handleAddFailure(l10n, e.message);
+    } catch (e) {
+      _handleAddFailure(l10n, e.toString());
+    } finally {
+      if (mounted) setState(() => _adding = false);
+    }
+  }
+
+  void _handleAddFailure(AppLocalizations l10n, String message) {
+    setState(() => _adding = false);
+    if (!mounted) return;
+    setState(() => _addError = l10n.failedToCreateComment(message));
+  }
+
+  void _showSnackbar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
+  }
+
+  Future<ItemService> _buildService() async {
+    final config = await BackendConfig.load();
+    return ItemService(host: config.host, port: config.port);
+  }
+
+  /// Opens the edit page for the item. On return with `true`, reloads the
+  /// canonical state so the new title and description render.
+  Future<void> _openEdit(BuildContext context, Item item) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditItemPage(
+          itemId: widget.itemId,
+          initialTitle: item.title,
+          initialDescription: item.description,
+          service: _service,
+        ),
+      ),
+    );
+    if (updated == true && mounted) {
+      await _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    _addController.dispose();
+    if (_ownsService) {
+      _service?.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!, style: theme.textTheme.bodyMedium),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh),
+                label: Text(l10n.retry),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final item = _item!;
+    return Scaffold(
+      appBar: AppBar(title: Text(item.title)),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openEdit(context, item),
+        tooltip: l10n.editItem,
+        child: const Icon(Icons.edit),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _sectionLabel(context, l10n.descriptionLabel),
+          if (item.description.isEmpty)
+            _mutedHint(context, l10n.noDescription)
+          else
+            _MarkdownBlock(
+              data: item.description,
+              onCopied: () => _showSnackbar(l10n.copiedToClipboard),
+              onTapLink: _onTapLink,
+            ),
+          const SizedBox(height: 16),
+          if (item.hasDueDate()) ...[
+            _sectionLabel(context, l10n.dueDate),
+            Text(_formatTimestamp(item.dueDate)),
+            const SizedBox(height: 16),
+          ],
+          _sectionLabel(context, l10n.effort),
+          if (item.hasEffort() && item.effort.name.isNotEmpty)
+            Text(item.effort.name)
+          else
+            _mutedHint(context, l10n.noEffort),
+          const SizedBox(height: 16),
+          _sectionLabel(context, l10n.labels),
+          if (item.labels.isEmpty)
+            _mutedHint(context, l10n.noLabels)
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [for (final label in item.labels) _labelChip(label)],
+            ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _showAddLabelDialog,
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addLabel),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _sectionLabel(context, l10n.blockers),
+          if (item.blockers.isEmpty)
+            _mutedHint(context, l10n.noBlockers)
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final blocker in item.blockers)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.block, size: 18),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(blocker.description)),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 16),
+          _sectionLabel(context, l10n.linkedItems),
+          if (item.linkedItems.isEmpty)
+            _mutedHint(context, l10n.noLinkedItems)
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final linked in item.linkedItems)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(linked.title),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 24),
+          _buildCommentsSection(context, l10n),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommentsSection(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel(context, l10n.comments),
+        // Inline add field at the top of the section.
+        TextField(
+          controller: _addController,
+          decoration: InputDecoration(
+            hintText: l10n.enterCommentBody,
+            errorText: _addError,
+            border: const OutlineInputBorder(),
+            isDense: true,
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.send),
+              onPressed: _adding ? null : _onAddComment,
+            ),
+          ),
+          textCapitalization: TextCapitalization.sentences,
+          onSubmitted: _adding ? null : (_) => _onAddComment(),
+          enabled: !_adding,
+        ),
+        if (_adding)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Center(child: SizedBox()),
+          ),
+        const SizedBox(height: 12),
+        if (_commentsLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (_commentsError != null)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _commentsError!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: _loadComments,
+                icon: const Icon(Icons.refresh),
+                label: Text(l10n.retry),
+              ),
+            ],
+          )
+        else ..._buildCommentList(context, l10n),
+      ],
+    );
+  }
+
+  List<Widget> _buildCommentList(BuildContext context, AppLocalizations l10n) {
+    final comments = _comments ?? const <Comment>[];
+    if (comments.isEmpty) {
+      return [_mutedHint(context, l10n.noComments)];
+    }
+    final sorted = List<Comment>.from(comments)
+      ..sort((a, b) {
+        final cmp = b.createdAt.seconds.compareTo(a.createdAt.seconds);
+        if (cmp != 0) return cmp;
+        if (b.createdAt.nanos != a.createdAt.nanos) {
+          return b.createdAt.nanos.compareTo(a.createdAt.nanos);
+        }
+        return b.id.compareTo(a.id);
+      });
+    return [
+      for (final comment in sorted) _commentCard(context, l10n, comment),
+    ];
+  }
+
+  Widget _commentCard(
+    BuildContext context,
+    AppLocalizations l10n,
+    Comment comment,
+  ) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _MarkdownBlock(
+              data: comment.body,
+              onCopied: () => _showSnackbar(l10n.copiedToClipboard),
+              onTapLink: _onTapLink,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _formatAuthorLine(comment),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+      ),
+    );
+  }
+
+  Widget _mutedHint(BuildContext context, String text) {
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+        fontStyle: FontStyle.italic,
+      ),
+    );
+  }
+
+  Widget _labelChip(Label label) {
+    final l10n = AppLocalizations.of(context)!;
+    Widget? avatar;
+    if (label.colour.isNotEmpty) {
+      final color = _parseColour(label.colour);
+      if (color != null) {
+        avatar = CircleAvatar(backgroundColor: color, maxRadius: 6);
+      }
+    }
+    return InputChip(
+      label: Text(label.name),
+      avatar: avatar,
+      onDeleted: () => _removeLabel(label),
+      deleteIcon: Icon(Icons.close, semanticLabel: l10n.removeLabel),
+    );
+  }
+
+  /// Optimistically removes [label] from the item, then detaches it on the
+  /// server via [ItemService.updateItemLabels]. On failure a SnackBar is
+  /// shown and the item is reloaded to revert the optimistic change.
+  Future<void> _removeLabel(Label label) async {
+    final l10n = AppLocalizations.of(context)!;
+    final previous = _item;
+    // Optimistic: drop the label from the local item immediately so the
+    // chip vanishes without waiting for the server round-trip.
+    final updated = previous!.deepCopy()
+      ..labels.removeWhere((l) => l.id == label.id);
+    setState(() => _item = updated);
+    try {
+      await _service!.updateItemLabels(
+        id: widget.itemId,
+        remove: [label.name],
+      );
+    } on ItemException catch (e) {
+      _showSnackbar(l10n.failedToRemoveLabel(e.message));
+      await _load();
+    } catch (e) {
+      _showSnackbar(l10n.failedToRemoveLabel(e.toString()));
+      await _load();
+    }
+  }
+
+  /// Opens a dialog listing known labels not already attached to the item.
+  /// Selecting a label attaches it via [ItemService.updateItemLabels]. The
+  /// label catalogue is loaded lazily if the initial fetch failed.
+  Future<void> _showAddLabelDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    // Ensure the label catalogue is available; reload on failure so the
+    // user can retry by tapping the button again.
+    if (_allLabels == null || _labelsError != null) {
+      await _loadLabels();
+      if (!mounted) return;
+    }
+    if (_labelsError != null || _allLabels == null) {
+      _showSnackbar(l10n.failedToAddLabel(_labelsError ?? 'labels unavailable'));
+      return;
+    }
+
+    final attached = _item?.labels ?? const <Label>[];
+    final attachedNames = attached.map((l) => l.name).toSet();
+    final candidates =
+        _allLabels!.where((l) => !attachedNames.contains(l.name)).toList();
+
+    final selected = await showDialog<Label>(
+      context: context,
+      builder: (context) {
+        if (candidates.isEmpty) {
+          return SimpleDialog(
+            title: Text(l10n.addLabel),
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Text(
+                  l10n.noMoreLabels,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurfaceVariant
+                            .withValues(alpha: 0.6),
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ),
+            ],
+          );
+        }
+        return SimpleDialog(
+          title: Text(l10n.addLabel),
+          children: [
+            for (final label in candidates)
+              SimpleDialogOption(
+                onPressed: () => Navigator.of(context).pop(label),
+                child: Row(
+                  children: [
+                    _swatchFor(label),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(label.name)),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    );
+
+    if (selected == null || !mounted) return;
+    await _addLabel(selected);
+  }
+
+  /// Optimistically attaches [label] to the item, then adds it on the server
+  /// via [ItemService.updateItemLabels]. On failure a SnackBar is shown and
+  /// the item is reloaded to revert the optimistic change.
+  Future<void> _addLabel(Label label) async {
+    final l10n = AppLocalizations.of(context)!;
+    // Optimistic: append the label to the local item so the chip appears
+    // immediately.
+    final updated = _item!.deepCopy()..labels.add(label);
+    setState(() => _item = updated);
+    try {
+      await _service!.updateItemLabels(
+        id: widget.itemId,
+        add: [label.name],
+      );
+      _showSnackbar(l10n.labelAdded);
+      // Refresh the canonical state and the candidate list.
+      unawaited(_load());
+      unawaited(_loadLabels());
+    } on ItemException catch (e) {
+      _showSnackbar(l10n.failedToAddLabel(e.message));
+      await _load();
+    } catch (e) {
+      _showSnackbar(l10n.failedToAddLabel(e.toString()));
+      await _load();
+    }
+  }
+
+  Widget _swatchFor(Label label) {
+    if (label.colour.isNotEmpty) {
+      final color = _parseColour(label.colour);
+      if (color != null) {
+        return CircleAvatar(backgroundColor: color, maxRadius: 8);
+      }
+    }
+    return CircleAvatar(
+      backgroundColor: Theme.of(context).colorScheme.outlineVariant,
+      maxRadius: 8,
+    );
+  }
+
+  String _formatTimestamp(Timestamp ts) {
+    final dt = ts.toDateTime().toLocal();
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${dt.year}-${two(dt.month)}-${two(dt.day)} '
+        '${two(dt.hour)}:${two(dt.minute)}';
+  }
+
+  String _formatAuthorLine(Comment comment) {
+    final author = comment.author.isEmpty ? '-' : comment.author;
+    if (comment.hasCreatedAt()) {
+      final ts = comment.createdAt.toDateTime().toLocal();
+      final formatted = '${ts.year}-${_two(ts.month)}-${_two(ts.day)} '
+          '${_two(ts.hour)}:${_two(ts.minute)}';
+      return '$author · $formatted';
+    }
+    return author;
+  }
+
+  static String _two(int value) => value.toString().padLeft(2, '0');
+
+  Color? _parseColour(String hex) {
+    var value = hex;
+    if (value.startsWith('#')) value = value.substring(1);
+    if (value.length != 6) return null;
+    final parsed = int.tryParse(value, radix: 16);
+    if (parsed == null) return null;
+    return Color(0xFF000000 | parsed);
+  }
+
+  /// Opens a markdown link in the system browser. Failures (bad URI or a
+  /// rejected launch) are surfaced as a SnackBar rather than crashing.
+  Future<void> _onTapLink(String text, String? href, String title) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (href == null || href.isEmpty) {
+      _showSnackbar(l10n.failedToOpenLink('empty link'));
+      return;
+    }
+    final uri = Uri.tryParse(href);
+    if (uri == null) {
+      _showSnackbar(l10n.failedToOpenLink('invalid url'));
+      return;
+    }
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+      if (!launched) {
+        _showSnackbar(l10n.failedToOpenLink('not launched'));
+      }
+    } catch (e) {
+      _showSnackbar(l10n.failedToOpenLink(e.toString()));
+    }
+  }
+}
+
+/// Renders a markdown block (description or comment body) with a
+/// copy-to-clipboard affordance. The rendered text is non-selectable; the
+/// copy button copies the raw markdown source. Links are forwarded to the
+/// page's [onTapLink] handler.
+class _MarkdownBlock extends StatelessWidget {
+  const _MarkdownBlock({
+    required this.data,
+    required this.onCopied,
+    required this.onTapLink,
+  });
+
+  final String data;
+  final VoidCallback onCopied;
+  final void Function(String text, String? href, String title) onTapLink;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: IconButton(
+            icon: const Icon(Icons.copy, size: 18),
+            tooltip: l10n.copyToClipboard,
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: data));
+              onCopied();
+            },
+          ),
+        ),
+        MarkdownBody(
+          data: data,
+          styleSheet: MarkdownStyleSheet.fromTheme(theme),
+          onTapLink: onTapLink,
+        ),
+      ],
+    );
+  }
+}

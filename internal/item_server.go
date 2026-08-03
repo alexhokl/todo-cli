@@ -312,6 +312,35 @@ func (s *ItemServer) UpdateItemDueDate(ctx context.Context, req *proto.UpdateIte
 	return result, nil
 }
 
+// UpdateItem changes an item's title and description. The title must be
+// non-empty after trimming; an empty description clears the field.
+func (s *ItemServer) UpdateItem(ctx context.Context, req *proto.UpdateItemRequest) (*proto.Item, error) {
+	ctx, span := startSpan(ctx, "UpdateItem")
+	defer span.End()
+
+	if req.GetId() == 0 {
+		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+
+	userID, err := userIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	item, err := database.UpdateItem(s.DB.WithContext(ctx), userID, uint(req.GetId()), req.GetTitle(), req.GetDescription())
+	if err != nil {
+		return nil, mapDatabaseError(err)
+	}
+
+	result, err := toProtoItem(*item)
+	if err != nil {
+		return nil, err
+	}
+
+	endSpanOk(span)
+	return result, nil
+}
+
 // SetItemDone completes or reopens an item.
 func (s *ItemServer) SetItemDone(ctx context.Context, req *proto.SetItemDoneRequest) (*proto.Item, error) {
 	ctx, span := startSpan(ctx, "SetItemDone")
@@ -363,6 +392,7 @@ func mapDatabaseError(err error) error {
 		errors.Is(err, database.ErrEffortNameEmpty),
 		errors.Is(err, database.ErrBlockerDescriptionEmpty),
 		errors.Is(err, database.ErrCommentBodyEmpty),
+		errors.Is(err, database.ErrItemTitleEmpty),
 		errors.Is(err, database.ErrItemLinkToSelf):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, database.ErrItemCompleted),
