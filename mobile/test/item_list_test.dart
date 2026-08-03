@@ -189,6 +189,53 @@ void main() {
     });
   });
 
+  group('ItemList status icons', () {
+    testWidgets('renders the triaged status icon for an item with priority',
+        (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 1, title: 'triaged', priority: 1.0)],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.low_priority), findsOneWidget);
+      expect(find.text('triaged'), findsOneWidget);
+    });
+
+    testWidgets('renders the untriaged status icon for an item without priority',
+        (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 2, title: 'untriaged')],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
+      expect(find.text('untriaged'), findsOneWidget);
+    });
+
+    testWidgets('renders the done status icon for a completed item',
+        (tester) async {
+      final service = _FakeItemService(
+        completed: [Item(id: 3, title: 'done', done: true)],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Switch to the Completed view.
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilterChip, 'Completed'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      expect(find.text('done'), findsOneWidget);
+    });
+  });
+
   group('ItemList search box', () {
     testWidgets('renders a search box directly under the chip bar', (tester) async {
       final service = _FakeItemService(triaged: [Item(id: 1, title: 'ship it')]);

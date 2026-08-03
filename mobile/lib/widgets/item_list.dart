@@ -4,6 +4,7 @@ import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/item_detail_page.dart';
 import 'package:todo/widgets/settings_page.dart';
+import 'package:todo/widgets/status_icon.dart';
 
 /// Read-only list of todo items fetched from the gRPC server.
 ///
@@ -302,10 +303,7 @@ class ItemListState extends State<ItemList> {
     int index, {
     required bool reorderable,
   }) {
-    final done = item.done;
-    final statusIcon = Icon(
-      done ? Icons.check_circle_outline : Icons.circle_outlined,
-    );
+    final statusIcon = statusIconFor(item);
 
     if (!reorderable) {
       return ListTile(
