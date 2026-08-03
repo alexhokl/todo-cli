@@ -192,6 +192,21 @@ class ItemService {
     }
   }
 
+  /// Attach an effort to an item by name, or clear it when [effort] is empty.
+  /// The effort must already exist; unknown names are reported by the server
+  /// rather than being created on the fly.
+  Future<Item> setEffort({required int id, required String effort}) async {
+    _ensureInitialized();
+
+    final request = SetItemEffortRequest(id: id, effort: effort);
+
+    try {
+      return await _client!.setItemEffort(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
   /// List every known label ordered by name.
   Future<List<Label>> listLabels() async {
     _ensureInitialized();

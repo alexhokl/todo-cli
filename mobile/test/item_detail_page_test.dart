@@ -16,7 +16,8 @@ class _FakeItemService extends ItemService {
   _FakeItemService({Item? item, this.error})
       : _item = item,
         comments = const [],
-        allLabels = const [];
+        allLabels = const [],
+        allEfforts = const [];
 
   Item? _item;
   ItemException? error;
@@ -24,6 +25,10 @@ class _FakeItemService extends ItemService {
   /// All known labels returned by [listLabels]. Tests may mutate this to
   /// script the add-label picker.
   List<Label> allLabels;
+
+  /// All known efforts returned by [listEfforts]. Tests may mutate this to
+  /// script the edit-effort picker.
+  List<Effort> allEfforts;
 
   final List<int> getItemCalls = [];
   final List<int> listCommentsCalls = [];
@@ -119,6 +124,41 @@ class _FakeItemService extends ItemService {
             updated.labels.add(match);
           }
         }
+      }
+      _item = updated;
+    }
+    return _item ?? Item(id: id);
+  }
+
+  final List<({int id, String effort})> setItemEffortCalls = [];
+  ItemException? setItemEffortError;
+  ItemException? _listEffortsError;
+
+  @override
+  Future<List<Effort>> listEfforts() async {
+    if (_listEffortsError != null) {
+      throw _listEffortsError!;
+    }
+    return List<Effort>.from(allEfforts);
+  }
+
+  @override
+  Future<Item> setEffort({required int id, required String effort}) async {
+    setItemEffortCalls.add((id: id, effort: effort));
+    if (setItemEffortError != null) {
+      throw setItemEffortError!;
+    }
+    // Reflect the change so a reload shows the new effort state.
+    if (_item != null) {
+      final updated = _item!.deepCopy();
+      if (effort.isEmpty) {
+        updated.clearEffort();
+      } else {
+        final match = allEfforts.firstWhere(
+          (e) => e.name == effort,
+          orElse: () => Effort(name: effort),
+        );
+        updated.effort = match;
       }
       _item = updated;
     }
@@ -358,9 +398,18 @@ void main() {
       // The inline comments error is shown.
       expect(find.text('comments down'), findsOneWidget);
 
-      // Recover and retry.
+      // Recover and retry. The comments retry button may be off-screen
+      // because the page content is taller than the viewport (the Edit-effort
+      // button added height to the page), so drag the ListView to bring it
+      // into view, then tap the enclosing FilledButton (tapping the icon
+      // directly does not always propagate when partially obscured).
       service._commentsError = null;
-      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+      await tester.tap(find.ancestor(
+        of: find.byIcon(Icons.refresh),
+        matching: find.byType(FilledButton),
+      ));
       await tester.pumpAndSettle();
 
       expect(find.text('comments down'), findsNothing);
@@ -681,6 +730,149 @@ void main() {
     });
   });
 
+  group('ItemDetailPage effort', () {
+    testWidgets('renders an Edit effort button next to the effort section',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha', effort: Effort(id: 1, name: 'high')),
+      )..allEfforts = [Effort(id: 1, name: 'high'), Effort(id: 2, name: 'low')];
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // The current effort name is rendered.
+      expect(find.text('high'), findsOneWidget);
+      // The Edit effort button is present.
+      expect(find.widgetWithText(TextButton, 'Edit effort'), findsOneWidget);
+    });
+
+    testWidgets('tapping the button opens a dialog listing all efforts plus No effort',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha', effort: Effort(id: 1, name: 'high')),
+      )..allEfforts = [Effort(id: 1, name: 'high'), Effort(id: 2, name: 'low')];
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.pumpAndSettle();
+
+      // The dialog lists every effort (including the currently-set one) plus
+      // the leading "No effort" option.
+      final dialog = find.byType(SimpleDialog);
+      expect(dialog, findsOneWidget);
+      expect(find.descendant(of: dialog, matching: find.text('No effort')),
+          findsOneWidget);
+      expect(find.descendant(of: dialog, matching: find.text('high')),
+          findsOneWidget);
+      expect(find.descendant(of: dialog, matching: find.text('low')),
+          findsOneWidget);
+    });
+
+    testWidgets('selecting an effort calls setEffort, shows a SnackBar, and updates the section',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha'),
+      )..allEfforts = [Effort(id: 1, name: 'high'), Effort(id: 2, name: 'low')];
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // Initially no effort is set.
+      expect(find.text('No effort'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.pumpAndSettle();
+
+      // Tap the "low" option in the dialog.
+      await tester.tap(find.text('low'));
+      await tester.pumpAndSettle();
+
+      // setEffort was called with the effort name.
+      expect(service.setItemEffortCalls, hasLength(1));
+      expect(service.setItemEffortCalls.single.id, 1);
+      expect(service.setItemEffortCalls.single.effort, 'low');
+      // The confirmation SnackBar is shown.
+      expect(find.text('Effort updated'), findsOneWidget);
+      // The section now shows the new effort name.
+      expect(find.text('low'), findsOneWidget);
+    });
+
+    testWidgets('selecting No effort clears the effort', (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha', effort: Effort(id: 1, name: 'high')),
+      )..allEfforts = [Effort(id: 1, name: 'high')];
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // The effort name is shown initially.
+      expect(find.text('high'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.pumpAndSettle();
+
+      // Tap the "No effort" option (first in the dialog). There are two
+      // widgets with the text "No effort" (the muted hint on the page behind
+      // the dialog and the dialog option); target the one inside the dialog.
+      final dialog = find.byType(SimpleDialog);
+      await tester.tap(find.descendant(of: dialog, matching: find.text('No effort')));
+      await tester.pumpAndSettle();
+
+      // setEffort was called with an empty string to clear.
+      expect(service.setItemEffortCalls, hasLength(1));
+      expect(service.setItemEffortCalls.single.effort, isEmpty);
+      // The section now shows the muted "No effort" hint.
+      expect(find.text('Effort updated'), findsOneWidget);
+    });
+
+    testWidgets('a failed set shows a SnackBar and reverts the effort',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha', effort: Effort(id: 1, name: 'high')),
+      )
+        ..allEfforts = [Effort(id: 1, name: 'high'), Effort(id: 2, name: 'low')]
+        ..setItemEffortError = ItemException('server says no');
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('low'));
+      await tester.pumpAndSettle();
+
+      // The failure SnackBar is shown.
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to set effort'), findsOneWidget);
+      // The optimistic change was reverted by the reload: the section shows
+      // the original effort name again.
+      expect(find.text('high'), findsOneWidget);
+      expect(service.setItemEffortCalls, hasLength(1));
+      // getItem re-fetched to revert: initial load + reload on failure.
+      expect(service.getItemCalls, [1, 1]);
+    });
+
+    testWidgets('a failed effort-catalogue load surfaces a SnackBar when tapped',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 1, title: 'Alpha'))
+        .._listEffortsError = ItemException('efforts unavailable');
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.pumpAndSettle();
+
+      // The failure is surfaced as a SnackBar rather than opening the dialog.
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to set effort'), findsOneWidget);
+      expect(find.byType(SimpleDialog), findsNothing);
+    });
+  });
+
   group('ItemDetailPage edit item', () {
     testWidgets('shows a FloatingActionButton with the edit tooltip',
         (tester) async {
@@ -691,7 +883,10 @@ void main() {
 
       final fab = find.byType(FloatingActionButton);
       expect(fab, findsOneWidget);
-      expect(find.byIcon(Icons.edit), findsOneWidget);
+      // The FAB carries the edit icon. (An Edit-effort TextButton on the
+      // page also uses Icons.edit, so scope the assertion to the FAB.)
+      expect(find.descendant(of: fab, matching: find.byIcon(Icons.edit)),
+          findsOneWidget);
     });
 
     testWidgets('tapping the FAB pushes EditItemPage pre-populated',

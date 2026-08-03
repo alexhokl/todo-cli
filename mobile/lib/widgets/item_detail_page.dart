@@ -58,6 +58,10 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   List<Label>? _allLabels;
   String? _labelsError;
 
+  /// All known efforts (for the edit-effort picker), loaded alongside the item.
+  List<Effort>? _allEfforts;
+  String? _effortsError;
+
   @override
   void initState() {
     super.initState();
@@ -84,6 +88,8 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
       // Fetch the catalogue of known labels for the add-label picker. A
       // load failure here must not blank the page either.
       unawaited(_loadLabels());
+      // Fetch the catalogue of known efforts for the edit-effort picker.
+      unawaited(_loadEfforts());
     } on ItemException catch (e) {
       setState(() {
         _error = e.message;
@@ -140,6 +146,29 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     } catch (e) {
       setState(() {
         _labelsError = 'Failed to load labels: $e';
+      });
+    }
+  }
+
+  /// Loads the catalogue of all known efforts for the edit-effort picker. A
+  /// failure is isolated so the rest of the page stays usable; the
+  /// edit-effort button surfaces the error when tapped.
+  Future<void> _loadEfforts() async {
+    setState(() {
+      _effortsError = null;
+    });
+    try {
+      final efforts = await _service!.listEfforts();
+      setState(() {
+        _allEfforts = efforts;
+      });
+    } on ItemException catch (e) {
+      setState(() {
+        _effortsError = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        _effortsError = 'Failed to load efforts: $e';
       });
     }
   }
@@ -277,6 +306,14 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
             Text(item.effort.name)
           else
             _mutedHint(context, l10n.noEffort),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _showEffortDialog,
+              icon: const Icon(Icons.edit),
+              label: Text(l10n.editEffort),
+            ),
+          ),
           const SizedBox(height: 16),
           _sectionLabel(context, l10n.labels),
           if (item.labels.isEmpty)
@@ -598,6 +635,98 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
       await _load();
     } catch (e) {
       _showSnackbar(l10n.failedToAddLabel(e.toString()));
+      await _load();
+    }
+  }
+
+  /// Opens a dialog listing every known effort plus a leading "No effort"
+  /// option. Selecting an option attaches (or clears) the effort via
+  /// [ItemService.setEffort]. The effort catalogue is loaded lazily if the
+  /// initial fetch failed.
+  Future<void> _showEffortDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+
+    // Ensure the effort catalogue is available; reload on failure so the
+    // user can retry by tapping the button again.
+    if (_allEfforts == null || _effortsError != null) {
+      await _loadEfforts();
+      if (!mounted) return;
+    }
+    if (_effortsError != null || _allEfforts == null) {
+      _showSnackbar(l10n.failedToSetEffort(_effortsError ?? 'efforts unavailable'));
+      return;
+    }
+
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return SimpleDialog(
+          title: Text(l10n.effort),
+          children: [
+            // The "No effort" option is always present, first in the list.
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(''),
+              child: Text(
+                l10n.noEffort,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurfaceVariant
+                          .withValues(alpha: 0.6),
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+            ),
+            for (final effort in _allEfforts!)
+              SimpleDialogOption(
+                onPressed: () => Navigator.of(context).pop(effort.name),
+                child: Row(
+                  children: [
+                    const Icon(Icons.bolt, size: 18),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(effort.name)),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    );
+
+    if (selected == null || !mounted) return;
+    await _setEffort(selected);
+  }
+
+  /// Optimistically sets (or clears) the item's effort, then persists it via
+  /// [ItemService.setEffort]. An empty [name] clears the effort. On failure a
+  /// SnackBar is shown and the item is reloaded to revert the optimistic
+  /// change.
+  Future<void> _setEffort(String name) async {
+    final l10n = AppLocalizations.of(context)!;
+    // Optimistic: update the local item so the section reflects the change
+    // immediately.
+    final updated = _item!.deepCopy();
+    if (name.isEmpty) {
+      updated.clearEffort();
+    } else {
+      final match = _allEfforts?.firstWhere(
+        (e) => e.name == name,
+        orElse: () => Effort(name: name),
+      );
+      if (match != null) updated.effort = match;
+    }
+    setState(() => _item = updated);
+    try {
+      await _service!.setEffort(id: widget.itemId, effort: name);
+      _showSnackbar(l10n.effortUpdated);
+      // Refresh the canonical state and the catalogue.
+      unawaited(_load());
+      unawaited(_loadEfforts());
+    } on ItemException catch (e) {
+      _showSnackbar(l10n.failedToSetEffort(e.message));
+      await _load();
+    } catch (e) {
+      _showSnackbar(l10n.failedToSetEffort(e.toString()));
       await _load();
     }
   }
