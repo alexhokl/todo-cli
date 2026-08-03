@@ -46,6 +46,12 @@ dependencies:
   # For date formatting
   intl: ^0.20.0
 
+  # For rendering GitHub-Flavored Markdown in item details and comments
+  flutter_markdown_plus: ^1.0.12
+
+  # For opening markdown links in the system browser
+  url_launcher: ^6.3.1
+
   # For localisation (generated AppLocalizations)
   flutter_localizations:
     sdk: flutter

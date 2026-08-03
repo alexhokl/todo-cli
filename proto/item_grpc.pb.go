@@ -28,6 +28,7 @@ const (
 	ItemService_UpdateItemLabels_FullMethodName  = "/item.ItemService/UpdateItemLabels"
 	ItemService_UpdateItemLinks_FullMethodName   = "/item.ItemService/UpdateItemLinks"
 	ItemService_UpdateItemDueDate_FullMethodName = "/item.ItemService/UpdateItemDueDate"
+	ItemService_UpdateItem_FullMethodName        = "/item.ItemService/UpdateItem"
 	ItemService_SetItemEffort_FullMethodName     = "/item.ItemService/SetItemEffort"
 	ItemService_ListLabels_FullMethodName        = "/item.ItemService/ListLabels"
 	ItemService_CreateLabel_FullMethodName       = "/item.ItemService/CreateLabel"
@@ -75,6 +76,8 @@ type ItemServiceClient interface {
 	UpdateItemLinks(ctx context.Context, in *UpdateItemLinksRequest, opts ...grpc.CallOption) (*Item, error)
 	// UpdateItemDueDate sets or clears an item's due date.
 	UpdateItemDueDate(ctx context.Context, in *UpdateItemDueDateRequest, opts ...grpc.CallOption) (*Item, error)
+	// UpdateItem changes an item's title and description.
+	UpdateItem(ctx context.Context, in *UpdateItemRequest, opts ...grpc.CallOption) (*Item, error)
 	// SetItemEffort attaches an effort to an item by name, or clears it when the
 	// name is empty. The effort must already exist; unknown names are reported.
 	SetItemEffort(ctx context.Context, in *SetItemEffortRequest, opts ...grpc.CallOption) (*Item, error)
@@ -198,6 +201,16 @@ func (c *itemServiceClient) UpdateItemDueDate(ctx context.Context, in *UpdateIte
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Item)
 	err := c.cc.Invoke(ctx, ItemService_UpdateItemDueDate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) UpdateItem(ctx context.Context, in *UpdateItemRequest, opts ...grpc.CallOption) (*Item, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Item)
+	err := c.cc.Invoke(ctx, ItemService_UpdateItem_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -402,6 +415,8 @@ type ItemServiceServer interface {
 	UpdateItemLinks(context.Context, *UpdateItemLinksRequest) (*Item, error)
 	// UpdateItemDueDate sets or clears an item's due date.
 	UpdateItemDueDate(context.Context, *UpdateItemDueDateRequest) (*Item, error)
+	// UpdateItem changes an item's title and description.
+	UpdateItem(context.Context, *UpdateItemRequest) (*Item, error)
 	// SetItemEffort attaches an effort to an item by name, or clears it when the
 	// name is empty. The effort must already exist; unknown names are reported.
 	SetItemEffort(context.Context, *SetItemEffortRequest) (*Item, error)
@@ -474,6 +489,9 @@ func (UnimplementedItemServiceServer) UpdateItemLinks(context.Context, *UpdateIt
 }
 func (UnimplementedItemServiceServer) UpdateItemDueDate(context.Context, *UpdateItemDueDateRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateItemDueDate not implemented")
+}
+func (UnimplementedItemServiceServer) UpdateItem(context.Context, *UpdateItemRequest) (*Item, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateItem not implemented")
 }
 func (UnimplementedItemServiceServer) SetItemEffort(context.Context, *SetItemEffortRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetItemEffort not implemented")
@@ -687,6 +705,24 @@ func _ItemService_UpdateItemDueDate_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ItemServiceServer).UpdateItemDueDate(ctx, req.(*UpdateItemDueDateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_UpdateItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).UpdateItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_UpdateItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).UpdateItem(ctx, req.(*UpdateItemRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1035,6 +1071,10 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateItemDueDate",
 			Handler:    _ItemService_UpdateItemDueDate_Handler,
+		},
+		{
+			MethodName: "UpdateItem",
+			Handler:    _ItemService_UpdateItem_Handler,
 		},
 		{
 			MethodName: "SetItemEffort",

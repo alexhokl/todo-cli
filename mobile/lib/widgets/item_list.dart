@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
-import 'package:todo/widgets/comments_page.dart';
+import 'package:todo/widgets/item_detail_page.dart';
 import 'package:todo/widgets/settings_page.dart';
 
 /// Read-only list of todo items fetched from the gRPC server.
@@ -107,11 +107,11 @@ class ItemListState extends State<ItemList> {
     });
   }
 
-  void _openComments(BuildContext context, Item item) {
+  void _openDetail(BuildContext context, Item item) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CommentsPage(itemId: item.id, itemTitle: item.title),
+        builder: (_) => ItemDetailPage(itemId: item.id, service: _service),
       ),
     );
   }
@@ -292,6 +292,7 @@ class ItemListState extends State<ItemList> {
   /// Builds a single item row. When [reorderable] is true (triaged view) the
   /// row is keyed by item id and prefixed with a drag handle wrapped in a
   /// [ReorderableDragStartListener]; otherwise it is a plain [ListTile].
+  /// Tapping the row body opens [ItemDetailPage].
   Widget _buildItemTile(
     BuildContext context,
     Item item,
@@ -302,17 +303,12 @@ class ItemListState extends State<ItemList> {
     final statusIcon = Icon(
       done ? Icons.check_circle_outline : Icons.circle_outlined,
     );
-    final commentsButton = IconButton(
-      icon: const Icon(Icons.comment_outlined),
-      tooltip: AppLocalizations.of(context)!.comments,
-      onPressed: () => _openComments(context, item),
-    );
 
     if (!reorderable) {
       return ListTile(
         leading: statusIcon,
         title: Text(item.title),
-        trailing: commentsButton,
+        onTap: () => _openDetail(context, item),
       );
     }
 
@@ -333,7 +329,7 @@ class ItemListState extends State<ItemList> {
           ],
         ),
         title: Text(item.title),
-        trailing: commentsButton,
+        onTap: () => _openDetail(context, item),
       ),
     );
   }

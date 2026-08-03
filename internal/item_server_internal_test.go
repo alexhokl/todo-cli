@@ -766,3 +766,128 @@ func TestGetItemCrossUserIsNotFound(t *testing.T) {
 		t.Errorf("expected %v for a cross-user access but got %v (%v)", codes.NotFound, got, err)
 	}
 }
+
+func TestUpdateItem(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
+	ctx := authenticatedContext()
+
+	updated, err := server.UpdateItem(ctx, &proto.UpdateItemRequest{
+		Id:          ids["a"],
+		Title:       "renamed",
+		Description: "new description",
+	})
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if updated.GetTitle() != "renamed" {
+		t.Errorf("expected title %q but got %q", "renamed", updated.GetTitle())
+	}
+	if updated.GetDescription() != "new description" {
+		t.Errorf("expected description %q but got %q", "new description", updated.GetDescription())
+	}
+
+	// Clearing the description writes an empty string.
+	updated, err = server.UpdateItem(ctx, &proto.UpdateItemRequest{
+		Id:          ids["a"],
+		Title:       "title only",
+		Description: "",
+	})
+	if err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if updated.GetDescription() != "" {
+		t.Errorf("expected empty description but got %q", updated.GetDescription())
+	}
+}
+
+func TestUpdateItemErrorCodes(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
+
+	tests := []struct {
+		name    string
+		ctx     context.Context
+		request *proto.UpdateItemRequest
+		code    codes.Code
+	}{
+		{
+			name:    "missing id",
+			ctx:     authenticatedContext(),
+			request: &proto.UpdateItemRequest{Title: "t"},
+			code:    codes.InvalidArgument,
+		},
+		{
+			name:    "empty title",
+			ctx:     authenticatedContext(),
+			request: &proto.UpdateItemRequest{Id: ids["a"], Title: ""},
+			code:    codes.InvalidArgument,
+		},
+		{
+			name:    "whitespace title",
+			ctx:     authenticatedContext(),
+			request: &proto.UpdateItemRequest{Id: ids["a"], Title: "   "},
+			code:    codes.InvalidArgument,
+		},
+		{
+			name:    "unknown id",
+			ctx:     authenticatedContext(),
+			request: &proto.UpdateItemRequest{Id: ids["a"] + 1000, Title: "t"},
+			code:    codes.NotFound,
+		},
+		{
+			name: "unauthenticated",
+			ctx:  context.Background(),
+			request: &proto.UpdateItemRequest{
+				Id:    ids["a"],
+				Title: "t",
+			},
+			code: codes.Unauthenticated,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := server.UpdateItem(test.ctx, test.request)
+			if got := status.Code(err); got != test.code {
+				t.Errorf("expected %v but got %v (%v)", test.code, got, err)
+			}
+		})
+	}
+}
+
+func TestUpdateItemCrossUserIsNotFound(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
+
+	otherCtx := context.WithValue(context.Background(), contextKeyUser{}, testUserID+1)
+	_, err := server.UpdateItem(otherCtx, &proto.UpdateItemRequest{
+		Id:          ids["a"],
+		Title:       "hijacked",
+		Description: "stolen",
+	})
+	if got := status.Code(err); got != codes.NotFound {
+		t.Errorf("expected %v for a cross-user access but got %v (%v)", codes.NotFound, got, err)
+	}
+
+	// The item is unchanged for its owner.
+	item, err := server.GetItem(authenticatedContext(), &proto.GetItemRequest{Id: ids["a"]})
+	if err != nil {
+		t.Fatalf("failed to reload item: %v", err)
+	}
+	if item.GetTitle() != "a" {
+		t.Errorf("expected unchanged title %q but got %q", "a", item.GetTitle())
+	}
+}
+
+func TestUpdateItemRejectsUnauthenticated(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
+
+	_, err := server.UpdateItem(context.Background(), &proto.UpdateItemRequest{
+		Id:    ids["a"],
+		Title: "t",
+	})
+	if got := status.Code(err); got != codes.Unauthenticated {
+		t.Errorf("expected %v but got %v (%v)", codes.Unauthenticated, got, err)
+	}
+}

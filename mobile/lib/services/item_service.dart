@@ -118,6 +118,37 @@ class ItemService {
     }
   }
 
+  /// Fetch a single item by id.
+  Future<Item> getItem(int id) async {
+    _ensureInitialized();
+
+    final request = GetItemRequest(id: id);
+
+    try {
+      return await _client!.getItem(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Update an item's title and description. The title must be non-empty;
+  /// an empty description clears the field.
+  Future<Item> updateItem({
+    required int id,
+    required String title,
+    required String description,
+  }) async {
+    _ensureInitialized();
+
+    final request = UpdateItemRequest(id: id, title: title, description: description);
+
+    try {
+      return await _client!.updateItem(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
   /// Move an item before or after another item, optionally reassigning its
   /// list in the same operation.
   Future<Item> moveItem({

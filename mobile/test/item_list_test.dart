@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
+import 'package:todo/widgets/item_detail_page.dart';
 import 'package:todo/widgets/item_list.dart';
 
 /// Minimal in-memory stand-in for [ItemService] that records the [listItems]
@@ -57,6 +58,16 @@ class _FakeItemService extends ItemService {
       throw moveItemError!;
     }
     return Item(id: id);
+  }
+
+  @override
+  Future<Item> getItem(int id) async {
+    return Item(id: id, title: 'item $id');
+  }
+
+  @override
+  Future<List<Comment>> listComments(int itemId) async {
+    return const <Comment>[];
   }
 
   @override
@@ -424,6 +435,30 @@ void main() {
 
       // Only the filtered item is shown and no drag handle is rendered.
       expect(find.byIcon(Icons.drag_indicator), findsNothing);
+    });
+  });
+
+  group('ItemList navigation to detail page', () {
+    testWidgets('tapping a row pushes ItemDetailPage', (tester) async {
+      final service = _FakeItemService(triaged: [
+        Item(id: 10, title: 'alpha'),
+        Item(id: 20, title: 'beta'),
+      ]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // No detail page is on stage yet.
+      expect(find.byType(ItemDetailPage), findsNothing);
+
+      // Tap the first row.
+      await tester.tap(find.text('alpha'));
+      await tester.pumpAndSettle();
+
+      // The ItemDetailPage is pushed. Its app bar shows the freshly fetched
+      // item title from getItem ('item 10'), not the stale list title.
+      expect(find.byType(ItemDetailPage), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'item 10'), findsOneWidget);
     });
   });
 }

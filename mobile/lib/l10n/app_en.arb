@@ -365,5 +365,129 @@
         "description": "The underlying error message"
       }
     }
+  },
+  "noDescription": "No description",
+  "@noDescription": {
+    "description": "Muted hint shown on the item details page when the item has no description"
+  },
+  "noEffort": "No effort",
+  "@noEffort": {
+    "description": "Muted hint shown on the item details page when the item has no effort assigned"
+  },
+  "noBlockers": "No blockers",
+  "@noBlockers": {
+    "description": "Muted hint shown on the item details page when the item has no blockers"
+  },
+  "noLinkedItems": "No linked items",
+  "@noLinkedItems": {
+    "description": "Muted hint shown on the item details page when the item has no linked items"
+  },
+  "notDone": "Not done",
+  "@notDone": {
+    "description": "Status chip label on the item details page for an incomplete item"
+  },
+  "dueDate": "Due date",
+  "@dueDate": {
+    "description": "Section label on the item details page for the due date"
+  },
+  "priority": "Priority",
+  "@priority": {
+    "description": "Section label on the item details page for the priority"
+  },
+  "effort": "Effort",
+  "@effort": {
+    "description": "Section label on the item details page for the effort"
+  },
+  "blockers": "Blockers",
+  "@blockers": {
+    "description": "Section label on the item details page for the blockers list"
+  },
+  "linkedItems": "Linked items",
+  "@linkedItems": {
+    "description": "Section label on the item details page for linked items"
+  },
+  "descriptionLabel": "Description",
+  "@descriptionLabel": {
+    "description": "Section label on the item details page for the description"
+  },
+  "copiedToClipboard": "Copied to clipboard",
+  "@copiedToClipboard": {
+    "description": "SnackBar confirmation after copying markdown source to clipboard"
+  },
+  "failedToOpenLink": "Failed to open link: {error}",
+  "@failedToOpenLink": {
+    "description": "SnackBar message shown when opening a markdown link in the browser fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "removeLabel": "Remove label",
+  "@removeLabel": {
+    "description": "Accessible label / semantic label for the delete icon on a label chip on the item details page"
+  },
+  "failedToRemoveLabel": "Failed to remove label: {error}",
+  "@failedToRemoveLabel": {
+    "description": "SnackBar message shown when removing a label from an item fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "labelAdded": "Label added",
+  "@labelAdded": {
+    "description": "SnackBar confirmation after a label is added to an item on the details page"
+  },
+  "failedToAddLabel": "Failed to add label: {error}",
+  "@failedToAddLabel": {
+    "description": "SnackBar message shown when adding a label to an item fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "noMoreLabels": "No more labels to add",
+  "@noMoreLabels": {
+    "description": "Message shown in the add-label dialog when every known label is already attached to the item"
+  },
+  "editItem": "Edit item",
+  "@editItem": {
+    "description": "AppBar title and FAB tooltip for the edit item page"
+  },
+  "titleLabel": "Title",
+  "@titleLabel": {
+    "description": "Text field label for the item title on the edit item page"
+  },
+  "enterTitle": "Enter a title",
+  "@enterTitle": {
+    "description": "Hint text for the item title field on the edit item page"
+  },
+  "titleRequired": "Title is required",
+  "@titleRequired": {
+    "description": "Validation error shown when the item title is empty on the edit item page"
+  },
+  "enterDescription": "Enter a description",
+  "@enterDescription": {
+    "description": "Hint text for the item description field on the edit item page"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "AppBar save action on the edit item page"
+  },
+  "failedToUpdateItem": "Failed to update item: {error}",
+  "@failedToUpdateItem": {
+    "description": "SnackBar message shown when updating an item on the edit page fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
   }
 }

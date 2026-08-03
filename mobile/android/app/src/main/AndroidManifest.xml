@@ -45,5 +45,16 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Required by url_launcher to resolve a browser for http/https
+             links on Android 11 (API 30) and above, where package
+             visibility is restricted by default. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
     </queries>
 </manifest>
