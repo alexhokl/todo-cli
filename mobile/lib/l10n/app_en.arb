@@ -669,5 +669,9 @@
         "description": "The underlying error message"
       }
     }
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "AppBar button tooltip to refresh the item list (desktop)"
   }
 }

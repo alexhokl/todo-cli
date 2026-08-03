@@ -124,4 +124,41 @@ void main() {
       expect(label.data, 'Untriaged');
     });
   });
+
+  group('HomePage refresh button', () {
+    testWidgets('renders a refresh IconButton on desktop', (tester) async {
+      final service = _FakeItemService(triaged: [Item(id: 1, title: 'alpha')]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // A single refresh IconButton is present inside the AppBar.
+      final refreshIcon = find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byIcon(Icons.refresh),
+      );
+      expect(refreshIcon, findsOneWidget);
+      expect(find.ancestor(of: refreshIcon, matching: find.byType(IconButton)),
+          findsOneWidget);
+    });
+
+    testWidgets('tapping the refresh button reloads the list', (tester) async {
+      final service = _FakeItemService(triaged: [Item(id: 1, title: 'alpha')]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Initial load fetches the default triaged view.
+      expect(service.viewsCalled, [ItemView.ITEM_VIEW_TRIAGED]);
+
+      await tester.tap(find.byIcon(Icons.refresh));
+      await tester.pumpAndSettle();
+
+      // retryLoading re-fetched the default triaged view.
+      expect(
+        service.viewsCalled,
+        [ItemView.ITEM_VIEW_TRIAGED, ItemView.ITEM_VIEW_TRIAGED],
+      );
+    });
+  });
 }

@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
@@ -66,6 +69,13 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
         actions: [
+          if (!kIsWeb &&
+              (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: l10n.refresh,
+              onPressed: () => _itemListKey.currentState?.retryLoading(),
+            ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {

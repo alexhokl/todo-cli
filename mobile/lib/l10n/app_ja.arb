@@ -123,5 +123,6 @@
   "madeTopPriority": "優先度リストの先頭に移動しました",
   "madeLowPriority": "優先度リストの末尾に移動しました",
   "failedToMakeTopPriority": "最優先への設定に失敗しました: {error}",
-  "failedToMakeLowPriority": "最低優先への設定に失敗しました: {error}"
+  "failedToMakeLowPriority": "最低優先への設定に失敗しました: {error}",
+  "refresh": "更新"
 }
