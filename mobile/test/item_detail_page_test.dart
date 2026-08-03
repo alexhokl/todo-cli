@@ -8,6 +8,7 @@ import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/edit_item_page.dart';
 import 'package:todo/widgets/item_detail_page.dart';
+import 'package:todo/widgets/select_linked_items_page.dart';
 
 /// Minimal stand-in for [ItemService] that records calls and lets each test
 /// script the responses. Extends the real service so the fake never touches
@@ -17,7 +18,8 @@ class _FakeItemService extends ItemService {
       : _item = item,
         comments = const [],
         allLabels = const [],
-        allEfforts = const [];
+        allEfforts = const [],
+        allItems = const [];
 
   Item? _item;
   ItemException? error;
@@ -159,6 +161,54 @@ class _FakeItemService extends ItemService {
           orElse: () => Effort(name: effort),
         );
         updated.effort = match;
+      }
+      _item = updated;
+    }
+    return _item ?? Item(id: id);
+  }
+
+  final List<({int id, List<int> add, List<int> remove})> updateItemLinksCalls =
+      [];
+  ItemException? updateItemLinksError;
+
+  /// All known items returned by [listItems]. Tests may mutate this to
+  /// script the linked-items selection page.
+  List<Item> allItems;
+
+  @override
+  Future<ListItemsResult> listItems({
+    List<String>? labels,
+    ItemView? view,
+  }) async {
+    return ListItemsResult(
+      active: List<Item>.from(allItems),
+      completed: const [],
+    );
+  }
+
+  @override
+  Future<Item> updateItemLinks({
+    required int id,
+    List<int>? add,
+    List<int>? remove,
+  }) async {
+    updateItemLinksCalls.add(
+      (id: id, add: add ?? const [], remove: remove ?? const []),
+    );
+    if (updateItemLinksError != null) {
+      throw updateItemLinksError!;
+    }
+    // Reflect the change so a reload shows the new linked items.
+    if (_item != null && add != null) {
+      final updated = _item!.deepCopy();
+      for (final linkedId in add) {
+        final match = allItems.firstWhere(
+          (i) => i.id == linkedId,
+          orElse: () => Item(id: linkedId, title: 'item $linkedId'),
+        );
+        if (updated.linkedItems.every((i) => i.id != linkedId)) {
+          updated.linkedItems.add(match);
+        }
       }
       _item = updated;
     }
@@ -375,8 +425,14 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      // Tap the send icon with an empty field.
-      await tester.tap(find.byIcon(Icons.send));
+      // Submit with an empty field. The comments section may be off-screen
+      // because the page content is taller than the viewport, so scroll it
+      // into view first, then use testTextInput to dispatch the done action
+      // (the field's onSubmitted triggers the validation).
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
 
       // The validation error is shown (the field's errorText, not the hint).
@@ -870,6 +926,79 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.textContaining('Failed to set effort'), findsOneWidget);
       expect(find.byType(SimpleDialog), findsNothing);
+    });
+  });
+
+  group('ItemDetailPage linked items', () {
+    testWidgets('renders an Add linked items button below the linked items section',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha', linkedItems: [Item(id: 2, title: 'Beta')]),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // The linked item is rendered and the Add linked items button is present.
+      expect(find.text('Beta'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Add linked items'), findsOneWidget);
+    });
+
+    testWidgets('tapping the button pushes SelectLinkedItemsPage', (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha', linkedItems: [Item(id: 2, title: 'Beta')]),
+      )..allItems = [
+          Item(id: 2, title: 'Beta'),
+          Item(id: 3, title: 'Gamma'),
+        ];
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Add linked items'));
+      await tester.pumpAndSettle();
+
+      // The selection page is on stage. The current item (id 1) and the
+      // already-linked item (id 2) are excluded; Gamma is the only candidate.
+      expect(find.byType(SelectLinkedItemsPage), findsOneWidget);
+      expect(find.text('Gamma'), findsOneWidget);
+      expect(find.text('Beta'), findsNothing);
+    });
+
+    testWidgets('returning true reloads the detail page with the new links',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha'),
+      )..allItems = [
+          Item(id: 2, title: 'Beta'),
+          Item(id: 3, title: 'Gamma'),
+        ];
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // Initially no linked items.
+      expect(find.text('No linked items'), findsOneWidget);
+
+      // Open the selection page.
+      await tester.tap(find.widgetWithText(TextButton, 'Add linked items'));
+      await tester.pumpAndSettle();
+
+      // Select Gamma and save.
+      await tester.tap(find.text('Gamma'));
+      await tester.pump();
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+
+      // updateItemLinks was called to add Gamma (id 3).
+      expect(service.updateItemLinksCalls, hasLength(1));
+      expect(service.updateItemLinksCalls.single.id, 1);
+      expect(service.updateItemLinksCalls.single.add, [3]);
+      // The selection page popped and the detail page reloaded, now showing
+      // the newly linked item.
+      expect(find.byType(SelectLinkedItemsPage), findsNothing);
+      expect(find.text('Gamma'), findsOneWidget);
+      expect(find.text('No linked items'), findsNothing);
     });
   });
 

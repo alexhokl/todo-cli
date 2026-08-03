@@ -192,6 +192,27 @@ class ItemService {
     }
   }
 
+  /// Attach and detach links between an item and other items. The relationship
+  /// is symmetric: linking A to B also links B to A. Self-links and unknown or
+  /// cross-user ids are rejected by the server.
+  Future<Item> updateItemLinks({
+    required int id,
+    List<int>? add,
+    List<int>? remove,
+  }) async {
+    _ensureInitialized();
+
+    final request = UpdateItemLinksRequest(id: id);
+    if (add != null) request.add.addAll(add);
+    if (remove != null) request.remove.addAll(remove);
+
+    try {
+      return await _client!.updateItemLinks(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
   /// Attach an effort to an item by name, or clear it when [effort] is empty.
   /// The effort must already exist; unknown names are reported by the server
   /// rather than being created on the fly.

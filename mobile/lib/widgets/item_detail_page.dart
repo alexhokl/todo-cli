@@ -10,6 +10,7 @@ import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/edit_item_page.dart';
+import 'package:todo/widgets/select_linked_items_page.dart';
 import 'package:todo/widgets/settings_page.dart';
 
 /// Read-only details for a single todo item, with an inline comments list.
@@ -236,6 +237,24 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     }
   }
 
+  /// Opens the linked-items selection page. On return with `true`, reloads the
+  /// canonical state so the new links render.
+  Future<void> _openSelectLinkedItems(BuildContext context, Item item) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SelectLinkedItemsPage(
+          itemId: widget.itemId,
+          alreadyLinked: item.linkedItems,
+          service: _service,
+        ),
+      ),
+    );
+    if (updated == true && mounted) {
+      await _load();
+    }
+  }
+
   @override
   void dispose() {
     _addController.dispose();
@@ -369,6 +388,14 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                   ),
               ],
             ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => _openSelectLinkedItems(context, item),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addLinkedItems),
+            ),
+          ),
           const SizedBox(height: 24),
           _buildCommentsSection(context, l10n),
         ],

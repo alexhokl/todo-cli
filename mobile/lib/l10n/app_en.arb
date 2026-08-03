@@ -420,6 +420,24 @@
   "@linkedItems": {
     "description": "Section label on the item details page for linked items"
   },
+  "addLinkedItems": "Add linked items",
+  "@addLinkedItems": {
+    "description": "Button label on the item details page to open the linked-items selection page"
+  },
+  "selectLinkedItems": "Select linked items",
+  "@selectLinkedItems": {
+    "description": "AppBar title of the page for selecting items to link to the current item"
+  },
+  "failedToAddLinks": "Failed to add linked items: {error}",
+  "@failedToAddLinks": {
+    "description": "SnackBar message shown when adding linked items fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
   "descriptionLabel": "Description",
   "@descriptionLabel": {
     "description": "Section label on the item details page for the description"
