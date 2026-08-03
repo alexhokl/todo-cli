@@ -409,11 +409,19 @@ void main() {
         ),
         findsNWidgets(2),
       );
-      // The blocker and linked-item rows each carry their own remove button.
+      // The blocker row carries its own remove button.
       expect(find.byKey(const ValueKey('remove-blocker-1')), findsOneWidget);
-      expect(find.byKey(const ValueKey('remove-link-2')), findsOneWidget);
       expect(find.text('high'), findsOneWidget);
       expect(find.text('waiting on review'), findsOneWidget);
+      // The linked-items section is below the fold, so scroll it into view
+      // before asserting on the remove-link button and the linked title.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('remove-link-2')),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('remove-link-2')), findsOneWidget);
       expect(find.text('Beta'), findsOneWidget);
     });
 
@@ -544,8 +552,22 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
+      // The comments section is at the bottom of the page, so scroll it
+      // into view before interacting.
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('add-comment-field')),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
       await tester.enterText(find.byKey(const Key('add-comment-field')), 'fresh');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('add-comment-field')),
+          matching: find.byIcon(Icons.send),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // createComment was called with the typed body.
@@ -573,12 +595,16 @@ void main() {
 
       // Submit with an empty field. The comments section may be off-screen
       // because the page content is taller than the viewport, so scroll it
-      // into view first, then use testTextInput to dispatch the done action
-      // (the field's onSubmitted triggers the validation).
+      // into view first, then tap the send icon to trigger validation.
       await tester.drag(find.byType(ListView), const Offset(0, -500));
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('add-comment-field')), '');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('add-comment-field')),
+          matching: find.byIcon(Icons.send),
+        ),
+      );
       await tester.pump();
 
       // The validation error is shown (the field's errorText, not the hint).
@@ -1238,7 +1264,12 @@ void main() {
         find.byKey(const Key('add-blocker-field')),
         'missing spec',
       );
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('add-blocker-field')),
+          matching: find.byIcon(Icons.send),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // createBlocker was called with the typed description.
@@ -1266,12 +1297,16 @@ void main() {
 
       // Submit with an empty field. The blockers section may be off-screen
       // because the page content is taller than the viewport, so scroll it
-      // into view first, then use testTextInput to dispatch the done action
-      // (the field's onSubmitted triggers the validation).
+      // into view first, then tap the send icon to trigger validation.
       await tester.drag(find.byType(ListView), const Offset(0, -300));
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('add-blocker-field')), '');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('add-blocker-field')),
+          matching: find.byIcon(Icons.send),
+        ),
+      );
       await tester.pump();
 
       // The validation error is shown (the field's errorText, not the hint).
@@ -1293,7 +1328,12 @@ void main() {
         find.byKey(const Key('add-blocker-field')),
         'missing spec',
       );
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('add-blocker-field')),
+          matching: find.byIcon(Icons.send),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // The failure SnackBar is shown with the localised message.
