@@ -220,6 +220,45 @@ void main() {
       expect(find.text('No items'), findsOneWidget);
       expect(find.byType(CheckboxListTile), findsNothing);
     });
+
+    testWidgets('renders a status icon per item (done/triaged/untriaged)',
+        (tester) async {
+      final service = _FakeItemService(
+        active: [
+          Item(id: 2, title: 'triaged', priority: 1.0),
+          Item(id: 3, title: 'untriaged'),
+        ],
+        completed: [Item(id: 4, title: 'done item', done: true)],
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // Done → check_circle_outline (matches ItemList's convention).
+      expect(
+        find.descendant(
+          of: find.widgetWithText(CheckboxListTile, 'done item'),
+          matching: find.byIcon(Icons.check_circle_outline),
+        ),
+        findsOneWidget,
+      );
+      // Triaged (has priority) → low_priority.
+      expect(
+        find.descendant(
+          of: find.widgetWithText(CheckboxListTile, 'triaged'),
+          matching: find.byIcon(Icons.low_priority),
+        ),
+        findsOneWidget,
+      );
+      // Untriaged (no priority, not done) → radio_button_unchecked.
+      expect(
+        find.descendant(
+          of: find.widgetWithText(CheckboxListTile, 'untriaged'),
+          matching: find.byIcon(Icons.radio_button_unchecked),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 
   group('SelectLinkedItemsPage search', () {

@@ -12,6 +12,7 @@ import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/edit_item_page.dart';
 import 'package:todo/widgets/select_linked_items_page.dart';
 import 'package:todo/widgets/settings_page.dart';
+import 'package:todo/widgets/status_icon.dart';
 
 /// Read-only details for a single todo item, with an inline comments list.
 ///
@@ -296,7 +297,15 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
 
     final item = _item!;
     return Scaffold(
-      appBar: AppBar(title: Text(item.title)),
+      appBar: AppBar(
+        title: Row(
+          children: [
+            statusIconFor(item),
+            const SizedBox(width: 8),
+            Expanded(child: Text(item.title)),
+          ],
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openEdit(context, item),
         tooltip: l10n.editItem,
@@ -368,6 +377,11 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                         const Icon(Icons.block, size: 18),
                         const SizedBox(width: 6),
                         Expanded(child: Text(blocker.description)),
+                        _removeButton(
+                          key: ValueKey('remove-blocker-${blocker.id}'),
+                          tooltip: l10n.removeBlocker,
+                          onPressed: () => _removeBlocker(blocker),
+                        ),
                       ],
                     ),
                   ),
@@ -384,7 +398,18 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                 for (final linked in item.linkedItems)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Text(linked.title),
+                    child: Row(
+                      children: [
+                        statusIconFor(linked),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(linked.title)),
+                        _removeButton(
+                          key: ValueKey('remove-link-${linked.id}'),
+                          tooltip: l10n.removeLinkedItem,
+                          onPressed: () => _removeLinkedItem(linked),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -569,6 +594,86 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
       _showSnackbar(l10n.failedToRemoveLabel(e.toString()));
       await _load();
     }
+  }
+
+  /// Optimistically removes [blocker] from the item, then deletes it on the
+  /// server via [ItemService.deleteBlocker]. On failure a SnackBar is shown
+  /// and the item is reloaded to revert the optimistic change. On success a
+  /// confirmation SnackBar is shown and the item is reloaded to reflect the
+  /// canonical state.
+  Future<void> _removeBlocker(Blocker blocker) async {
+    final l10n = AppLocalizations.of(context)!;
+    final previous = _item;
+    // Optimistic: drop the blocker from the local item immediately so the
+    // row vanishes without waiting for the server round-trip.
+    final updated = previous!.deepCopy()
+      ..blockers.removeWhere((b) => b.id == blocker.id);
+    setState(() => _item = updated);
+    try {
+      await _service!.deleteBlocker(id: blocker.id);
+      _showSnackbar(l10n.blockerRemoved);
+      // Refresh the canonical state (the server returns Empty, so a reload is
+      // required to confirm the deletion persisted).
+      unawaited(_load());
+    } on ItemException catch (e) {
+      _showSnackbar(l10n.failedToRemoveBlocker(e.message));
+      await _load();
+    } catch (e) {
+      _showSnackbar(l10n.failedToRemoveBlocker(e.toString()));
+      await _load();
+    }
+  }
+
+  /// Optimistically removes [linked] from the item, then detaches it on the
+  /// server via [ItemService.updateItemLinks] (symmetric: also unlinks the
+  /// peer). On failure a SnackBar is shown and the item is reloaded to revert
+  /// the optimistic change. On success a confirmation SnackBar is shown and
+  /// the canonical state is refreshed.
+  Future<void> _removeLinkedItem(Item linked) async {
+    final l10n = AppLocalizations.of(context)!;
+    final previous = _item;
+    // Optimistic: drop the linked item from the local item immediately so the
+    // row vanishes without waiting for the server round-trip.
+    final updated = previous!.deepCopy()
+      ..linkedItems.removeWhere((i) => i.id == linked.id);
+    setState(() => _item = updated);
+    try {
+      await _service!.updateItemLinks(
+        id: widget.itemId,
+        remove: [linked.id],
+      );
+      _showSnackbar(l10n.linkedItemRemoved);
+      // Refresh the canonical state and the candidate list.
+      unawaited(_load());
+    } on ItemException catch (e) {
+      _showSnackbar(l10n.failedToRemoveLinkedItem(e.message));
+      await _load();
+    } catch (e) {
+      _showSnackbar(l10n.failedToRemoveLinkedItem(e.toString()));
+      await _load();
+    }
+  }
+
+  /// A compact delete affordance used on blocker and linked-item rows. Uses a
+  /// [Key] per row so tests can target a specific row's remove button without
+  /// ambiguity from the label chips' [Icons.close] delete icons.
+  Widget _removeButton({
+    required Key key,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton(
+        key: key,
+        icon: const Icon(Icons.close, size: 18),
+        tooltip: tooltip,
+        onPressed: onPressed,
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+      ),
+    );
   }
 
   /// Opens a dialog listing known labels not already attached to the item.

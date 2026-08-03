@@ -539,5 +539,41 @@
         "description": "The underlying error message"
       }
     }
+  },
+  "removeBlocker": "Remove blocker",
+  "@removeBlocker": {
+    "description": "Accessible label / semantic label for the delete icon on a blocker row on the item details page"
+  },
+  "removeLinkedItem": "Remove linked item",
+  "@removeLinkedItem": {
+    "description": "Accessible label / semantic label for the delete icon on a linked item row on the item details page"
+  },
+  "blockerRemoved": "Blocker removed",
+  "@blockerRemoved": {
+    "description": "SnackBar confirmation after a blocker is removed from an item on the details page"
+  },
+  "linkedItemRemoved": "Linked item removed",
+  "@linkedItemRemoved": {
+    "description": "SnackBar confirmation after a linked item is removed from an item on the details page"
+  },
+  "failedToRemoveBlocker": "Failed to remove blocker: {error}",
+  "@failedToRemoveBlocker": {
+    "description": "SnackBar message shown when removing a blocker from an item fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
+  "failedToRemoveLinkedItem": "Failed to remove linked item: {error}",
+  "@failedToRemoveLinkedItem": {
+    "description": "SnackBar message shown when removing a linked item from an item fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
   }
 }

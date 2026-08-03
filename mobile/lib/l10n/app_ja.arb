@@ -101,5 +101,11 @@
   "failedToUpdateItem": "アイテムの更新に失敗しました: {error}",
   "addItem": "アイテムを追加",
   "createItem": "アイテムを作成",
-  "failedToCreateItem": "アイテムの作成に失敗しました: {error}"
+  "failedToCreateItem": "アイテムの作成に失敗しました: {error}",
+  "removeBlocker": "ブロックを削除",
+  "removeLinkedItem": "関連アイテムを削除",
+  "blockerRemoved": "ブロックを削除しました",
+  "linkedItemRemoved": "関連アイテムを削除しました",
+  "failedToRemoveBlocker": "ブロックの削除に失敗しました: {error}",
+  "failedToRemoveLinkedItem": "関連アイテムの削除に失敗しました: {error}"
 }

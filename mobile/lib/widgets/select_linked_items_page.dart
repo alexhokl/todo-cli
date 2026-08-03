@@ -4,6 +4,7 @@ import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/settings_page.dart';
+import 'package:todo/widgets/status_icon.dart';
 
 /// Full-page selector for choosing items to link to a source item.
 ///
@@ -258,7 +259,9 @@ class _SelectLinkedItemsPageState extends State<SelectLinkedItemsPage> {
                   itemBuilder: (context, index) {
                     final item = filtered[index];
                     return CheckboxListTile(
+                      key: ValueKey(item.id),
                       title: Text(item.title),
+                      secondary: statusIconFor(item),
                       value: _selected.contains(item.id),
                       onChanged: (value) => _toggle(item.id, value),
                     );

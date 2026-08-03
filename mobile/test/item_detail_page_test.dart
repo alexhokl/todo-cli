@@ -199,20 +199,43 @@ class _FakeItemService extends ItemService {
       throw updateItemLinksError!;
     }
     // Reflect the change so a reload shows the new linked items.
-    if (_item != null && add != null) {
+    if (_item != null) {
       final updated = _item!.deepCopy();
-      for (final linkedId in add) {
-        final match = allItems.firstWhere(
-          (i) => i.id == linkedId,
-          orElse: () => Item(id: linkedId, title: 'item $linkedId'),
-        );
-        if (updated.linkedItems.every((i) => i.id != linkedId)) {
-          updated.linkedItems.add(match);
+      if (add != null) {
+        for (final linkedId in add) {
+          final match = allItems.firstWhere(
+            (i) => i.id == linkedId,
+            orElse: () => Item(id: linkedId, title: 'item $linkedId'),
+          );
+          if (updated.linkedItems.every((i) => i.id != linkedId)) {
+            updated.linkedItems.add(match);
+          }
         }
+      }
+      if (remove != null) {
+        updated.linkedItems
+            .removeWhere((i) => remove.contains(i.id));
       }
       _item = updated;
     }
     return _item ?? Item(id: id);
+  }
+
+  final List<int> deleteBlockerCalls = [];
+  ItemException? deleteBlockerError;
+
+  @override
+  Future<void> deleteBlocker({required int id}) async {
+    deleteBlockerCalls.add(id);
+    if (deleteBlockerError != null) {
+      throw deleteBlockerError!;
+    }
+    // Reflect the change so a reload shows the blocker gone.
+    if (_item != null) {
+      final updated = _item!.deepCopy()
+        ..blockers.removeWhere((b) => b.id == id);
+      _item = updated;
+    }
   }
 
   @override
@@ -298,7 +321,17 @@ void main() {
       expect(find.byType(InputChip), findsNWidgets(2));
       expect(find.widgetWithText(InputChip, 'work'), findsOneWidget);
       expect(find.widgetWithText(InputChip, 'urgent'), findsOneWidget);
-      expect(find.byIcon(Icons.close), findsNWidgets(2));
+      // The label chips' delete icons are the close icons inside InputChips.
+      expect(
+        find.descendant(
+          of: find.byType(InputChip),
+          matching: find.byIcon(Icons.close),
+        ),
+        findsNWidgets(2),
+      );
+      // The blocker and linked-item rows each carry their own remove button.
+      expect(find.byKey(const ValueKey('remove-blocker-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('remove-link-2')), findsOneWidget);
       expect(find.text('high'), findsOneWidget);
       expect(find.text('waiting on review'), findsOneWidget);
       expect(find.text('Beta'), findsOneWidget);
@@ -332,6 +365,37 @@ void main() {
       expect(find.textContaining('1970'), findsOneWidget);
       // Priority is no longer rendered on the details page.
       expect(find.text('42'), findsNothing);
+    });
+
+    testWidgets('shows the triaged status icon next to the title',
+        (tester) async {
+      await tester.pumpWidget(_harness(
+        service: _FakeItemService(
+          item: Item(id: 1, title: 'Triaged', priority: 1.0),
+        ),
+        itemId: 1,
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.low_priority), findsOneWidget);
+    });
+
+    testWidgets('shows the untriaged status icon next to the title',
+        (tester) async {
+      await tester.pumpWidget(_harness(
+        service: _FakeItemService(item: Item(id: 2, title: 'Untriaged')),
+        itemId: 2,
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
+    });
+
+    testWidgets('shows the done status icon next to the title', (tester) async {
+      await tester.pumpWidget(_harness(
+        service: _FakeItemService(item: Item(id: 3, title: 'Done', done: true)),
+        itemId: 3,
+      ));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     });
 
     testWidgets('shows noComments hint when there are no comments',
@@ -999,6 +1063,189 @@ void main() {
       expect(find.byType(SelectLinkedItemsPage), findsNothing);
       expect(find.text('Gamma'), findsOneWidget);
       expect(find.text('No linked items'), findsNothing);
+    });
+  });
+
+  group('ItemDetailPage blocker removal', () {
+    testWidgets('tapping the remove icon optimistically removes the blocker',
+        (tester) async {
+      final item = Item(
+        id: 1,
+        title: 'Blocked',
+        blockers: [
+          Blocker(id: 10, description: 'waiting on infra'),
+          Blocker(id: 11, description: 'missing spec'),
+        ],
+      );
+      final service = _FakeItemService(item: item);
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // Both blockers are present initially.
+      expect(find.text('waiting on infra'), findsOneWidget);
+      expect(find.text('missing spec'), findsOneWidget);
+
+      // Tap the remove icon on the 'waiting on infra' row (keyed by blocker id).
+      await tester.tap(find.byKey(const ValueKey('remove-blocker-10')));
+      await tester.pumpAndSettle();
+
+      // The blocker row disappeared immediately (optimistic); the other stays.
+      expect(find.text('waiting on infra'), findsNothing);
+      expect(find.text('missing spec'), findsOneWidget);
+      // deleteBlocker was called with the blocker id.
+      expect(service.deleteBlockerCalls, [10]);
+      // A success SnackBar was shown.
+      expect(find.text('Blocker removed'), findsOneWidget);
+    });
+
+    testWidgets('a failed removal shows a SnackBar and reverts the blocker',
+        (tester) async {
+      final item = Item(
+        id: 1,
+        title: 'Blocked',
+        blockers: [Blocker(id: 10, description: 'waiting on infra')],
+      );
+      final service = _FakeItemService(item: item)
+        ..deleteBlockerError = ItemException('server says no');
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('remove-blocker-10')));
+      await tester.pumpAndSettle();
+
+      // The failure SnackBar is shown with the localised message.
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to remove blocker'), findsOneWidget);
+      // The blocker reappeared after the reload reverted the optimistic removal.
+      expect(find.text('waiting on infra'), findsOneWidget);
+      // deleteBlocker was attempted.
+      expect(service.deleteBlockerCalls, [10]);
+      // getItem was called again to revert (initial load + reload on failure).
+      expect(service.getItemCalls, [1, 1]);
+    });
+  });
+
+  group('ItemDetailPage linked item status icons', () {
+    testWidgets('renders a status icon per linked item (done/triaged/untriaged)',
+        (tester) async {
+      final item = Item(
+        id: 1,
+        title: 'Alpha',
+        linkedItems: [
+          Item(id: 2, title: 'triaged', priority: 1.0),
+          Item(id: 3, title: 'untriaged'),
+          Item(id: 4, title: 'done item', done: true),
+        ],
+      );
+      final service = _FakeItemService(item: item);
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // Each linked row is a Row containing the status icon, the title, and a
+      // remove button keyed by 'remove-link-<id>'. Scope the icon lookup to the
+      // Row ancestor of that remove button so the title's own status icon (in
+      // the AppBar) and other rows don't match.
+
+      // Done → check_circle_outline.
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.byKey(const ValueKey('remove-link-4')),
+            matching: find.byType(Row),
+          ),
+          matching: find.byIcon(Icons.check_circle_outline),
+        ),
+        findsOneWidget,
+      );
+      // Triaged (has priority) → low_priority.
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.byKey(const ValueKey('remove-link-2')),
+            matching: find.byType(Row),
+          ),
+          matching: find.byIcon(Icons.low_priority),
+        ),
+        findsOneWidget,
+      );
+      // Untriaged (no priority, not done) → radio_button_unchecked.
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.byKey(const ValueKey('remove-link-3')),
+            matching: find.byType(Row),
+          ),
+          matching: find.byIcon(Icons.radio_button_unchecked),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('ItemDetailPage linked item removal', () {
+    testWidgets('tapping the remove icon optimistically removes the linked item',
+        (tester) async {
+      final item = Item(
+        id: 1,
+        title: 'Alpha',
+        linkedItems: [
+          Item(id: 2, title: 'Beta'),
+          Item(id: 3, title: 'Gamma'),
+        ],
+      );
+      final service = _FakeItemService(item: item);
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // Both linked items are present initially.
+      expect(find.text('Beta'), findsOneWidget);
+      expect(find.text('Gamma'), findsOneWidget);
+
+      // Tap the remove icon on the 'Beta' row (keyed by linked item id).
+      await tester.tap(find.byKey(const ValueKey('remove-link-2')));
+      await tester.pumpAndSettle();
+
+      // The linked row disappeared immediately (optimistic); Gamma stays.
+      expect(find.text('Beta'), findsNothing);
+      expect(find.text('Gamma'), findsOneWidget);
+      // updateItemLinks was called to remove Beta (id 2).
+      expect(service.updateItemLinksCalls, hasLength(1));
+      expect(service.updateItemLinksCalls.single.id, 1);
+      expect(service.updateItemLinksCalls.single.add, isEmpty);
+      expect(service.updateItemLinksCalls.single.remove, [2]);
+      // A success SnackBar was shown.
+      expect(find.text('Linked item removed'), findsOneWidget);
+    });
+
+    testWidgets('a failed removal shows a SnackBar and reverts the linked item',
+        (tester) async {
+      final item = Item(
+        id: 1,
+        title: 'Alpha',
+        linkedItems: [Item(id: 2, title: 'Beta')],
+      );
+      final service = _FakeItemService(item: item)
+        ..updateItemLinksError = ItemException('server says no');
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('remove-link-2')));
+      await tester.pumpAndSettle();
+
+      // The failure SnackBar is shown with the localised message.
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to remove linked item'), findsOneWidget);
+      // The linked item reappeared after the reload reverted the optimistic removal.
+      expect(find.text('Beta'), findsOneWidget);
+      // updateItemLinks was attempted.
+      expect(service.updateItemLinksCalls, hasLength(1));
+      // getItem was called again to revert (initial load + reload on failure).
+      expect(service.getItemCalls, [1, 1]);
     });
   });
 

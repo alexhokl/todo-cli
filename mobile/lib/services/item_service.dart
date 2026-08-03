@@ -213,6 +213,20 @@ class ItemService {
     }
   }
 
+  /// Removes a blocker by id. The server returns Empty, so callers must
+  /// reload the item to reflect the updated blockers list.
+  Future<void> deleteBlocker({required int id}) async {
+    _ensureInitialized();
+
+    final request = DeleteBlockerRequest(id: id);
+
+    try {
+      await _client!.deleteBlocker(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
   /// Attach an effort to an item by name, or clear it when [effort] is empty.
   /// The effort must already exist; unknown names are reported by the server
   /// rather than being created on the fly.
