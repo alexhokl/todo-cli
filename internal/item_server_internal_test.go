@@ -673,6 +673,8 @@ func TestMapDatabaseError(t *testing.T) {
 		{"label name empty", database.ErrLabelNameEmpty, codes.InvalidArgument},
 		{"item completed", database.ErrItemCompleted, codes.FailedPrecondition},
 		{"anchor completed", database.ErrAnchorCompleted, codes.FailedPrecondition},
+		{"item not untriaged", database.ErrItemNotUntriaged, codes.FailedPrecondition},
+		{"item has links", database.ErrItemHasLinks, codes.FailedPrecondition},
 		{"label in use", database.ErrLabelInUse, codes.FailedPrecondition},
 		{"unknown error", errors.New("something broke"), codes.Internal},
 	}
@@ -887,6 +889,200 @@ func TestUpdateItemRejectsUnauthenticated(t *testing.T) {
 		Id:    ids["a"],
 		Title: "t",
 	})
+	if got := status.Code(err); got != codes.Unauthenticated {
+		t.Errorf("expected %v but got %v (%v)", codes.Unauthenticated, got, err)
+	}
+}
+
+func TestDeleteItem(t *testing.T) {
+	server := setupItemServer(t)
+	ctx := authenticatedContext()
+
+	// Create an untriaged item (CreateItem does not triage).
+	item, err := server.CreateItem(ctx, &proto.CreateItemRequest{Title: "untriaged"})
+	if err != nil {
+		t.Fatalf("failed to create the item: %v", err)
+	}
+
+	if _, err := server.DeleteItem(ctx, &proto.DeleteItemRequest{Id: item.GetId()}); err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+
+	// A subsequent Get is not found.
+	if _, err := server.GetItem(ctx, &proto.GetItemRequest{Id: item.GetId()}); err == nil ||
+		status.Code(err) != codes.NotFound {
+		t.Errorf("expected %v after deletion but got %v (%v)", codes.NotFound, status.Code(err), err)
+	}
+}
+
+func TestDeleteItemCascadesBlockersAndComments(t *testing.T) {
+	server := setupItemServer(t)
+	ctx := authenticatedContext()
+
+	item, err := server.CreateItem(ctx, &proto.CreateItemRequest{Title: "untriaged"})
+	if err != nil {
+		t.Fatalf("failed to create the item: %v", err)
+	}
+	if _, err := server.CreateBlocker(ctx, &proto.CreateBlockerRequest{
+		ItemId:      item.GetId(),
+		Description: "waiting on review",
+	}); err != nil {
+		t.Fatalf("failed to create the blocker: %v", err)
+	}
+	if _, err := server.CreateComment(ctx, &proto.CreateCommentRequest{
+		ItemId: item.GetId(),
+		Body:   "drafted a reply",
+	}); err != nil {
+		t.Fatalf("failed to create the comment: %v", err)
+	}
+
+	if _, err := server.DeleteItem(ctx, &proto.DeleteItemRequest{Id: item.GetId()}); err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+
+	// The blockers and comments are gone. ListBlockers/ListComments go through
+	// findItem which rejects the soft-deleted item, so query the counts
+	// directly.
+	var blockerCount int64
+	server.DB.Model(&database.Blocker{}).Where("item_id = ?", item.GetId()).Count(&blockerCount)
+	if blockerCount != 0 {
+		t.Errorf("expected no blockers but got %d", blockerCount)
+	}
+	var commentCount int64
+	server.DB.Model(&database.Comment{}).Where("item_id = ?", item.GetId()).Count(&commentCount)
+	if commentCount != 0 {
+		t.Errorf("expected no comments but got %d", commentCount)
+	}
+}
+
+func TestDeleteItemRejectsLinkedItems(t *testing.T) {
+	server := setupItemServer(t)
+	ctx := authenticatedContext()
+
+	// `a` is created untriaged; `b` is triaged (so it has a priority). Link a<->b.
+	item, err := server.CreateItem(ctx, &proto.CreateItemRequest{Title: "a"})
+	if err != nil {
+		t.Fatalf("failed to create a: %v", err)
+	}
+	other, err := server.CreateItem(ctx, &proto.CreateItemRequest{Title: "b"})
+	if err != nil {
+		t.Fatalf("failed to create b: %v", err)
+	}
+	if _, err := server.MoveItem(ctx, &proto.MoveItemRequest{
+		Id:     other.GetId(),
+		Anchor: &proto.MoveItemRequest_Bottom{Bottom: true},
+	}); err != nil {
+		t.Fatalf("failed to triage b: %v", err)
+	}
+	if _, err := server.UpdateItemLinks(ctx, &proto.UpdateItemLinksRequest{
+		Id:  item.GetId(),
+		Add: []uint32{other.GetId()},
+	}); err != nil {
+		t.Fatalf("failed to link a to b: %v", err)
+	}
+
+	_, err = server.DeleteItem(ctx, &proto.DeleteItemRequest{Id: item.GetId()})
+	if got := status.Code(err); got != codes.FailedPrecondition {
+		t.Errorf("expected %v but got %v (%v)", codes.FailedPrecondition, got, err)
+	}
+
+	// The item is still present.
+	if _, err := server.GetItem(ctx, &proto.GetItemRequest{Id: item.GetId()}); err != nil {
+		t.Errorf("expected the item to still exist but got %v", err)
+	}
+}
+
+func TestDeleteItemRejectsTriaged(t *testing.T) {
+	server := setupItemServer(t)
+	ctx := authenticatedContext()
+	ids := createItems(t, server, "a") // createItems triages via MoveItem(bottom)
+
+	_, err := server.DeleteItem(ctx, &proto.DeleteItemRequest{Id: ids["a"]})
+	if got := status.Code(err); got != codes.FailedPrecondition {
+		t.Errorf("expected %v but got %v (%v)", codes.FailedPrecondition, got, err)
+	}
+}
+
+func TestDeleteItemRejectsCompleted(t *testing.T) {
+	server := setupItemServer(t)
+	ctx := authenticatedContext()
+	ids := createItems(t, server, "a")
+	if _, err := server.SetItemDone(ctx, &proto.SetItemDoneRequest{Id: ids["a"], Done: true}); err != nil {
+		t.Fatalf("failed to complete a: %v", err)
+	}
+
+	_, err := server.DeleteItem(ctx, &proto.DeleteItemRequest{Id: ids["a"]})
+	if got := status.Code(err); got != codes.FailedPrecondition {
+		t.Errorf("expected %v but got %v (%v)", codes.FailedPrecondition, got, err)
+	}
+}
+
+func TestDeleteItemErrorCodes(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
+
+	tests := []struct {
+		name     string
+		request  *proto.DeleteItemRequest
+		ctxFunc  func() context.Context
+		expected codes.Code
+	}{
+		{
+			name:     "missing id",
+			request:  &proto.DeleteItemRequest{},
+			ctxFunc:  authenticatedContext,
+			expected: codes.InvalidArgument,
+		},
+		{
+			name:     "unknown id",
+			request:  &proto.DeleteItemRequest{Id: ids["a"] + 1000},
+			ctxFunc:  authenticatedContext,
+			expected: codes.NotFound,
+		},
+		{
+			name:     "unauthenticated",
+			request:  &proto.DeleteItemRequest{Id: ids["a"]},
+			ctxFunc:  func() context.Context { return context.Background() },
+			expected: codes.Unauthenticated,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := server.DeleteItem(test.ctxFunc(), test.request)
+			if got := status.Code(err); got != test.expected {
+				t.Errorf("expected %v but got %v (%v)", test.expected, got, err)
+			}
+		})
+	}
+}
+
+func TestDeleteItemCrossUserIsNotFound(t *testing.T) {
+	server := setupItemServer(t)
+	ctx := authenticatedContext()
+
+	item, err := server.CreateItem(ctx, &proto.CreateItemRequest{Title: "untriaged"})
+	if err != nil {
+		t.Fatalf("failed to create the item: %v", err)
+	}
+
+	otherCtx := context.WithValue(context.Background(), contextKeyUser{}, testUserID+1)
+	_, err = server.DeleteItem(otherCtx, &proto.DeleteItemRequest{Id: item.GetId()})
+	if got := status.Code(err); got != codes.NotFound {
+		t.Errorf("expected %v for a cross-user access but got %v (%v)", codes.NotFound, got, err)
+	}
+
+	// The item still exists for the owner.
+	if _, err := server.GetItem(ctx, &proto.GetItemRequest{Id: item.GetId()}); err != nil {
+		t.Errorf("expected the item to still exist for the owner but got %v", err)
+	}
+}
+
+func TestDeleteItemRejectsUnauthenticated(t *testing.T) {
+	server := setupItemServer(t)
+	ids := createItems(t, server, "a")
+
+	_, err := server.DeleteItem(context.Background(), &proto.DeleteItemRequest{Id: ids["a"]})
 	if got := status.Code(err); got != codes.Unauthenticated {
 		t.Errorf("expected %v but got %v (%v)", codes.Unauthenticated, got, err)
 	}

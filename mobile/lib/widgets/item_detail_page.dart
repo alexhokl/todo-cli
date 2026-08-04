@@ -70,6 +70,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
 
   bool _isCompleting = false;
   bool _isPrioritising = false;
+  bool _isDeleting = false;
 
   /// All known labels (for the add-label picker), loaded alongside the item.
   List<Label>? _allLabels;
@@ -337,6 +338,56 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     }
   }
 
+  /// Prompts the user to confirm deletion of the current item. Only untriaged
+  /// items without linked items may be deleted; the server enforces both
+  /// guards, so a rejection is surfaced as a SnackBar rather than dismissing
+  /// the page.
+  Future<void> _confirmDeleteItem() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.delete),
+        content: Text(l10n.confirmDeleteItem),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _deleteItem();
+  }
+
+  Future<void> _deleteItem() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _isDeleting = true);
+    try {
+      await _service!.deleteItem(widget.itemId);
+      widget.onItemChanged?.call();
+      if (mounted) {
+        _showSnackbar(l10n.itemDeleted);
+        Navigator.of(context).pop(true);
+      }
+    } on ItemException catch (e) {
+      _showSnackbar(l10n.failedToDeleteItem(e.message));
+    } catch (e) {
+      _showSnackbar(l10n.failedToDeleteItem(e.toString()));
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
+    }
+  }
+
   void _showSnackbar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -491,6 +542,25 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                         label: Text(l10n.makeLowPriority),
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFF8FBC8F),
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        key: const Key('delete-item-button'),
+                        onPressed: _isDeleting
+                            ? null
+                            : _confirmDeleteItem,
+                        icon: const Icon(Icons.delete),
+                        label: Text(l10n.delete),
+                        style: FilledButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.error,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onError,
                           minimumSize: const Size.fromHeight(48),
                         ),
                       ),

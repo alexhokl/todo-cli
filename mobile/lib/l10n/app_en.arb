@@ -266,6 +266,24 @@
   "@confirmDeleteComment": {
     "description": "Confirmation dialog prompt asking the user to confirm deleting a comment"
   },
+  "confirmDeleteItem": "Delete this item?",
+  "@confirmDeleteItem": {
+    "description": "Confirmation dialog prompt asking the user to confirm deleting an item"
+  },
+  "itemDeleted": "Item deleted",
+  "@itemDeleted": {
+    "description": "Snackbar confirmation after an item is deleted"
+  },
+  "failedToDeleteItem": "Failed to delete item: {error}",
+  "@failedToDeleteItem": {
+    "description": "Snackbar message shown when deleting an item fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
   "enterCommentBodyError": "Enter a comment",
   "@enterCommentBodyError": {
     "description": "Validation error shown when the comment body is empty"

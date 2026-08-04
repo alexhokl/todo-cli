@@ -23,6 +23,7 @@ const (
 	ItemService_ListItems_FullMethodName         = "/item.ItemService/ListItems"
 	ItemService_CreateItem_FullMethodName        = "/item.ItemService/CreateItem"
 	ItemService_GetItem_FullMethodName           = "/item.ItemService/GetItem"
+	ItemService_DeleteItem_FullMethodName        = "/item.ItemService/DeleteItem"
 	ItemService_MoveItem_FullMethodName          = "/item.ItemService/MoveItem"
 	ItemService_SetItemDone_FullMethodName       = "/item.ItemService/SetItemDone"
 	ItemService_UpdateItemLabels_FullMethodName  = "/item.ItemService/UpdateItemLabels"
@@ -62,6 +63,10 @@ type ItemServiceClient interface {
 	CreateItem(ctx context.Context, in *CreateItemRequest, opts ...grpc.CallOption) (*Item, error)
 	// GetItem returns a single item by identifier.
 	GetItem(ctx context.Context, in *GetItemRequest, opts ...grpc.CallOption) (*Item, error)
+	// DeleteItem removes an untriaged item. Only items that are not done and
+	// carry no priority may be deleted; items with linked items are rejected.
+	// Attached blockers and comments are removed in the same operation.
+	DeleteItem(ctx context.Context, in *DeleteItemRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// MoveItem places an item immediately before or after another item and
 	// optionally reassigns its list in the same operation.
 	MoveItem(ctx context.Context, in *MoveItemRequest, opts ...grpc.CallOption) (*Item, error)
@@ -151,6 +156,16 @@ func (c *itemServiceClient) GetItem(ctx context.Context, in *GetItemRequest, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Item)
 	err := c.cc.Invoke(ctx, ItemService_GetItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemServiceClient) DeleteItem(ctx context.Context, in *DeleteItemRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ItemService_DeleteItem_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -401,6 +416,10 @@ type ItemServiceServer interface {
 	CreateItem(context.Context, *CreateItemRequest) (*Item, error)
 	// GetItem returns a single item by identifier.
 	GetItem(context.Context, *GetItemRequest) (*Item, error)
+	// DeleteItem removes an untriaged item. Only items that are not done and
+	// carry no priority may be deleted; items with linked items are rejected.
+	// Attached blockers and comments are removed in the same operation.
+	DeleteItem(context.Context, *DeleteItemRequest) (*emptypb.Empty, error)
 	// MoveItem places an item immediately before or after another item and
 	// optionally reassigns its list in the same operation.
 	MoveItem(context.Context, *MoveItemRequest) (*Item, error)
@@ -474,6 +493,9 @@ func (UnimplementedItemServiceServer) CreateItem(context.Context, *CreateItemReq
 }
 func (UnimplementedItemServiceServer) GetItem(context.Context, *GetItemRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetItem not implemented")
+}
+func (UnimplementedItemServiceServer) DeleteItem(context.Context, *DeleteItemRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteItem not implemented")
 }
 func (UnimplementedItemServiceServer) MoveItem(context.Context, *MoveItemRequest) (*Item, error) {
 	return nil, status.Error(codes.Unimplemented, "method MoveItem not implemented")
@@ -615,6 +637,24 @@ func _ItemService_GetItem_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ItemServiceServer).GetItem(ctx, req.(*GetItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ItemService_DeleteItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemServiceServer).DeleteItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ItemService_DeleteItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemServiceServer).DeleteItem(ctx, req.(*DeleteItemRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1051,6 +1091,10 @@ var ItemService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetItem",
 			Handler:    _ItemService_GetItem_Handler,
+		},
+		{
+			MethodName: "DeleteItem",
+			Handler:    _ItemService_DeleteItem_Handler,
 		},
 		{
 			MethodName: "MoveItem",

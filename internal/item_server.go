@@ -10,6 +10,7 @@ import (
 	"github.com/alexhokl/todo-cli/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
@@ -229,6 +230,30 @@ func (s *ItemServer) GetItem(ctx context.Context, req *proto.GetItemRequest) (*p
 	return result, nil
 }
 
+// DeleteItem removes an untriaged item. Only items that are not done and carry
+// no priority may be deleted; items with linked items are rejected. Attached
+// blockers and comments are removed in the same operation.
+func (s *ItemServer) DeleteItem(ctx context.Context, req *proto.DeleteItemRequest) (*emptypb.Empty, error) {
+	ctx, span := startSpan(ctx, "DeleteItem")
+	defer span.End()
+
+	if req.GetId() == 0 {
+		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+
+	userID, err := userIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := database.DeleteItem(s.DB.WithContext(ctx), userID, uint(req.GetId())); err != nil {
+		return nil, mapDatabaseError(err)
+	}
+
+	endSpanOk(span)
+	return &emptypb.Empty{}, nil
+}
+
 // MoveItem places an item immediately before or after another item, optionally
 // reassigning its list in the same operation.
 func (s *ItemServer) MoveItem(ctx context.Context, req *proto.MoveItemRequest) (*proto.Item, error) {
@@ -397,6 +422,8 @@ func mapDatabaseError(err error) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, database.ErrItemCompleted),
 		errors.Is(err, database.ErrAnchorCompleted),
+		errors.Is(err, database.ErrItemNotUntriaged),
+		errors.Is(err, database.ErrItemHasLinks),
 		errors.Is(err, database.ErrLabelInUse),
 		errors.Is(err, database.ErrEffortInUse):
 		return status.Error(codes.FailedPrecondition, err.Error())

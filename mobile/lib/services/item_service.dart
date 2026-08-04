@@ -131,6 +131,21 @@ class ItemService {
     }
   }
 
+  /// Delete an untriaged item. Only items that are not done and carry no
+  /// priority may be deleted; items with linked items must be unlinked first.
+  /// Attached blockers and comments are removed in the same operation.
+  Future<void> deleteItem(int id) async {
+    _ensureInitialized();
+
+    final request = DeleteItemRequest(id: id);
+
+    try {
+      await _client!.deleteItem(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
   /// Update an item's title and description. The title must be non-empty;
   /// an empty description clears the field.
   Future<Item> updateItem({

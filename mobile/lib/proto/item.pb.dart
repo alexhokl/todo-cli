@@ -824,6 +824,62 @@ class GetItemRequest extends $pb.GeneratedMessage {
   void clearId() => $_clearField(1);
 }
 
+/// DeleteItemRequest identifies a single item to delete by id. Only untriaged
+/// items (not done, no priority) without linked items may be deleted.
+class DeleteItemRequest extends $pb.GeneratedMessage {
+  factory DeleteItemRequest({
+    $core.int? id,
+  }) {
+    final result = create();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  DeleteItemRequest._();
+
+  factory DeleteItemRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory DeleteItemRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DeleteItemRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'item'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'id', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteItemRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DeleteItemRequest copyWith(void Function(DeleteItemRequest) updates) =>
+      super.copyWith((message) => updates(message as DeleteItemRequest))
+          as DeleteItemRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DeleteItemRequest create() => DeleteItemRequest._();
+  @$core.override
+  DeleteItemRequest createEmptyInstance() => create();
+  @$core.pragma('dart2js:noInline')
+  static DeleteItemRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<DeleteItemRequest>(create);
+  static DeleteItemRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setUnsignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
 enum MoveItemRequest_Anchor { beforeId, afterId, top, bottom, notSet }
 
 class MoveItemRequest extends $pb.GeneratedMessage {

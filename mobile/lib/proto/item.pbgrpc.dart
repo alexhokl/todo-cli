@@ -60,6 +60,16 @@ class ItemServiceClient extends $grpc.Client {
     return $createUnaryCall(_$getItem, request, options: options);
   }
 
+  /// DeleteItem removes an untriaged item. Only items that are not done and
+  /// carry no priority may be deleted; items with linked items are rejected.
+  /// Attached blockers and comments are removed in the same operation.
+  $grpc.ResponseFuture<$1.Empty> deleteItem(
+    $0.DeleteItemRequest request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createUnaryCall(_$deleteItem, request, options: options);
+  }
+
   /// MoveItem places an item immediately before or after another item and
   /// optionally reassigns its list in the same operation.
   $grpc.ResponseFuture<$0.Item> moveItem(
@@ -268,6 +278,11 @@ class ItemServiceClient extends $grpc.Client {
       '/item.ItemService/GetItem',
       ($0.GetItemRequest value) => value.writeToBuffer(),
       $0.Item.fromBuffer);
+  static final _$deleteItem =
+      $grpc.ClientMethod<$0.DeleteItemRequest, $1.Empty>(
+          '/item.ItemService/DeleteItem',
+          ($0.DeleteItemRequest value) => value.writeToBuffer(),
+          $1.Empty.fromBuffer);
   static final _$moveItem = $grpc.ClientMethod<$0.MoveItemRequest, $0.Item>(
       '/item.ItemService/MoveItem',
       ($0.MoveItemRequest value) => value.writeToBuffer(),
@@ -409,6 +424,13 @@ abstract class ItemServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $0.GetItemRequest.fromBuffer(value),
         ($0.Item value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$0.DeleteItemRequest, $1.Empty>(
+        'DeleteItem',
+        deleteItem_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $0.DeleteItemRequest.fromBuffer(value),
+        ($1.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.MoveItemRequest, $0.Item>(
         'MoveItem',
         moveItem_Pre,
@@ -618,6 +640,14 @@ abstract class ItemServiceBase extends $grpc.Service {
 
   $async.Future<$0.Item> getItem(
       $grpc.ServiceCall call, $0.GetItemRequest request);
+
+  $async.Future<$1.Empty> deleteItem_Pre($grpc.ServiceCall $call,
+      $async.Future<$0.DeleteItemRequest> $request) async {
+    return deleteItem($call, await $request);
+  }
+
+  $async.Future<$1.Empty> deleteItem(
+      $grpc.ServiceCall call, $0.DeleteItemRequest request);
 
   $async.Future<$0.Item> moveItem_Pre($grpc.ServiceCall $call,
       $async.Future<$0.MoveItemRequest> $request) async {

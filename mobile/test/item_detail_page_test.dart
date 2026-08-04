@@ -301,6 +301,17 @@ class _FakeItemService extends ItemService {
   final List<({int id, bool top, bool bottom})> moveItemCalls = [];
   ItemException? moveItemError;
 
+  final List<int> deleteItemCalls = [];
+  ItemException? deleteItemError;
+
+  @override
+  Future<void> deleteItem(int id) async {
+    deleteItemCalls.add(id);
+    if (deleteItemError != null) {
+      throw deleteItemError!;
+    }
+  }
+
   @override
   Future<Item> moveItem({
     required int id,
@@ -357,7 +368,7 @@ void main() {
   setUp(() {
     final view =
         TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
-    view.physicalSize = const Size(800, 2400);
+    view.physicalSize = const Size(800, 2600);
     addTearDown(view.resetPhysicalSize);
   });
 
@@ -1909,6 +1920,130 @@ void main() {
 
       expect(service.moveItemCalls, [(id: 7, top: true, bottom: false)]);
       expect(changedCalls, 0);
+    });
+  });
+
+  group('ItemDetailPage delete', () {
+    testWidgets(
+        'shows a red Delete button for an untriaged item alongside the triage buttons',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 1, title: 'Untriaged'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      final delete = find.byKey(const ValueKey('delete-item-button'));
+      expect(delete, findsOneWidget);
+      final filled = tester.widget<FilledButton>(delete);
+      expect(
+        filled.style?.backgroundColor?.resolve(<WidgetState>{}),
+        Theme.of(tester.element(delete)).colorScheme.error,
+      );
+      expect(find.text('Delete'), findsWidgets);
+    });
+
+    testWidgets('does not show the Delete button for a triaged item',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Triaged', priority: 10),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('delete-item-button')), findsNothing);
+    });
+
+    testWidgets('does not show the Delete button for a done item',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Done', done: true),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('delete-item-button')), findsNothing);
+    });
+
+    testWidgets('tapping Delete opens a confirmation dialog', (tester) async {
+      final service = _FakeItemService(item: Item(id: 7, title: 'Untriaged'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('delete-item-button')));
+      await tester.pumpAndSettle();
+
+      // The confirmation dialog is showing; no service call yet.
+      expect(find.text('Delete this item?'), findsOneWidget);
+      expect(service.deleteItemCalls, isEmpty);
+    });
+
+    testWidgets(
+        'confirming the dialog calls deleteItem, invokes onItemChanged, and pops',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 7, title: 'Untriaged'));
+      var changedCalls = 0;
+
+      await tester.pumpWidget(_harness(
+        service: service,
+        itemId: 7,
+        onItemChanged: () => changedCalls++,
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('delete-item-button')));
+      await tester.pumpAndSettle();
+
+      // Confirm the dialog. The dialog's confirm button is the second action
+      // (a FilledButton labelled Delete) inside the AlertDialog.
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete').last);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(service.deleteItemCalls, [7]);
+      expect(changedCalls, 1);
+      // The page has popped back to the caller.
+      expect(find.byType(ItemDetailPage), findsNothing);
+    });
+
+    testWidgets('cancelling the dialog does not call deleteItem', (tester) async {
+      final service = _FakeItemService(item: Item(id: 7, title: 'Untriaged'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('delete-item-button')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(service.deleteItemCalls, isEmpty);
+      // The page is still visible.
+      expect(find.byType(ItemDetailPage), findsOneWidget);
+    });
+
+    testWidgets('a failed delete shows an error SnackBar and stays on the page',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 7, title: 'Untriaged'));
+      service.deleteItemError = ItemException('item has linked items');
+
+      await tester.pumpWidget(_harness(service: service, itemId: 7));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('delete-item-button')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete').last);
+      await tester.pumpAndSettle();
+
+      expect(service.deleteItemCalls, [7]);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to delete item'), findsOneWidget);
+      // The page is still visible because the delete was rejected.
+      expect(find.byType(ItemDetailPage), findsOneWidget);
     });
   });
 }

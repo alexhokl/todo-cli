@@ -17,6 +17,10 @@ service ItemService {
   rpc CreateItem(CreateItemRequest) returns (Item);
   // GetItem returns a single item by identifier.
   rpc GetItem(GetItemRequest) returns (Item);
+  // DeleteItem removes an untriaged item. Only items that are not done and
+  // carry no priority may be deleted; items with linked items are rejected.
+  // Attached blockers and comments are removed in the same operation.
+  rpc DeleteItem(DeleteItemRequest) returns (google.protobuf.Empty);
   // MoveItem places an item immediately before or after another item and
   // optionally reassigns its list in the same operation.
   rpc MoveItem(MoveItemRequest) returns (Item);
@@ -188,6 +192,12 @@ message CreateItemRequest {
 
 // GetItemRequest identifies a single item by id.
 message GetItemRequest {
+  uint32 id = 1;
+}
+
+// DeleteItemRequest identifies a single item to delete by id. Only untriaged
+// items (not done, no priority) without linked items may be deleted.
+message DeleteItemRequest {
   uint32 id = 1;
 }
 

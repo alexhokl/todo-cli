@@ -288,6 +288,18 @@ const GetItemRequest$json = {
 final $typed_data.Uint8List getItemRequestDescriptor =
     $convert.base64Decode('Cg5HZXRJdGVtUmVxdWVzdBIOCgJpZBgBIAEoDVICaWQ=');
 
+@$core.Deprecated('Use deleteItemRequestDescriptor instead')
+const DeleteItemRequest$json = {
+  '1': 'DeleteItemRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 13, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `DeleteItemRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteItemRequestDescriptor =
+    $convert.base64Decode('ChFEZWxldGVJdGVtUmVxdWVzdBIOCgJpZBgBIAEoDVICaWQ=');
+
 @$core.Deprecated('Use moveItemRequestDescriptor instead')
 const MoveItemRequest$json = {
   '1': 'MoveItemRequest',
