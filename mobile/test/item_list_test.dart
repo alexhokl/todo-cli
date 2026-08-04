@@ -18,17 +18,26 @@ class _FakeItemService extends ItemService {
   _FakeItemService({
     this.triaged = const [],
     this.completed = const [],
+    this.labels = const [],
     this.moveItemError,
+    this.listLabelsError,
   });
 
   final List<Item> triaged;
   final List<Item> completed;
+  final List<Label> labels;
 
   /// When non-null, the next [moveItem] call throws this [ItemException].
   final ItemException? moveItemError;
 
+  /// When non-null, [listLabels] throws this.
+  final Object? listLabelsError;
+
   /// The views passed to each [listItems] call, in call order.
   final List<ItemView> viewsCalled = [];
+
+  /// The label names passed to each [listItems] call, in call order.
+  final List<List<String>> labelsCalled = [];
 
   /// Each recorded [moveItem] call: the moved id and the anchor arguments.
   final List<({int id, int? beforeId, int? afterId})> moveCalls = [];
@@ -39,12 +48,21 @@ class _FakeItemService extends ItemService {
     ItemView? view,
   }) async {
     viewsCalled.add(view ?? ItemView.ITEM_VIEW_UNSPECIFIED);
+    labelsCalled.add(labels ?? const []);
     switch (view) {
       case ItemView.ITEM_VIEW_DONE:
         return ListItemsResult(active: List<Item>.from(completed), completed: const []);
       default:
         return ListItemsResult(active: List<Item>.from(triaged), completed: const []);
     }
+  }
+
+  @override
+  Future<List<Label>> listLabels() async {
+    if (listLabelsError != null) {
+      throw listLabelsError!;
+    }
+    return List<Label>.from(labels);
   }
 
   @override
@@ -345,6 +363,205 @@ void main() {
       // present on the same row.
       expect(find.widgetWithText(InputChip, 'work'), findsOneWidget);
       expect(find.byIcon(Icons.timer), findsOneWidget);
+    });
+  });
+
+  group('ItemList label filter bar', () {
+    testWidgets(
+        'renders a FilterChip per known label with the label colour as the avatar',
+        (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 1, title: 'ship it')],
+        labels: [
+          Label(id: 1, name: 'work', colour: '#FF0000'),
+          Label(id: 2, name: 'urgent'),
+        ],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // One FilterChip per label in the catalogue. (The bucket chip bar is
+      // collapsed to an ActionChip by default, so these are the only
+      // FilterChips.)
+      expect(find.widgetWithText(FilterChip, 'work'), findsOneWidget);
+      expect(find.widgetWithText(FilterChip, 'urgent'), findsOneWidget);
+
+      // The 'work' chip has a coloured CircleAvatar; the 'urgent' chip has no
+      // avatar (no colour -> no dot).
+      final workChip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'work'),
+      );
+      expect(workChip.avatar, isA<CircleAvatar>());
+      expect(
+        (workChip.avatar as CircleAvatar).backgroundColor,
+        const Color(0xFFFF0000),
+      );
+
+      final urgentChip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'urgent'),
+      );
+      expect(urgentChip.avatar, isNull);
+    });
+
+    testWidgets('renders no filter bar when the label catalogue is empty',
+        (tester) async {
+      final service = _FakeItemService(triaged: [Item(id: 1, title: 'ship it')]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // No FilterChips: the bucket chip bar is collapsed to an ActionChip and
+      // the label filter bar renders nothing when the catalogue is empty.
+      expect(find.byType(FilterChip), findsNothing);
+    });
+
+    testWidgets(
+        'tapping a label chip selects it and reloads the list with that label',
+        (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 1, title: 'ship it')],
+        labels: [Label(id: 1, name: 'work', colour: '#FF0000')],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Initial load sends no labels.
+      expect(service.labelsCalled, [
+        const [],
+      ]);
+
+      await tester.tap(find.widgetWithText(FilterChip, 'work'));
+      await tester.pumpAndSettle();
+
+      // The reload sent the selected label name to the server (AND semantics).
+      expect(service.labelsCalled, [
+        const [],
+        ['work'],
+      ]);
+      // The chip is now selected.
+      final chip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'work'),
+      );
+      expect(chip.selected, isTrue);
+    });
+
+    testWidgets(
+        'selecting multiple labels sends all selected labels (AND semantics)',
+        (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 1, title: 'ship it')],
+        labels: [
+          Label(id: 1, name: 'work', colour: '#FF0000'),
+          Label(id: 2, name: 'urgent'),
+        ],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilterChip, 'work'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilterChip, 'urgent'));
+      await tester.pumpAndSettle();
+
+      // The last listItems call carries both selected labels.
+      final last = service.labelsCalled.last;
+      expect(last, containsAll(['work', 'urgent']));
+      expect(last.length, 2);
+    });
+
+    testWidgets(
+        'tapping a selected label deselects it and reloads without that label',
+        (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 1, title: 'ship it')],
+        labels: [Label(id: 1, name: 'work', colour: '#FF0000')],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilterChip, 'work'));
+      await tester.pumpAndSettle();
+
+      // Tap again to deselect.
+      await tester.tap(find.widgetWithText(FilterChip, 'work'));
+      await tester.pumpAndSettle();
+
+      // The last listItems call sends no labels.
+      expect(service.labelsCalled.last, isEmpty);
+      final chip = tester.widget<FilterChip>(
+        find.widgetWithText(FilterChip, 'work'),
+      );
+      expect(chip.selected, isFalse);
+    });
+
+    testWidgets('label filtering disables reordering', (tester) async {
+      final service = _FakeItemService(
+        triaged: [
+          Item(id: 1, title: 'alpha'),
+          Item(id: 2, title: 'beta'),
+        ],
+        labels: [Label(id: 1, name: 'work', colour: '#FF0000')],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Reordering is available in the triaged view with no filter active.
+      expect(find.byIcon(Icons.drag_indicator), findsNWidgets(2));
+
+      await tester.tap(find.widgetWithText(FilterChip, 'work'));
+      await tester.pumpAndSettle();
+
+      // With a label filter active, drag handles are hidden (the filtered
+      // list cannot guarantee adjacency for reorder anchors).
+      expect(find.byIcon(Icons.drag_indicator), findsNothing);
+    });
+
+    testWidgets('switching bucket keeps the selected labels', (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 1, title: 'triaged item')],
+        completed: [Item(id: 2, title: 'done item', done: true)],
+        labels: [Label(id: 1, name: 'work', colour: '#FF0000')],
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Select the 'work' label in the triaged view.
+      await tester.tap(find.widgetWithText(FilterChip, 'work'));
+      await tester.pumpAndSettle();
+
+      // Switch to the Completed bucket via the chip bar.
+      await tester.tap(find.byType(ActionChip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilterChip, 'Completed'));
+      await tester.pumpAndSettle();
+
+      // The last listItems call carries both the DONE view and the 'work'
+      // label (orthogonal filters, matching CLI `--label work --done`).
+      expect(service.viewsCalled.last, ItemView.ITEM_VIEW_DONE);
+      expect(service.labelsCalled.last, ['work']);
+    });
+
+    testWidgets(
+        'a failed listLabels leaves the filter bar empty without breaking the list',
+        (tester) async {
+      final service = _FakeItemService(
+        triaged: [Item(id: 1, title: 'ship it')],
+        listLabelsError: ItemException('boom'),
+      );
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // The list still renders items.
+      expect(find.text('ship it'), findsOneWidget);
+      // No label FilterChips appear (the catalogue failed to load).
+      expect(find.byType(FilterChip), findsNothing);
     });
   });
 

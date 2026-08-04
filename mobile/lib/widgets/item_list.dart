@@ -35,6 +35,13 @@ class ItemListState extends State<ItemList> {
   bool _isLoading = true;
   ItemService? _service;
 
+  /// All known labels (for the label filter bar), loaded alongside the items.
+  List<Label> _allLabels = const [];
+
+  /// Currently selected label names (AND semantics, matching the CLI
+  /// `--label` repeatable flag). Persist across bucket switches.
+  final Set<String> _selectedLabels = {};
+
   /// Current search query, trimmed. Empty means no filtering.
   String _query = '';
   final TextEditingController _searchController = TextEditingController();
@@ -45,6 +52,7 @@ class ItemListState extends State<ItemList> {
     super.initState();
     _service = widget.service;
     _load();
+    _loadLabels();
   }
 
   Future<void> _load() async {
@@ -54,7 +62,10 @@ class ItemListState extends State<ItemList> {
     });
     try {
       _service ??= await _buildService();
-      final result = await _service!.listItems(view: _view);
+      final result = await _service!.listItems(
+        view: _view,
+        labels: _selectedLabels.isEmpty ? null : _selectedLabels.toList(),
+      );
       setState(() {
         _items = result.active;
         _isLoading = false;
@@ -72,6 +83,19 @@ class ItemListState extends State<ItemList> {
     }
   }
 
+  /// Loads the label catalogue for the filter bar. Failures are non-fatal:
+  /// the bar is a secondary affordance, so an empty catalogue just hides it
+  /// without surfacing a SnackBar on every refresh.
+  Future<void> _loadLabels() async {
+    try {
+      _service ??= await _buildService();
+      final labels = await _service!.listLabels();
+      if (mounted) setState(() => _allLabels = labels);
+    } catch (_) {
+      if (mounted) setState(() => _allLabels = const []);
+    }
+  }
+
   Future<ItemService> _buildService() async {
     final config = await BackendConfig.load();
     return ItemService(host: config.host, port: config.port);
@@ -82,6 +106,7 @@ class ItemListState extends State<ItemList> {
     _service = widget.service;
     _items = null;
     await _load();
+    await _loadLabels();
   }
 
   /// Selects a bucket, collapses the chip bar, clears any active search, and
@@ -110,6 +135,20 @@ class ItemListState extends State<ItemList> {
     setState(() {
       _query = '';
     });
+  }
+
+  /// Toggles membership of [name] in [_selectedLabels] and reloads the list.
+  /// The server applies AND semantics: only items carrying every selected
+  /// label are returned (matching the CLI `--label` repeatable flag).
+  void _toggleLabel(String name) {
+    setState(() {
+      if (_selectedLabels.contains(name)) {
+        _selectedLabels.remove(name);
+      } else {
+        _selectedLabels.add(name);
+      }
+    });
+    _load();
   }
 
   void _openDetail(BuildContext context, Item item) {
@@ -214,6 +253,40 @@ class ItemListState extends State<ItemList> {
     );
   }
 
+  /// A horizontally-scrollable bar of [FilterChip]s, one per known label,
+  /// allowing the user to narrow the list by label (AND semantics, matching
+  /// the CLI `--label` repeatable flag). Each chip shows the label's colour
+  /// as a small [CircleAvatar] avatar. Returns a zero-height widget when the
+  /// label catalogue is empty so the list layout is unchanged.
+  Widget _buildLabelFilterBar(BuildContext context) {
+    if (_allLabels.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final label in _allLabels)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(label.name),
+                  avatar: parseLabelColour(label.colour) != null
+                      ? CircleAvatar(
+                          backgroundColor: parseLabelColour(label.colour),
+                          maxRadius: 6,
+                        )
+                      : null,
+                  selected: _selectedLabels.contains(label.name),
+                  onSelected: (_) => _toggleLabel(label.name),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -245,15 +318,17 @@ class ItemListState extends State<ItemList> {
             .toList();
     final l10n = AppLocalizations.of(context)!;
     // Reordering is only meaningful for the triaged view and only when no
-    // search filter is active: anchors sent to the server reference items that
-    // must be adjacent in the full ordering, which the filtered list cannot
-    // guarantee.
-    final canReorder =
-        _view == ItemView.ITEM_VIEW_TRIAGED && _query.isEmpty;
+    // search or label filter is active: anchors sent to the server reference
+    // items that must be adjacent in the full ordering, which a filtered list
+    // cannot guarantee.
+    final canReorder = _view == ItemView.ITEM_VIEW_TRIAGED &&
+        _query.isEmpty &&
+        _selectedLabels.isEmpty;
     return Column(
       children: [
         _buildChipBar(context),
         _buildSearchBar(context),
+        _buildLabelFilterBar(context),
         Expanded(
           child: items.isEmpty
               ? Center(
