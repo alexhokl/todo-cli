@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
+import 'package:todo/widgets/colour.dart';
 import 'package:todo/widgets/edit_item_page.dart';
 import 'package:todo/widgets/select_linked_items_page.dart';
 import 'package:todo/widgets/settings_page.dart';
@@ -803,7 +804,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     final l10n = AppLocalizations.of(context)!;
     Widget? avatar;
     if (label.colour.isNotEmpty) {
-      final color = _parseColour(label.colour);
+      final color = parseLabelColour(label.colour);
       if (color != null) {
         avatar = CircleAvatar(backgroundColor: color, maxRadius: 6);
       }
@@ -1110,7 +1111,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
 
   Widget _swatchFor(Label label) {
     if (label.colour.isNotEmpty) {
-      final color = _parseColour(label.colour);
+      final color = parseLabelColour(label.colour);
       if (color != null) {
         return CircleAvatar(backgroundColor: color, maxRadius: 8);
       }
@@ -1140,15 +1141,6 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   }
 
   static String _two(int value) => value.toString().padLeft(2, '0');
-
-  Color? _parseColour(String hex) {
-    var value = hex;
-    if (value.startsWith('#')) value = value.substring(1);
-    if (value.length != 6) return null;
-    final parsed = int.tryParse(value, radix: 16);
-    if (parsed == null) return null;
-    return Color(0xFF000000 | parsed);
-  }
 
   /// Opens a markdown link in the system browser. Failures (bad URI or a
   /// rejected launch) are surfaced as a SnackBar rather than crashing.

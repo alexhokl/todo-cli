@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
+import 'package:todo/widgets/colour.dart';
 import 'package:todo/widgets/item_detail_page.dart';
 import 'package:todo/widgets/settings_page.dart';
 import 'package:todo/widgets/status_icon.dart';
@@ -308,11 +309,33 @@ class ItemListState extends State<ItemList> {
     required bool reorderable,
   }) {
     final statusIcon = statusIconFor(item);
+    final labelChips = item.labels.isEmpty
+        ? null
+        : Wrap(
+            spacing: 4,
+            runSpacing: 0,
+            children: [
+              for (final label in item.labels)
+                InputChip(
+                  label: Text(label.name),
+                  avatar: parseLabelColour(label.colour) != null
+                      ? CircleAvatar(
+                          backgroundColor: parseLabelColour(label.colour),
+                          maxRadius: 6,
+                        )
+                      : null,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          );
 
     if (!reorderable) {
       return ListTile(
         leading: statusIcon,
         title: Text(item.title),
+        subtitle: labelChips,
+        trailing: item.hasDueDate() ? const Icon(Icons.timer) : null,
         onTap: () => _openDetail(context, item),
       );
     }
@@ -334,6 +357,8 @@ class ItemListState extends State<ItemList> {
           ],
         ),
         title: Text(item.title),
+        subtitle: labelChips,
+        trailing: item.hasDueDate() ? const Icon(Icons.timer) : null,
         onTap: () => _openDetail(context, item),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
+import 'package:todo/widgets/colour.dart';
 import 'package:todo/widgets/settings_page.dart';
 
 /// Page that lists every label and lets the user create, rename, and delete
@@ -229,21 +230,11 @@ class _ColourSwatch extends StatelessWidget {
       width: 24,
       height: 24,
       decoration: BoxDecoration(
-        color: _parseColour(colour),
+        color: parseLabelColour(colour) ?? Colors.grey,
         shape: BoxShape.circle,
         border: Border.all(color: Theme.of(context).dividerColor, width: 1),
       ),
     );
-  }
-
-  static Color _parseColour(String hex) {
-    if (hex.length == 7 && hex.startsWith('#')) {
-      final value = int.tryParse(hex.substring(1), radix: 16);
-      if (value != null) {
-        return Color(0xFF000000 | value);
-      }
-    }
-    return Colors.grey;
   }
 }
 
@@ -390,8 +381,10 @@ class _LabelDialogState extends State<_LabelDialog> {
               border: const OutlineInputBorder(),
               prefixIcon: ValueListenableBuilder<TextEditingValue>(
                 valueListenable: _colourController,
-                builder: (context, value, _) =>
-                    Icon(Icons.circle, color: _ColourSwatch._parseColour(value.text)),
+                builder: (context, value, _) => Icon(
+                  Icons.circle,
+                  color: parseLabelColour(value.text) ?? Colors.grey,
+                ),
               ),
             ),
           ),

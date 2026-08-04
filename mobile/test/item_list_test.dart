@@ -1,3 +1,4 @@
+import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todo/l10n/app_localizations.dart';
@@ -5,6 +6,7 @@ import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/item_detail_page.dart';
 import 'package:todo/widgets/item_list.dart';
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart';
 
 /// Minimal in-memory stand-in for [ItemService] that records the [listItems]
 /// calls made by [ItemList] and lets each test script the responses. Extending
@@ -253,6 +255,96 @@ void main() {
 
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
       expect(find.text('done'), findsOneWidget);
+    });
+
+    testWidgets('renders a timer icon on the trailing side for an item with a due date',
+        (tester) async {
+      final item = Item(id: 1, title: 'with due')
+        ..dueDate = Timestamp(seconds: Int64(100));
+      final service = _FakeItemService(triaged: [item]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.timer), findsOneWidget);
+      expect(find.text('with due'), findsOneWidget);
+    });
+
+    testWidgets('does not render a timer icon for an item without a due date',
+        (tester) async {
+      final service = _FakeItemService(triaged: [Item(id: 1, title: 'no due')]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.timer), findsNothing);
+      expect(find.text('no due'), findsOneWidget);
+    });
+  });
+
+  group('ItemList label chips', () {
+    testWidgets('renders a chip per label with the label colour as the avatar',
+        (tester) async {
+      final item = Item(
+        id: 1,
+        title: 'with labels',
+        labels: [
+          Label(id: 1, name: 'work', colour: '#FF0000'),
+          Label(id: 2, name: 'urgent'),
+        ],
+      );
+      final service = _FakeItemService(triaged: [item]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // One InputChip per label, with the label name as its text.
+      expect(find.byType(InputChip), findsNWidgets(2));
+      expect(find.widgetWithText(InputChip, 'work'), findsOneWidget);
+      expect(find.widgetWithText(InputChip, 'urgent'), findsOneWidget);
+
+      // The 'work' chip has a coloured CircleAvatar; the 'urgent' chip has no
+      // avatar (no colour -> no dot, matching the details-page behaviour).
+      final workChip = tester.widget<InputChip>(
+        find.widgetWithText(InputChip, 'work'),
+      );
+      expect(workChip.avatar, isA<CircleAvatar>());
+      final workAvatar = workChip.avatar as CircleAvatar;
+      expect(workAvatar.backgroundColor, const Color(0xFFFF0000));
+
+      final urgentChip = tester.widget<InputChip>(
+        find.widgetWithText(InputChip, 'urgent'),
+      );
+      expect(urgentChip.avatar, isNull);
+    });
+
+    testWidgets('renders no chips for an item without labels', (tester) async {
+      final service = _FakeItemService(triaged: [Item(id: 1, title: 'no labels')]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // No InputChips on the row (the chip bar uses FilterChip/ActionChip, not
+      // InputChip, so this is unambiguous).
+      expect(find.byType(InputChip), findsNothing);
+    });
+
+    testWidgets('renders chips on the row alongside the timer trailing icon',
+        (tester) async {
+      final item = Item(
+        id: 1,
+        title: 'labelled and dated',
+        labels: [Label(id: 1, name: 'work', colour: '#FF0000')],
+      )..dueDate = Timestamp(seconds: Int64(100));
+      final service = _FakeItemService(triaged: [item]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      // Both the label chip (subtitle) and the timer icon (trailing) are
+      // present on the same row.
+      expect(find.widgetWithText(InputChip, 'work'), findsOneWidget);
+      expect(find.byIcon(Icons.timer), findsOneWidget);
     });
   });
 
