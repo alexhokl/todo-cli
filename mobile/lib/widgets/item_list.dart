@@ -404,13 +404,21 @@ class ItemListState extends State<ItemList> {
                 ),
             ],
           );
+    final dueDateIcon = item.hasDueDate()
+        ? Icon(
+            Icons.timer,
+            color: item.dueDate.toDateTime().toLocal().isBefore(DateTime.now())
+                ? Colors.red
+                : null,
+          )
+        : null;
 
     if (!reorderable) {
       return ListTile(
         leading: statusIcon,
         title: Text(item.title),
         subtitle: labelChips,
-        trailing: item.hasDueDate() ? const Icon(Icons.timer) : null,
+        trailing: dueDateIcon,
         onTap: () => _openDetail(context, item),
       );
     }
@@ -433,7 +441,7 @@ class ItemListState extends State<ItemList> {
         ),
         title: Text(item.title),
         subtitle: labelChips,
-        trailing: item.hasDueDate() ? const Icon(Icons.timer) : null,
+        trailing: dueDateIcon,
         onTap: () => _openDetail(context, item),
       ),
     );

@@ -298,6 +298,35 @@ void main() {
       expect(find.byIcon(Icons.timer), findsNothing);
       expect(find.text('no due'), findsOneWidget);
     });
+
+    testWidgets('renders the timer icon in red when the due date is in the past',
+        (tester) async {
+      final past = DateTime.now().subtract(const Duration(hours: 1));
+      final item = Item(id: 1, title: 'overdue')
+        ..dueDate = Timestamp.fromDateTime(past);
+      final service = _FakeItemService(triaged: [item]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.timer));
+      expect(icon.color, Colors.red);
+    });
+
+    testWidgets(
+        'renders the timer icon in the default colour when the due date is in the future',
+        (tester) async {
+      final future = DateTime.now().add(const Duration(hours: 1));
+      final item = Item(id: 1, title: 'upcoming')
+        ..dueDate = Timestamp.fromDateTime(future);
+      final service = _FakeItemService(triaged: [item]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      final icon = tester.widget<Icon>(find.byIcon(Icons.timer));
+      expect(icon.color, isNull);
+    });
   });
 
   group('ItemList label chips', () {
