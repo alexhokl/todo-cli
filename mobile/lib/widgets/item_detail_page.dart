@@ -606,6 +606,9 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _sectionLabel(context, l10n.idLabel),
+          Text('${item.id}'),
+          const SizedBox(height: 16),
           _sectionLabel(context, l10n.descriptionLabel),
           if (item.description.isEmpty)
             _mutedHint(context, l10n.noDescription)

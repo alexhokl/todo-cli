@@ -88,6 +88,7 @@
   "selectLinkedItems": "関連アイテムを選択",
   "failedToAddLinks": "関連アイテムの追加に失敗しました: {error}",
   "descriptionLabel": "説明",
+  "idLabel": "ID",
   "copiedToClipboard": "クリップボードにコピーしました",
   "failedToOpenLink": "リンクを開けませんでした: {error}",
   "removeLabel": "ラベルを削除",

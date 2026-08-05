@@ -456,6 +456,10 @@
       }
     }
   },
+  "idLabel": "ID",
+  "@idLabel": {
+    "description": "Section label on the item details page for the item ID"
+  },
   "descriptionLabel": "Description",
   "@descriptionLabel": {
     "description": "Section label on the item details page for the description"

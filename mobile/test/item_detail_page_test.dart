@@ -368,7 +368,7 @@ void main() {
   setUp(() {
     final view =
         TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
-    view.physicalSize = const Size(800, 2600);
+    view.physicalSize = const Size(800, 2900);
     addTearDown(view.resetPhysicalSize);
   });
 
@@ -387,6 +387,8 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('Ship it'), findsWidgets);
       expect(find.text('Cut a release'), findsOneWidget);
+      // The item ID is shown in its own section at the top of the body.
+      expect(find.text('5'), findsOneWidget);
       expect(service.getItemCalls, [5]);
     });
 
@@ -418,6 +420,8 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
+      // The item ID is shown in its own section at the top of the body.
+      expect(find.text('1'), findsOneWidget);
       // Two label InputChips inside the Wrap, each with a close delete icon.
       expect(find.byType(InputChip), findsNWidgets(2));
       expect(find.widgetWithText(InputChip, 'work'), findsOneWidget);
