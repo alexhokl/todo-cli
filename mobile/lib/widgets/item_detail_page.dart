@@ -41,8 +41,9 @@ class ItemDetailPage extends StatefulWidget {
   final ItemService? service;
 
   /// Invoked after a successful bottom-bar action (complete, return to
-  /// untriaged, make top/low priority) so the parent [ItemList] can reload
-  /// its current bucket. Not invoked for blocker/comment/label/effort/link
+  /// untriaged, make top/low priority) and after a label add/remove so the
+  /// parent [ItemList] can reload its current bucket (and refresh the label
+  /// chips on the affected row). Not invoked for blocker/comment/effort/link
   /// edits, which do not change the list's bucket or ordering.
   final VoidCallback? onItemChanged;
 
@@ -893,6 +894,8 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
         id: widget.itemId,
         remove: [label.name],
       );
+      // Notify the parent list so the row's label chips refresh.
+      widget.onItemChanged?.call();
     } on ItemException catch (e) {
       _showSnackbar(l10n.failedToRemoveLabel(e.message));
       await _load();
@@ -1027,6 +1030,8 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
         add: [label.name],
       );
       _showSnackbar(l10n.labelAdded);
+      // Notify the parent list so the row's label chips refresh.
+      widget.onItemChanged?.call();
       // Refresh the canonical state and the candidate list.
       unawaited(_load());
       unawaited(_loadLabels());

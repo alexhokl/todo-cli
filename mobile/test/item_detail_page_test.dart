@@ -799,8 +799,13 @@ void main() {
         ],
       );
       final service = _FakeItemService(item: item);
+      var changedCalls = 0;
 
-      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpWidget(_harness(
+        service: service,
+        itemId: 1,
+        onItemChanged: () => changedCalls++,
+      ));
       await tester.pumpAndSettle();
 
       // Both labels are present initially.
@@ -822,6 +827,8 @@ void main() {
       expect(service.updateItemLabelsCalls.single.remove, ['work']);
       // No failure SnackBar was shown.
       expect(find.byType(SnackBar), findsNothing);
+      // The parent-list refresh callback fires exactly once after success.
+      expect(changedCalls, 1);
     });
 
     testWidgets('a failed removal shows a SnackBar and reverts the chip',
@@ -833,8 +840,13 @@ void main() {
       );
       final service = _FakeItemService(item: item)
         ..updateItemLabelsError = ItemException('server says no');
+      var changedCalls = 0;
 
-      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpWidget(_harness(
+        service: service,
+        itemId: 1,
+        onItemChanged: () => changedCalls++,
+      ));
       await tester.pumpAndSettle();
 
       final chip = find.widgetWithText(InputChip, 'work');
@@ -850,6 +862,9 @@ void main() {
       expect(service.updateItemLabelsCalls, hasLength(1));
       // getItem was called again to revert (initial load + reload on failure).
       expect(service.getItemCalls, [1, 1]);
+      // The call was attempted but failed; the list-refresh callback must
+      // not fire (no change to refresh).
+      expect(changedCalls, 0);
     });
   });
 
@@ -910,8 +925,13 @@ void main() {
           Label(id: 1, name: 'work', colour: '#FF0000'),
           Label(id: 2, name: 'urgent'),
         ];
+      var changedCalls = 0;
 
-      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpWidget(_harness(
+        service: service,
+        itemId: 1,
+        onItemChanged: () => changedCalls++,
+      ));
       await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithText(TextButton, 'Add label'));
@@ -929,6 +949,8 @@ void main() {
       expect(find.text('Label added'), findsOneWidget);
       // The new chip appears after the optimistic add + reload.
       expect(find.widgetWithText(InputChip, 'urgent'), findsOneWidget);
+      // The parent-list refresh callback fires exactly once after success.
+      expect(changedCalls, 1);
     });
 
     testWidgets('a failed add shows a SnackBar and reverts the chip',
@@ -945,8 +967,13 @@ void main() {
             Label(id: 2, name: 'urgent'),
           ]
         ..updateItemLabelsError = ItemException('server says no');
+      var changedCalls = 0;
 
-      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpWidget(_harness(
+        service: service,
+        itemId: 1,
+        onItemChanged: () => changedCalls++,
+      ));
       await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithText(TextButton, 'Add label'));
@@ -963,6 +990,9 @@ void main() {
       expect(service.updateItemLabelsCalls, hasLength(1));
       // getItem re-fetched to revert: initial load + reload on failure.
       expect(service.getItemCalls, [1, 1]);
+      // The call was attempted but failed; the list-refresh callback must
+      // not fire (no change to refresh).
+      expect(changedCalls, 0);
     });
 
     testWidgets('shows noMoreLabels when all known labels are attached',
