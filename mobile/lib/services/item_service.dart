@@ -85,17 +85,23 @@ class ItemService {
     }
   }
 
-  /// Create a new item. Labels are created on the fly when they do not exist.
+  /// Create a new item. Labels are created on the fly when they do not
+  /// exist. When [effort] is a non-empty string it must name an existing
+  /// effort; an empty string (or null) leaves the item without an effort.
   Future<Item> createItem({
     required String title,
     String description = '',
     List<String>? labels,
+    String? effort,
   }) async {
     _ensureInitialized();
 
     final request = CreateItemRequest(title: title, description: description);
     if (labels != null && labels.isNotEmpty) {
       request.labels.addAll(labels);
+    }
+    if (effort != null && effort.isNotEmpty) {
+      request.effort = effort;
     }
 
     try {

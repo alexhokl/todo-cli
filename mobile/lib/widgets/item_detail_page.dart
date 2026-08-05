@@ -9,8 +9,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
-import 'package:todo/widgets/colour.dart';
 import 'package:todo/widgets/edit_item_page.dart';
+import 'package:todo/widgets/effort_picker.dart';
+import 'package:todo/widgets/label_picker.dart';
 import 'package:todo/widgets/select_linked_items_page.dart';
 import 'package:todo/widgets/settings_page.dart';
 import 'package:todo/widgets/status_icon.dart';
@@ -870,22 +871,11 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     );
   }
 
-  Widget _labelChip(Label label) {
-    final l10n = AppLocalizations.of(context)!;
-    Widget? avatar;
-    if (label.colour.isNotEmpty) {
-      final color = parseLabelColour(label.colour);
-      if (color != null) {
-        avatar = CircleAvatar(backgroundColor: color, maxRadius: 6);
-      }
-    }
-    return InputChip(
-      label: Text(label.name),
-      avatar: avatar,
-      onDeleted: () => _removeLabel(label),
-      deleteIcon: Icon(Icons.close, semanticLabel: l10n.removeLabel),
-    );
-  }
+  Widget _labelChip(Label label) => labelChip(
+        context,
+        label,
+        onDeleted: () => _removeLabel(label),
+      );
 
   /// Optimistically removes [label] from the item, then detaches it on the
   /// server via [ItemService.updateItemLabels]. On failure a SnackBar is
@@ -997,67 +987,29 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   /// label catalogue is loaded lazily if the initial fetch failed.
   Future<void> _showAddLabelDialog() async {
     final l10n = AppLocalizations.of(context)!;
-
-    // Ensure the label catalogue is available; reload on failure so the
-    // user can retry by tapping the button again.
-    if (_allLabels == null || _labelsError != null) {
-      await _loadLabels();
-      if (!mounted) return;
-    }
-    if (_labelsError != null || _allLabels == null) {
-      _showSnackbar(l10n.failedToAddLabel(_labelsError ?? 'labels unavailable'));
+    final result = await showLabelPickerDialog(
+      context,
+      ensureCatalogue: _ensureLabelCatalogue,
+      excludedNames:
+          _item?.labels.map((l) => l.name).toSet() ?? const <String>{},
+    );
+    if (result.aborted) {
+      _showSnackbar(l10n.failedToAddLabel(result.error!));
       return;
     }
+    if (result.label == null || !mounted) return;
+    await _addLabel(result.label!);
+  }
 
-    final attached = _item?.labels ?? const <Label>[];
-    final attachedNames = attached.map((l) => l.name).toSet();
-    final candidates =
-        _allLabels!.where((l) => !attachedNames.contains(l.name)).toList();
-
-    final selected = await showDialog<Label>(
-      context: context,
-      builder: (context) {
-        if (candidates.isEmpty) {
-          return SimpleDialog(
-            title: Text(l10n.addLabel),
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                child: Text(
-                  l10n.noMoreLabels,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant
-                            .withValues(alpha: 0.6),
-                        fontStyle: FontStyle.italic,
-                      ),
-                ),
-              ),
-            ],
-          );
-        }
-        return SimpleDialog(
-          title: Text(l10n.addLabel),
-          children: [
-            for (final label in candidates)
-              SimpleDialogOption(
-                onPressed: () => Navigator.of(context).pop(label),
-                child: Row(
-                  children: [
-                    _swatchFor(label),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(label.name)),
-                  ],
-                ),
-              ),
-          ],
-        );
-      },
-    );
-
-    if (selected == null || !mounted) return;
-    await _addLabel(selected);
+  /// Returns the current label catalogue, reloading it lazily when the
+  /// initial fetch failed (so the user can retry by tapping the button
+  /// again). Used by [showLabelPickerDialog] as its [ensureCatalogue]
+  /// callback.
+  Future<LabelCatalogue> _ensureLabelCatalogue() async {
+    if (_allLabels == null || _labelsError != null) {
+      await _loadLabels();
+    }
+    return LabelCatalogue(labels: _allLabels, error: _labelsError);
   }
 
   /// Optimistically attaches [label] to the item, then adds it on the server
@@ -1087,62 +1039,32 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     }
   }
 
-  /// Opens a dialog listing every known effort plus a leading "No effort"
-  /// option. Selecting an option attaches (or clears) the effort via
-  /// [ItemService.setEffort]. The effort catalogue is loaded lazily if the
-  /// initial fetch failed.
+  /// Opens a dialog listing "No effort" plus every known effort and, on
+  /// selection, sets (or clears) the item's effort via [ItemService.setEffort].
+  /// The effort catalogue is loaded lazily if the initial fetch failed.
   Future<void> _showEffortDialog() async {
     final l10n = AppLocalizations.of(context)!;
-
-    // Ensure the effort catalogue is available; reload on failure so the
-    // user can retry by tapping the button again.
-    if (_allEfforts == null || _effortsError != null) {
-      await _loadEfforts();
-      if (!mounted) return;
-    }
-    if (_effortsError != null || _allEfforts == null) {
-      _showSnackbar(l10n.failedToSetEffort(_effortsError ?? 'efforts unavailable'));
+    final result = await showEffortPickerDialog(
+      context,
+      ensureCatalogue: _ensureEffortCatalogue,
+    );
+    if (result.aborted) {
+      _showSnackbar(l10n.failedToSetEffort(result.error!));
       return;
     }
+    if (result.dismissed || !mounted) return;
+    await _setEffort(result.name!);
+  }
 
-    final selected = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return SimpleDialog(
-          title: Text(l10n.effort),
-          children: [
-            // The "No effort" option is always present, first in the list.
-            SimpleDialogOption(
-              onPressed: () => Navigator.of(context).pop(''),
-              child: Text(
-                l10n.noEffort,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant
-                          .withValues(alpha: 0.6),
-                      fontStyle: FontStyle.italic,
-                    ),
-              ),
-            ),
-            for (final effort in _allEfforts!)
-              SimpleDialogOption(
-                onPressed: () => Navigator.of(context).pop(effort.name),
-                child: Row(
-                  children: [
-                    const Icon(Icons.bolt, size: 18),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text(effort.name)),
-                  ],
-                ),
-              ),
-          ],
-        );
-      },
-    );
-
-    if (selected == null || !mounted) return;
-    await _setEffort(selected);
+  /// Returns the current effort catalogue, reloading it lazily when the
+  /// initial fetch failed (so the user can retry by tapping the button
+  /// again). Used by [showEffortPickerDialog] as its [ensureCatalogue]
+  /// callback.
+  Future<EffortCatalogue> _ensureEffortCatalogue() async {
+    if (_allEfforts == null || _effortsError != null) {
+      await _loadEfforts();
+    }
+    return EffortCatalogue(efforts: _allEfforts, error: _effortsError);
   }
 
   /// Optimistically sets (or clears) the item's effort, then persists it via
@@ -1177,19 +1099,6 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
       _showSnackbar(l10n.failedToSetEffort(e.toString()));
       await _load();
     }
-  }
-
-  Widget _swatchFor(Label label) {
-    if (label.colour.isNotEmpty) {
-      final color = parseLabelColour(label.colour);
-      if (color != null) {
-        return CircleAvatar(backgroundColor: color, maxRadius: 8);
-      }
-    }
-    return CircleAvatar(
-      backgroundColor: Theme.of(context).colorScheme.outlineVariant,
-      maxRadius: 8,
-    );
   }
 
   String _formatTimestamp(Timestamp ts) {
