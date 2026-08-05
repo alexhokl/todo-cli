@@ -609,12 +609,13 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
           _sectionLabel(context, l10n.idLabel),
           Text('${item.id}'),
           const SizedBox(height: 16),
-          _sectionLabel(context, l10n.descriptionLabel),
-          if (item.description.isEmpty)
-            _mutedHint(context, l10n.noDescription)
-          else
+          if (item.description.isEmpty) ...[
+            _sectionLabel(context, l10n.descriptionLabel),
+            _mutedHint(context, l10n.noDescription),
+          ] else
             _MarkdownBlock(
               data: item.description,
+              label: l10n.descriptionLabel,
               onCopied: () => _showSnackbar(l10n.copiedToClipboard),
               onTapLink: _onTapLink,
             ),
@@ -624,21 +625,25 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
             Text(_formatTimestamp(item.dueDate)),
             const SizedBox(height: 16),
           ],
-          _sectionLabel(context, l10n.effort),
+          _sectionLabelWithAction(
+            context,
+            text: l10n.effort,
+            icon: Icons.edit,
+            tooltip: l10n.editEffort,
+            onPressed: _showEffortDialog,
+          ),
           if (item.hasEffort() && item.effort.name.isNotEmpty)
             Text(item.effort.name)
           else
             _mutedHint(context, l10n.noEffort),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _showEffortDialog,
-              icon: const Icon(Icons.edit),
-              label: Text(l10n.editEffort),
-            ),
-          ),
           const SizedBox(height: 16),
-          _sectionLabel(context, l10n.labels),
+          _sectionLabelWithAction(
+            context,
+            text: l10n.labels,
+            icon: Icons.add,
+            tooltip: l10n.addLabel,
+            onPressed: _showAddLabelDialog,
+          ),
           if (item.labels.isEmpty)
             _mutedHint(context, l10n.noLabels)
           else
@@ -647,14 +652,6 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
               runSpacing: 4,
               children: [for (final label in item.labels) _labelChip(label)],
             ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _showAddLabelDialog,
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addLabel),
-            ),
-          ),
           const SizedBox(height: 16),
           _sectionLabel(context, l10n.blockers),
           if (item.blockers.isEmpty)
@@ -705,7 +702,13 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
             enabled: !_addingBlocker,
           ),
           const SizedBox(height: 16),
-          _sectionLabel(context, l10n.linkedItems),
+          _sectionLabelWithAction(
+            context,
+            text: l10n.linkedItems,
+            icon: Icons.add,
+            tooltip: l10n.addLinkedItems,
+            onPressed: () => _openSelectLinkedItems(context, item),
+          ),
           if (item.linkedItems.isEmpty)
             _mutedHint(context, l10n.noLinkedItems)
           else
@@ -730,14 +733,6 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
                   ),
               ],
             ),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: () => _openSelectLinkedItems(context, item),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.addLinkedItems),
-            ),
-          ),
           const SizedBox(height: 24),
           _buildCommentsSection(context, l10n),
         ],
@@ -836,15 +831,28 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
           children: [
             _MarkdownBlock(
               data: comment.body,
-              onCopied: () => _showSnackbar(l10n.copiedToClipboard),
               onTapLink: _onTapLink,
             ),
             const SizedBox(height: 4),
-            Text(
-              _formatAuthorLine(comment),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _formatAuthorLine(comment),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 18),
+                  tooltip: l10n.copyToClipboard,
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: comment.body));
+                    _showSnackbar(l10n.copiedToClipboard);
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -860,6 +868,35 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: Theme.of(context).colorScheme.primary,
             ),
+      ),
+    );
+  }
+
+  Widget _sectionLabelWithAction(
+    BuildContext context, {
+    required String text,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(icon, size: 24),
+            tooltip: tooltip,
+            onPressed: onPressed,
+          ),
+        ],
       ),
     );
   }
@@ -1153,39 +1190,56 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   }
 }
 
-/// Renders a markdown block (description or comment body) with a
-/// copy-to-clipboard affordance. The rendered text is non-selectable; the
-/// copy button copies the raw markdown source. Links are forwarded to the
-/// page's [onTapLink] handler.
+/// Renders a markdown block (description or comment body). The rendered
+/// text is non-selectable. Links are forwarded to the page's [onTapLink]
+/// handler. When [label] and [onCopied] are both provided, a header row is
+/// rendered above the body with the label on the left and a copy-to-clipboard
+/// button on the right (used for the description section); otherwise no
+/// header/button is rendered here (used for comments, whose copy button is
+/// rendered inline with the author line instead).
 class _MarkdownBlock extends StatelessWidget {
   const _MarkdownBlock({
     required this.data,
-    required this.onCopied,
     required this.onTapLink,
+    this.label,
+    this.onCopied,
   });
 
   final String data;
-  final VoidCallback onCopied;
+  final String? label;
+  final VoidCallback? onCopied;
   final void Function(String text, String? href, String title) onTapLink;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final label = this.label;
+    final onCopied = this.onCopied;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: IconButton(
-            icon: const Icon(Icons.copy, size: 18),
-            tooltip: l10n.copyToClipboard,
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: data));
-              onCopied();
-            },
+        if (label != null && onCopied != null)
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 18),
+                tooltip: l10n.copyToClipboard,
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: data));
+                  onCopied();
+                },
+              ),
+            ],
           ),
-        ),
         MarkdownBody(
           data: data,
           styleSheet: MarkdownStyleSheet.fromTheme(theme),

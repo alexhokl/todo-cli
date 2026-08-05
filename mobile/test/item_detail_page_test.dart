@@ -880,7 +880,7 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      final button = find.widgetWithText(TextButton, 'Add label');
+      final button = find.byTooltip('Add label');
       expect(button, findsOneWidget);
     });
 
@@ -901,7 +901,7 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Add label'));
+      await tester.tap(find.byTooltip('Add label'));
       await tester.pumpAndSettle();
 
       // The dialog lists the two unattached labels; the attached one is
@@ -938,7 +938,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Add label'));
+      await tester.tap(find.byTooltip('Add label'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('urgent'));
@@ -980,7 +980,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Add label'));
+      await tester.tap(find.byTooltip('Add label'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('urgent'));
@@ -1012,7 +1012,7 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Add label'));
+      await tester.tap(find.byTooltip('Add label'));
       await tester.pumpAndSettle();
 
       // The dialog shows the no-more-labels message and no options.
@@ -1034,7 +1034,7 @@ void main() {
       // The current effort name is rendered.
       expect(find.text('high'), findsOneWidget);
       // The Edit effort button is present.
-      expect(find.widgetWithText(TextButton, 'Edit effort'), findsOneWidget);
+      expect(find.byTooltip('Edit effort'), findsOneWidget);
     });
 
     testWidgets('tapping the button opens a dialog listing all efforts plus No effort',
@@ -1046,7 +1046,7 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.tap(find.byTooltip('Edit effort'));
       await tester.pumpAndSettle();
 
       // The dialog lists every effort (including the currently-set one) plus
@@ -1073,7 +1073,7 @@ void main() {
       // Initially no effort is set.
       expect(find.text('No effort'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.tap(find.byTooltip('Edit effort'));
       await tester.pumpAndSettle();
 
       // Tap the "low" option in the dialog.
@@ -1101,7 +1101,7 @@ void main() {
       // The effort name is shown initially.
       expect(find.text('high'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.tap(find.byTooltip('Edit effort'));
       await tester.pumpAndSettle();
 
       // Tap the "No effort" option (first in the dialog). There are two
@@ -1129,7 +1129,7 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.tap(find.byTooltip('Edit effort'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('low'));
@@ -1154,7 +1154,7 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Edit effort'));
+      await tester.tap(find.byTooltip('Edit effort'));
       await tester.pumpAndSettle();
 
       // The failure is surfaced as a SnackBar rather than opening the dialog.
@@ -1176,7 +1176,7 @@ void main() {
 
       // The linked item is rendered and the Add linked items button is present.
       expect(find.text('Beta'), findsOneWidget);
-      expect(find.widgetWithText(TextButton, 'Add linked items'), findsOneWidget);
+      expect(find.byTooltip('Add linked items'), findsOneWidget);
     });
 
     testWidgets('tapping the button pushes SelectLinkedItemsPage', (tester) async {
@@ -1190,7 +1190,7 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Add linked items'));
+      await tester.tap(find.byTooltip('Add linked items'));
       await tester.pumpAndSettle();
 
       // The selection page is on stage. The current item (id 1) and the
@@ -1216,7 +1216,7 @@ void main() {
       expect(find.text('No linked items'), findsOneWidget);
 
       // Open the selection page.
-      await tester.tap(find.widgetWithText(TextButton, 'Add linked items'));
+      await tester.tap(find.byTooltip('Add linked items'));
       await tester.pumpAndSettle();
 
       // Select Gamma and save.
