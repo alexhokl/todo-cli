@@ -18,12 +18,17 @@ tasks:
     cmd: go test ./...
 
   coverage:
-    desc: Test with coverage
-    cmd: go test --cover ./...
+    desc: Test with coverage (Go and Flutter)
+    cmds:
+      - go test --cover ./...
+      - cd mobile && flutter test --no-pub --coverage
 
   coverage-html:
-    desc: Test with coverage in HTML
-    cmd: go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html
+    desc: Test with coverage in HTML (Go and Flutter)
+    cmds:
+      - go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out -o coverage.html
+      - cd mobile && flutter test --no-pub --coverage
+      - cd mobile && genhtml coverage/lcov.info -o coverage/html
 
   open-coverage-html:
     desc: Test with coverage in HTML and open the HTML
@@ -67,18 +72,6 @@ tasks:
     cmds:
       - curl -o google/protobuf/empty.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/empty.proto
       - curl -o google/protobuf/timestamp.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/timestamp.proto
-
-  flutter-coverage:
-    desc: Run Flutter tests with coverage
-    dir: mobile
-    cmd: flutter test --no-pub --coverage
-
-  flutter-coverage-html:
-    desc: Generate Flutter coverage HTML report
-    dir: mobile
-    cmds:
-      - task: flutter-coverage
-      - genhtml coverage/lcov.info -o coverage/html
 
   mac:
     desc: Build macOS

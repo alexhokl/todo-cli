@@ -59,7 +59,7 @@ task proto                    # generate protobuf Go + Dart code
 ### Flutter / Dart
 
 ```bash
-task flutter-coverage         # or: cd mobile && flutter test --no-pub --coverage
+task coverage                 # or: go test --cover ./... ; cd mobile && flutter test --no-pub --coverage
 cd mobile && flutter test test/item_service_test.dart  # single test file
 dart fix --dry-run            # lint (dry run)
 task mac                      # flutter build macos
