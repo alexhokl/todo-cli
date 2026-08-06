@@ -167,6 +167,28 @@ class _FakeItemService extends ItemService {
     return _item ?? Item(id: id);
   }
 
+  final List<({int id, DateTime? dueDate})> updateItemDueDateCalls = [];
+  ItemException? updateItemDueDateError;
+
+  @override
+  Future<Item> updateItemDueDate({required int id, DateTime? dueDate}) async {
+    updateItemDueDateCalls.add((id: id, dueDate: dueDate));
+    if (updateItemDueDateError != null) {
+      throw updateItemDueDateError!;
+    }
+    // Reflect the change so a reload shows the new due-date state.
+    if (_item != null) {
+      final updated = _item!.deepCopy();
+      if (dueDate == null) {
+        updated.clearDueDate();
+      } else {
+        updated.dueDate = Timestamp.fromDateTime(dueDate);
+      }
+      _item = updated;
+    }
+    return _item ?? Item(id: id);
+  }
+
   final List<({int id, List<int> add, List<int> remove})> updateItemLinksCalls =
       [];
   ItemException? updateItemLinksError;
@@ -1161,6 +1183,138 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
       expect(find.textContaining('Failed to set effort'), findsOneWidget);
       expect(find.byType(SimpleDialog), findsNothing);
+    });
+  });
+
+  group('ItemDetailPage due date', () {
+    testWidgets('shows the no-due-date hint when the item has no due date',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 1, title: 'Alpha'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // The muted hint is shown and the edit button is present.
+      expect(find.text('No due date'), findsOneWidget);
+      expect(find.byTooltip('Edit due date'), findsOneWidget);
+      // The clear button is not shown when there is no due date.
+      expect(find.byTooltip('Clear due date'), findsNothing);
+    });
+
+    testWidgets('selecting a date calls updateItemDueDate and updates the section',
+        (tester) async {
+      final service = _FakeItemService(item: Item(id: 1, title: 'Alpha'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No due date'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Edit due date'));
+      await tester.pumpAndSettle();
+
+      // A date picker dialog is open. Confirm the default selection to set
+      // the due date to today.
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      // updateItemDueDate was called once with today's date (00:00 local).
+      expect(service.updateItemDueDateCalls, hasLength(1));
+      expect(service.updateItemDueDateCalls.single.id, 1);
+      final now = DateTime.now();
+      final dueDate = service.updateItemDueDateCalls.single.dueDate!;
+      expect(dueDate.year, now.year);
+      expect(dueDate.month, now.month);
+      expect(dueDate.day, now.day);
+      expect(dueDate.hour, 0);
+      expect(dueDate.minute, 0);
+
+      // The confirmation SnackBar is shown.
+      expect(find.text('Due date updated'), findsOneWidget);
+      // The section now shows the formatted date instead of the hint.
+      expect(find.text('No due date'), findsNothing);
+      final expected =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}'
+          '-${now.day.toString().padLeft(2, '0')}';
+      expect(find.text(expected), findsOneWidget);
+      // The clear button is now shown.
+      expect(find.byTooltip('Clear due date'), findsOneWidget);
+    });
+
+    testWidgets('tapping the clear button calls updateItemDueDate with null',
+        (tester) async {
+      final existing = DateTime(2024, 3, 15);
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha')
+          ..dueDate = Timestamp.fromDateTime(existing),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      // The formatted date is shown initially.
+      expect(find.text('2024-03-15'), findsOneWidget);
+      expect(find.byTooltip('Clear due date'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Clear due date'));
+      await tester.pumpAndSettle();
+
+      // updateItemDueDate was called with a null due date to clear it.
+      expect(service.updateItemDueDateCalls, hasLength(1));
+      expect(service.updateItemDueDateCalls.single.id, 1);
+      expect(service.updateItemDueDateCalls.single.dueDate, isNull);
+
+      // The confirmation SnackBar is shown.
+      expect(find.text('Due date cleared'), findsOneWidget);
+      // The section now shows the muted hint again.
+      expect(find.text('No due date'), findsOneWidget);
+      expect(find.text('2024-03-15'), findsNothing);
+      expect(find.byTooltip('Clear due date'), findsNothing);
+    });
+
+    testWidgets('a failed update shows an error SnackBar and reverts the change',
+        (tester) async {
+      final existing = DateTime(2024, 3, 15);
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Alpha')
+          ..dueDate = Timestamp.fromDateTime(existing),
+      )..updateItemDueDateError = ItemException('server says no');
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2024-03-15'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Clear due date'));
+      await tester.pumpAndSettle();
+
+      // The failure SnackBar is shown.
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining('Failed to update due date'), findsOneWidget);
+      // The optimistic change was reverted by the reload: the original date is
+      // shown again.
+      expect(find.text('2024-03-15'), findsOneWidget);
+      expect(service.updateItemDueDateCalls, hasLength(1));
+      // getItem re-fetched to revert: initial load + reload on failure.
+      expect(service.getItemCalls, [1, 1]);
+    });
+
+    testWidgets('dismissing the date picker makes no request', (tester) async {
+      final service = _FakeItemService(item: Item(id: 1, title: 'Alpha'));
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Edit due date'));
+      await tester.pumpAndSettle();
+
+      // Cancel the dialog.
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // No request was made and the hint is still shown.
+      expect(service.updateItemDueDateCalls, isEmpty);
+      expect(find.text('No due date'), findsOneWidget);
     });
   });
 

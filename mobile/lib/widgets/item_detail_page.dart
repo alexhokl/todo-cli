@@ -73,6 +73,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   bool _isCompleting = false;
   bool _isPrioritising = false;
   bool _isDeleting = false;
+  bool _updatingDueDate = false;
 
   /// All known labels (for the add-label picker), loaded alongside the item.
   List<Label>? _allLabels;
@@ -620,11 +621,28 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
               onTapLink: _onTapLink,
             ),
           const SizedBox(height: 16),
-          if (item.hasDueDate()) ...[
-            _sectionLabel(context, l10n.dueDate),
-            Text(_formatTimestamp(item.dueDate)),
-            const SizedBox(height: 16),
-          ],
+          _sectionLabelWithAction(
+            context,
+            text: l10n.dueDate,
+            icon: Icons.calendar_today,
+            tooltip: l10n.editDueDate,
+            buttonKey: const Key('edit-due-date'),
+            onPressed: _updatingDueDate ? null : _editDueDate,
+          ),
+          if (item.hasDueDate())
+            Row(
+              children: [
+                Expanded(child: Text(_formatDate(item.dueDate))),
+                _removeButton(
+                  key: const ValueKey('clear-due-date'),
+                  tooltip: l10n.clearDueDate,
+                  onPressed: _updatingDueDate ? null : _clearDueDate,
+                ),
+              ],
+            )
+          else
+            _mutedHint(context, l10n.noDueDate),
+          const SizedBox(height: 16),
           _sectionLabelWithAction(
             context,
             text: l10n.effort,
@@ -877,7 +895,8 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     required String text,
     required IconData icon,
     required String tooltip,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
+    Key? buttonKey,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -892,6 +911,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
             ),
           ),
           IconButton(
+            key: buttonKey,
             icon: Icon(icon, size: 24),
             tooltip: tooltip,
             onPressed: onPressed,
@@ -1009,7 +1029,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
   Widget _removeButton({
     required Key key,
     required String tooltip,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
   }) {
     return SizedBox(
       width: 32,
@@ -1146,11 +1166,82 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     }
   }
 
-  String _formatTimestamp(Timestamp ts) {
+  /// Opens the Material date picker and, on selection, sets the item's due
+  /// date via [ItemService.updateItemDueDate]. The time portion is normalised
+  /// to 00:00 local so the stored value is date-only. On failure a SnackBar is
+  /// shown and the item is reloaded to revert the optimistic change.
+  Future<void> _editDueDate() async {
+    final l10n = AppLocalizations.of(context)!;
+    final item = _item;
+    if (item == null) return;
+    final now = DateTime.now();
+    final initial = item.hasDueDate()
+        ? item.dueDate.toDateTime().toLocal()
+        : now;
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (selected == null || !mounted) return;
+    // Normalise to date-only (00:00 local).
+    final normalised = DateTime(selected.year, selected.month, selected.day);
+    setState(() {
+      _updatingDueDate = true;
+      _item = item.deepCopy()..dueDate = Timestamp.fromDateTime(normalised);
+    });
+    try {
+      await _service!.updateItemDueDate(
+        id: widget.itemId,
+        dueDate: normalised,
+      );
+      _showSnackbar(l10n.dueDateUpdated);
+      // Notify the parent list so the row's due-date icon refreshes.
+      widget.onItemChanged?.call();
+      unawaited(_load());
+    } on ItemException catch (e) {
+      _showSnackbar(l10n.failedToUpdateDueDate(e.message));
+      await _load();
+    } catch (e) {
+      _showSnackbar(l10n.failedToUpdateDueDate(e.toString()));
+      await _load();
+    } finally {
+      if (mounted) setState(() => _updatingDueDate = false);
+    }
+  }
+
+  /// Clears the item's due date via [ItemService.updateItemDueDate] (passing
+  /// null). On failure a SnackBar is shown and the item is reloaded to revert
+  /// the optimistic change.
+  Future<void> _clearDueDate() async {
+    final l10n = AppLocalizations.of(context)!;
+    final item = _item;
+    if (item == null) return;
+    setState(() {
+      _updatingDueDate = true;
+      _item = item.deepCopy()..clearDueDate();
+    });
+    try {
+      await _service!.updateItemDueDate(id: widget.itemId, dueDate: null);
+      _showSnackbar(l10n.dueDateCleared);
+      widget.onItemChanged?.call();
+      unawaited(_load());
+    } on ItemException catch (e) {
+      _showSnackbar(l10n.failedToUpdateDueDate(e.message));
+      await _load();
+    } catch (e) {
+      _showSnackbar(l10n.failedToUpdateDueDate(e.toString()));
+      await _load();
+    } finally {
+      if (mounted) setState(() => _updatingDueDate = false);
+    }
+  }
+
+  /// Formats a [Timestamp] as a date-only string (`yyyy-MM-dd`) in local time.
+  String _formatDate(Timestamp ts) {
     final dt = ts.toDateTime().toLocal();
-    String two(int v) => v.toString().padLeft(2, '0');
-    return '${dt.year}-${two(dt.month)}-${two(dt.day)} '
-        '${two(dt.hour)}:${two(dt.minute)}';
+    return '${dt.year}-${_two(dt.month)}-${_two(dt.day)}';
   }
 
   String _formatAuthorLine(Comment comment) {

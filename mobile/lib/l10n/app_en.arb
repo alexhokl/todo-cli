@@ -422,6 +422,36 @@
   "@dueDate": {
     "description": "Section label on the item details page for the due date"
   },
+  "editDueDate": "Edit due date",
+  "@editDueDate": {
+    "description": "Tooltip for the button on the item details page that opens the date picker to set or change the due date"
+  },
+  "clearDueDate": "Clear due date",
+  "@clearDueDate": {
+    "description": "Tooltip for the button on the item details page that clears an existing due date"
+  },
+  "noDueDate": "No due date",
+  "@noDueDate": {
+    "description": "Muted hint shown on the item details page when the item has no due date"
+  },
+  "dueDateUpdated": "Due date updated",
+  "@dueDateUpdated": {
+    "description": "Snackbar confirmation after an item's due date is set or changed"
+  },
+  "dueDateCleared": "Due date cleared",
+  "@dueDateCleared": {
+    "description": "Snackbar confirmation after an item's due date is cleared"
+  },
+  "failedToUpdateDueDate": "Failed to update due date: {error}",
+  "@failedToUpdateDueDate": {
+    "description": "SnackBar message shown when setting or clearing an item's due date fails",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "description": "The underlying error message"
+      }
+    }
+  },
   "priority": "Priority",
   "@priority": {
     "description": "Section label on the item details page for the priority"

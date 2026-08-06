@@ -1,4 +1,5 @@
 import 'package:grpc/grpc.dart';
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart';
 import 'package:todo/proto/item.pbgrpc.dart';
 
 /// Result of listing items, split into active and completed.
@@ -286,6 +287,25 @@ class ItemService {
 
     try {
       return await _client!.setItemEffort(request);
+    } on GrpcError catch (e) {
+      throw ItemException('gRPC error: ${e.message}', grpcError: e);
+    }
+  }
+
+  /// Set or clear an item's due date. Pass a [dueDate] to set it; pass null to
+  /// clear it. The time portion of [dueDate] is normalised to 00:00 local by
+  /// the caller (see `_editDueDate` on the details page); the server stores
+  /// the resulting [Timestamp] as-is.
+  Future<Item> updateItemDueDate({required int id, DateTime? dueDate}) async {
+    _ensureInitialized();
+
+    final request = UpdateItemDueDateRequest(id: id);
+    if (dueDate != null) {
+      request.dueDate = Timestamp.fromDateTime(dueDate);
+    }
+
+    try {
+      return await _client!.updateItemDueDate(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
