@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"io"
+	"math"
 	"testing"
 
+	"github.com/alexhokl/todo-cli/proto"
 	"github.com/spf13/cobra"
 )
 
@@ -72,6 +74,94 @@ func TestItemCommandsRequireService(t *testing.T) {
 			}
 		})
 	}
+}
+func TestToUint32Slice(t *testing.T) {
+	tests := []struct {
+		name    string
+		ids     []uint
+		expected []uint32
+		wantError bool
+	}{
+		{"empty", []uint{}, []uint32{}, false},
+		{"single in range", []uint{7}, []uint32{7}, false},
+		{"several in range", []uint{1, 2, 3}, []uint32{1, 2, 3}, false},
+		{"max uint32", []uint{math.MaxUint32}, []uint32{math.MaxUint32}, false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := toUint32Slice(test.ids)
+			if test.wantError {
+				if err == nil {
+					t.Fatalf("expected an error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expected no error but got %v", err)
+			}
+			if len(result) != len(test.expected) {
+				t.Fatalf("expected %v but got %v", test.expected, result)
+			}
+			for i, v := range result {
+				if v != test.expected[i] {
+					t.Errorf("at index %d expected %d but got %d", i, test.expected[i], v)
+				}
+			}
+		})
+	}
+
+	t.Run("out of range", func(t *testing.T) {
+		over, ok := maxUint32Plus1()
+		if !ok {
+			t.Skip("uint is 32-bit on this platform; overflow case is unreachable")
+		}
+		if _, err := toUint32Slice([]uint{over}); err == nil {
+			t.Errorf("expected an error but got none")
+		}
+	})
+
+	t.Run("mixed valid and out of range", func(t *testing.T) {
+		over, ok := maxUint32Plus1()
+		if !ok {
+			t.Skip("uint is 32-bit on this platform; overflow case is unreachable")
+		}
+		if _, err := toUint32Slice([]uint{1, over}); err == nil {
+			t.Errorf("expected an error but got none")
+		}
+	})
+}
+
+// maxUint32Plus1 returns a value greater than math.MaxUint32, or 0 and false
+// on 32-bit platforms where uint cannot hold such a value. Shared across the
+// cmd package tests so the overflow path is exercised only where it exists.
+func maxUint32Plus1() (uint, bool) {
+	if ^uint(0)>>32 == 0 {
+		return 0, false
+	}
+	return uint(math.MaxUint32) + 1, true
+}
+
+func TestBuildMoveItemRequestTopBottom(t *testing.T) {
+	t.Run("top anchor", func(t *testing.T) {
+		req := buildMoveItemRequest(7, moveItemOptions{Top: true}, false)
+		if req.GetId() != 7 {
+			t.Errorf("expected id 7 but got %d", req.GetId())
+		}
+		if top, ok := req.GetAnchor().(*proto.MoveItemRequest_Top); !ok || !top.Top {
+			t.Errorf("expected a Top anchor set to true but got %T %v", req.GetAnchor(), req.GetAnchor())
+		}
+	})
+
+	t.Run("bottom anchor", func(t *testing.T) {
+		req := buildMoveItemRequest(7, moveItemOptions{Bottom: true}, false)
+		if req.GetId() != 7 {
+			t.Errorf("expected id 7 but got %d", req.GetId())
+		}
+		if bottom, ok := req.GetAnchor().(*proto.MoveItemRequest_Bottom); !ok || !bottom.Bottom {
+			t.Errorf("expected a Bottom anchor set to true but got %T %v", req.GetAnchor(), req.GetAnchor())
+		}
+	})
 }
 
 func TestMoveItemFlagValidation(t *testing.T) {

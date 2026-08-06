@@ -171,3 +171,258 @@ func TestWriteItemLineWithDoneAndList(t *testing.T) {
 		t.Errorf("expected the done marker to be rendered but got %q", output)
 	}
 }
+
+func TestBuildUpdateItemLinksRequest(t *testing.T) {
+	t.Run("empty add and remove", func(t *testing.T) {
+		req, err := buildUpdateItemLinksRequest(7, updateItemOptions{})
+		if err != nil {
+			t.Fatalf("expected no error but got %v", err)
+		}
+		if req.GetId() != 7 {
+			t.Errorf("expected id 7 but got %d", req.GetId())
+		}
+		if len(req.GetAdd()) != 0 {
+			t.Errorf("expected no add ids but got %v", req.GetAdd())
+		}
+		if len(req.GetRemove()) != 0 {
+			t.Errorf("expected no remove ids but got %v", req.GetRemove())
+		}
+	})
+
+	t.Run("add only", func(t *testing.T) {
+		req, err := buildUpdateItemLinksRequest(7, updateItemOptions{AddLinks: []uint{3, 5}})
+		if err != nil {
+			t.Fatalf("expected no error but got %v", err)
+		}
+		if len(req.GetAdd()) != 2 || req.GetAdd()[0] != 3 || req.GetAdd()[1] != 5 {
+			t.Errorf("expected add [3 5] but got %v", req.GetAdd())
+		}
+		if len(req.GetRemove()) != 0 {
+			t.Errorf("expected no remove ids but got %v", req.GetRemove())
+		}
+	})
+
+	t.Run("remove only", func(t *testing.T) {
+		req, err := buildUpdateItemLinksRequest(7, updateItemOptions{RemoveLinks: []uint{2}})
+		if err != nil {
+			t.Fatalf("expected no error but got %v", err)
+		}
+		if len(req.GetRemove()) != 1 || req.GetRemove()[0] != 2 {
+			t.Errorf("expected remove [2] but got %v", req.GetRemove())
+		}
+		if len(req.GetAdd()) != 0 {
+			t.Errorf("expected no add ids but got %v", req.GetAdd())
+		}
+	})
+
+	t.Run("add and remove", func(t *testing.T) {
+		req, err := buildUpdateItemLinksRequest(7, updateItemOptions{AddLinks: []uint{3}, RemoveLinks: []uint{9}})
+		if err != nil {
+			t.Fatalf("expected no error but got %v", err)
+		}
+		if len(req.GetAdd()) != 1 || req.GetAdd()[0] != 3 {
+			t.Errorf("expected add [3] but got %v", req.GetAdd())
+		}
+		if len(req.GetRemove()) != 1 || req.GetRemove()[0] != 9 {
+			t.Errorf("expected remove [9] but got %v", req.GetRemove())
+		}
+	})
+
+	t.Run("out of range add id", func(t *testing.T) {
+		over, ok := maxUint32Plus1()
+		if !ok {
+			t.Skip("uint is 32-bit on this platform; overflow case is unreachable")
+		}
+		_, err := buildUpdateItemLinksRequest(7, updateItemOptions{AddLinks: []uint{over}})
+		if err == nil {
+			t.Fatalf("expected an error but got none")
+		}
+	})
+
+	t.Run("out of range remove id", func(t *testing.T) {
+		over, ok := maxUint32Plus1()
+		if !ok {
+			t.Skip("uint is 32-bit on this platform; overflow case is unreachable")
+		}
+		_, err := buildUpdateItemLinksRequest(7, updateItemOptions{RemoveLinks: []uint{over}})
+		if err == nil {
+			t.Fatalf("expected an error but got none")
+		}
+	})
+}
+
+func TestJoinBlockerDescriptions(t *testing.T) {
+	tests := []struct {
+		name     string
+		blockers []*proto.Blocker
+		expected string
+	}{
+		{"none", nil, "-"},
+		{"one", []*proto.Blocker{{Description: "waiting"}}, "waiting"},
+		{"several", []*proto.Blocker{{Description: "waiting"}, {Description: "needs review"}}, "waiting; needs review"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := joinBlockerDescriptions(&proto.Item{Blockers: test.blockers})
+			if result != test.expected {
+				t.Errorf("expected %q but got %q", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestJoinLinkedItemIDs(t *testing.T) {
+	tests := []struct {
+		name     string
+		linked   []*proto.Item
+		expected string
+	}{
+		{"none", nil, "-"},
+		{"one", []*proto.Item{{Id: 3}}, "3"},
+		{"several", []*proto.Item{{Id: 3}, {Id: 5}}, "3,5"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := joinLinkedItemIDs(&proto.Item{LinkedItems: test.linked})
+			if result != test.expected {
+				t.Errorf("expected %q but got %q", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestCommentCount(t *testing.T) {
+	tests := []struct {
+		name     string
+		comments []*proto.Comment
+		expected string
+	}{
+		{"none", nil, "-"},
+		{"one", []*proto.Comment{{Id: 1}}, "1"},
+		{"several", []*proto.Comment{{Id: 1}, {Id: 2}}, "2"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := commentCount(&proto.Item{Comments: test.comments})
+			if result != test.expected {
+				t.Errorf("expected %q but got %q", test.expected, result)
+			}
+		})
+	}
+}
+
+func TestEffortName(t *testing.T) {
+	t.Run("nil effort", func(t *testing.T) {
+		if got := effortName(&proto.Item{Effort: nil}); got != "-" {
+			t.Errorf("expected %q but got %q", "-", got)
+		}
+	})
+
+	t.Run("named effort", func(t *testing.T) {
+		item := &proto.Item{Effort: &proto.Effort{Id: 1, Name: "high"}}
+		if got := effortName(item); got != "high" {
+			t.Errorf("expected %q but got %q", "high", got)
+		}
+	})
+}
+
+func TestWriteItemLineFull(t *testing.T) {
+	var buffer strings.Builder
+	listID := uint32(2)
+	item := &proto.Item{
+		Id:          7,
+		Title:       "ship it",
+		Done:        true,
+		ListId:      &listID,
+		Effort:      &proto.Effort{Id: 1, Name: "high"},
+		Labels:      []*proto.Label{{Name: "urgent"}},
+		Blockers:    []*proto.Blocker{{Id: 1, Description: "waiting"}},
+		Comments:    []*proto.Comment{{Id: 1}, {Id: 2}},
+		LinkedItems: []*proto.Item{{Id: 3}, {Id: 5}},
+	}
+
+	if err := writeItemLine(&buffer, item); err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+
+	output := buffer.String()
+	for _, want := range []string{
+		"ship it (",
+		"id 7",
+		"labels urgent",
+		"effort high",
+		"blockers 1",
+		"comments 2",
+		"linked 3,5",
+		"list 2",
+		"done",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected %q in the output but it is missing in %q", want, output)
+		}
+	}
+}
+
+func TestWriteItemTableFullRow(t *testing.T) {
+	var buffer strings.Builder
+	listID := uint32(2)
+	due := timestamppb.New(time.Date(2026, time.August, 15, 0, 0, 0, 0, time.UTC))
+	items := []*proto.Item{
+		{
+			Id:          1,
+			Title:       "ship it",
+			DueDate:     due,
+			ListId:      &listID,
+			Effort:      &proto.Effort{Id: 1, Name: "high"},
+			Labels:      []*proto.Label{{Name: "urgent"}},
+			Blockers:    []*proto.Blocker{{Id: 1, Description: "waiting"}},
+			Comments:    []*proto.Comment{{Id: 1}, {Id: 2}},
+			LinkedItems: []*proto.Item{{Id: 3}, {Id: 5}},
+		},
+	}
+
+	if err := writeItemTable(&buffer, items); err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+
+	output := buffer.String()
+	// The tabwriter expands tabs to spaces, so assert the header labels and
+	// the row's content are present rather than an exact tab-delimited line.
+	for _, want := range []string{
+		"ID",
+		"TITLE",
+		"LABELS",
+		"EFFORT",
+		"BLOCKERS",
+		"COMMENTS",
+		"LINKED",
+		"LIST",
+		"DUE",
+		"ship it",
+		"urgent",
+		"high",
+		"waiting",
+		"3,5",
+		"2026-08-15",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("expected %q in the output but it is missing in %q", want, output)
+		}
+	}
+}
+
+func TestWriteItemTableWriteError(t *testing.T) {
+	items := []*proto.Item{{Id: 1, Title: "a"}}
+	if err := writeItemTable(failingWriter{}, items); err == nil {
+		t.Errorf("expected a write error but got none")
+	}
+}
+
+func TestWriteItemLineWriteError(t *testing.T) {
+	if err := writeItemLine(failingWriter{}, &proto.Item{Id: 1, Title: "a"}); err == nil {
+		t.Errorf("expected a write error but got none")
+	}
+}

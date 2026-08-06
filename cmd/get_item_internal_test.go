@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alexhokl/todo-cli/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -139,6 +140,130 @@ func TestJoinLinkedItemSummaries(t *testing.T) {
 	empty := joinLinkedItemSummaries(&proto.Item{})
 	if empty != "" {
 		t.Errorf("expected an empty string for no linked items but got %q", empty)
+	}
+}
+
+func TestFormatPriority(t *testing.T) {
+	tests := []struct {
+		name     string
+		priority float64
+		expected string
+	}{
+		{"whole number", 2.0, "2"},
+		{"one decimal", 2.5, "2.5"},
+		{"two decimals", 2.25, "2.25"},
+		{"zero", 0.0, "0"},
+		{"max uint32", 4294967295.0, "4294967295"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := formatPriority(test.priority); got != test.expected {
+				t.Errorf("expected %q but got %q", test.expected, got)
+			}
+		})
+	}
+}
+
+func TestWriteItemDetailRendersDueDate(t *testing.T) {
+	var buf bytes.Buffer
+	due := timestamppb.New(time.Date(2026, time.August, 15, 0, 0, 0, 0, time.UTC))
+	if err := writeItemDetail(&buf, &proto.Item{Id: 1, Title: "due soon", DueDate: due, Priority: floatPtr(1.0)}); err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "Due:") {
+		t.Errorf("expected a Due: row in %q", out)
+	}
+	if !strings.Contains(out, "2026-08-15") {
+		t.Errorf("expected the formatted due date in %q", out)
+	}
+}
+
+func TestWriteCommentDetailEmptyCreatedAndAuthor(t *testing.T) {
+	var buf bytes.Buffer
+	item := &proto.Item{
+		Id: 1,
+		Title: "discussed",
+		Comments: []*proto.Comment{
+			{Id: 1, Body: "no timestamp", Author: "alex"},
+			{Id: 2, Body: "anonymous", Author: "", CreatedAt: timestamppb.Now()},
+		},
+	}
+	if err := writeCommentDetail(&buf, item); err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "Comments (2):") {
+		t.Errorf("expected a Comments header in %q", out)
+	}
+	if !strings.Contains(out, "no timestamp") || !strings.Contains(out, "alex") {
+		t.Errorf("expected the first comment body and author in %q", out)
+	}
+	if !strings.Contains(out, "anonymous") {
+		t.Errorf("expected the second comment body in %q", out)
+	}
+}
+
+func TestWriteBlockerDetailEmpty(t *testing.T) {
+	var buf bytes.Buffer
+	if err := writeBlockerDetail(&buf, &proto.Item{Id: 1, Title: "bare"}); err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if buf.Len() != 0 {
+		t.Errorf("expected no output for an item with no blockers but got %q", buf.String())
+	}
+}
+
+func TestWriteCommentDetailEmpty(t *testing.T) {
+	var buf bytes.Buffer
+	if err := writeCommentDetail(&buf, &proto.Item{Id: 1, Title: "bare"}); err != nil {
+		t.Fatalf("expected no error but got %v", err)
+	}
+	if buf.Len() != 0 {
+		t.Errorf("expected no output for an item with no comments but got %q", buf.String())
+	}
+}
+
+// failingWriter is an io.Writer that always returns an error, used to
+// exercise the error-return branches of the output helpers.
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) {
+	return 0, errWriteFailed
+}
+
+var errWriteFailed = bytesErr("write failed")
+
+type bytesErr string
+
+func (e bytesErr) Error() string { return string(e) }
+
+func TestWriteItemDetailWriteError(t *testing.T) {
+	if err := writeItemDetail(failingWriter{}, &proto.Item{Id: 1, Title: "a"}); err == nil {
+		t.Errorf("expected a write error but got none")
+	}
+}
+
+func TestWriteBlockerDetailWriteError(t *testing.T) {
+	item := &proto.Item{
+		Id:       1,
+		Title:    "a",
+		Blockers: []*proto.Blocker{{Id: 1, Description: "waiting"}},
+	}
+	if err := writeBlockerDetail(failingWriter{}, item); err == nil {
+		t.Errorf("expected a write error but got none")
+	}
+}
+
+func TestWriteCommentDetailWriteError(t *testing.T) {
+	item := &proto.Item{
+		Id:       1,
+		Title:    "a",
+		Comments: []*proto.Comment{{Id: 1, Body: "note", Author: "alex", CreatedAt: timestamppb.Now()}},
+	}
+	if err := writeCommentDetail(failingWriter{}, item); err == nil {
+		t.Errorf("expected a write error but got none")
 	}
 }
 

@@ -97,6 +97,63 @@ func TestBuildCreateItemRequest(t *testing.T) {
 			t.Errorf("expected no list id but got %v", req.ListId)
 		}
 	})
+
+	t.Run("effort set", func(t *testing.T) {
+		req, err := buildCreateItemRequest(
+			[]string{"a"},
+			createItemOptions{Effort: "high"},
+			false,
+		)
+		if err != nil {
+			t.Fatalf("expected no error but got %v", err)
+		}
+		if req.Effort == nil || *req.Effort != "high" {
+			t.Errorf("expected effort %q but got %v", "high", req.Effort)
+		}
+	})
+
+	t.Run("effort empty leaves effort absent", func(t *testing.T) {
+		req, err := buildCreateItemRequest(
+			[]string{"a"},
+			createItemOptions{Effort: ""},
+			false,
+		)
+		if err != nil {
+			t.Fatalf("expected no error but got %v", err)
+		}
+		if req.Effort != nil {
+			t.Errorf("expected no effort but got %v", req.Effort)
+		}
+	})
+
+	t.Run("link item ids set", func(t *testing.T) {
+		req, err := buildCreateItemRequest(
+			[]string{"a"},
+			createItemOptions{LinkItemIDs: []uint{3, 5}},
+			false,
+		)
+		if err != nil {
+			t.Fatalf("expected no error but got %v", err)
+		}
+		if len(req.GetLinkItemIds()) != 2 || req.GetLinkItemIds()[0] != 3 || req.GetLinkItemIds()[1] != 5 {
+			t.Errorf("expected link ids [3 5] but got %v", req.GetLinkItemIds())
+		}
+	})
+
+	t.Run("out of range link item id", func(t *testing.T) {
+		over, ok := maxUint32Plus1()
+		if !ok {
+			t.Skip("uint is 32-bit on this platform; overflow case is unreachable")
+		}
+		_, err := buildCreateItemRequest(
+			[]string{"a"},
+			createItemOptions{LinkItemIDs: []uint{over}},
+			false,
+		)
+		if err == nil {
+			t.Fatalf("expected an error but got none")
+		}
+	})
 }
 
 func TestBuildMoveItemRequest(t *testing.T) {
