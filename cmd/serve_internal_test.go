@@ -88,8 +88,7 @@ func TestBindEnvironmentVariablesToServeOptions(t *testing.T) {
 			flags.StringVar(&opts.TailscaleAuthKey, "ts-auth-key", "", "")
 			flags.StringVar(&opts.TailscaleStateDirectory, "ts-state-dir", "./tailscale-state", "")
 
-			cmd.SetArgs(test.args)
-			if err := cmd.Execute(); err != nil {
+			if err := cmd.ParseFlags(test.args); err != nil {
 				t.Fatalf("failed to parse flags: %v", err)
 			}
 
@@ -155,8 +154,7 @@ func TestBindEnvironmentVariablesAppliesTailscaleOptions(t *testing.T) {
 			flags.StringVar(&opts.TailscaleAuthKey, "ts-auth-key", "", "")
 			flags.StringVar(&opts.TailscaleStateDirectory, "ts-state-dir", "./tailscale-state", "")
 
-			cmd.SetArgs(test.args)
-			if err := cmd.Execute(); err != nil {
+			if err := cmd.ParseFlags(test.args); err != nil {
 				t.Fatalf("failed to parse flags: %v", err)
 			}
 
