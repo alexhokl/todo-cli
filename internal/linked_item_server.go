@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/alexhokl/todo-cli/database"
 	"github.com/alexhokl/todo-cli/proto"
@@ -44,6 +45,21 @@ func (s *ItemServer) UpdateItemLinks(ctx context.Context, req *proto.UpdateItemL
 	result, err := toProtoItem(*item)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(req.GetAdd()) > 0 {
+		slog.InfoContext(ctx, "items linked",
+			slog.Uint64("item_id", uint64(req.GetId())),
+			slog.String("item_title", item.Title),
+			slog.Any("linked_item_ids", req.GetAdd()),
+		)
+	}
+	if len(req.GetRemove()) > 0 {
+		slog.InfoContext(ctx, "items unlinked",
+			slog.Uint64("item_id", uint64(req.GetId())),
+			slog.String("item_title", item.Title),
+			slog.Any("linked_item_ids", req.GetRemove()),
+		)
 	}
 
 	endSpanOk(span)

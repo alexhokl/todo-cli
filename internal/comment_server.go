@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/alexhokl/todo-cli/database"
 	"github.com/alexhokl/todo-cli/proto"
@@ -66,6 +67,11 @@ func (s *ItemServer) CreateComment(ctx context.Context, req *proto.CreateComment
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "comment created",
+		slog.Uint64("comment_id", uint64(comment.ID)),
+		slog.Uint64("item_id", uint64(req.GetItemId())),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -95,6 +101,10 @@ func (s *ItemServer) UpdateComment(ctx context.Context, req *proto.UpdateComment
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "comment updated",
+		slog.Uint64("comment_id", uint64(comment.ID)),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -117,6 +127,10 @@ func (s *ItemServer) DeleteComment(ctx context.Context, req *proto.DeleteComment
 	if err := database.DeleteComment(s.DB.WithContext(ctx), userID, uint(req.GetId())); err != nil {
 		return nil, mapDatabaseError(err)
 	}
+
+	slog.InfoContext(ctx, "comment deleted",
+		slog.Uint64("comment_id", uint64(req.GetId())),
+	)
 
 	endSpanOk(span)
 

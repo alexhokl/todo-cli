@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/alexhokl/todo-cli/database"
 	"github.com/alexhokl/todo-cli/proto"
@@ -61,6 +62,11 @@ func (s *ItemServer) CreateLabel(ctx context.Context, req *proto.CreateLabelRequ
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "label created",
+		slog.Uint64("label_id", uint64(label.ID)),
+		slog.String("label_name", label.Name),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -95,6 +101,11 @@ func (s *ItemServer) RenameLabel(ctx context.Context, req *proto.RenameLabelRequ
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "label renamed",
+		slog.Uint64("label_id", uint64(label.ID)),
+		slog.String("label_name", label.Name),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -117,6 +128,10 @@ func (s *ItemServer) DeleteLabel(ctx context.Context, req *proto.DeleteLabelRequ
 	if err := database.DeleteLabel(s.DB.WithContext(ctx), userID, uint(req.GetId())); err != nil {
 		return nil, mapDatabaseError(err)
 	}
+
+	slog.InfoContext(ctx, "label deleted",
+		slog.Uint64("label_id", uint64(req.GetId())),
+	)
 
 	endSpanOk(span)
 
@@ -149,6 +164,21 @@ func (s *ItemServer) UpdateItemLabels(ctx context.Context, req *proto.UpdateItem
 	)
 	if err != nil {
 		return nil, mapDatabaseError(err)
+	}
+
+	if len(req.GetAdd()) > 0 {
+		slog.InfoContext(ctx, "labels added to item",
+			slog.Uint64("item_id", uint64(req.GetId())),
+			slog.String("item_title", item.Title),
+			slog.Any("labels", req.GetAdd()),
+		)
+	}
+	if len(req.GetRemove()) > 0 {
+		slog.InfoContext(ctx, "labels removed from item",
+			slog.Uint64("item_id", uint64(req.GetId())),
+			slog.String("item_title", item.Title),
+			slog.Any("labels", req.GetRemove()),
+		)
 	}
 
 	result, err := toProtoItem(*item)

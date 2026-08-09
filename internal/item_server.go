@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"math"
 	"time"
 
@@ -201,6 +202,11 @@ func (s *ItemServer) CreateItem(ctx context.Context, req *proto.CreateItemReques
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "item created",
+		slog.Uint64("item_id", uint64(item.ID)),
+		slog.String("item_title", item.Title),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -254,6 +260,10 @@ func (s *ItemServer) DeleteItem(ctx context.Context, req *proto.DeleteItemReques
 		return nil, mapDatabaseError(err)
 	}
 
+	slog.InfoContext(ctx, "item deleted",
+		slog.Uint64("item_id", uint64(req.GetId())),
+	)
+
 	endSpanOk(span)
 	return &emptypb.Empty{}, nil
 }
@@ -302,6 +312,11 @@ func (s *ItemServer) MoveItem(ctx context.Context, req *proto.MoveItemRequest) (
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "item moved",
+		slog.Uint64("item_id", uint64(item.ID)),
+		slog.String("item_title", item.Title),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -337,6 +352,11 @@ func (s *ItemServer) UpdateItemDueDate(ctx context.Context, req *proto.UpdateIte
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "item due date updated",
+		slog.Uint64("item_id", uint64(item.ID)),
+		slog.String("item_title", item.Title),
+	)
+
 	endSpanOk(span)
 	return result, nil
 }
@@ -366,6 +386,11 @@ func (s *ItemServer) UpdateItem(ctx context.Context, req *proto.UpdateItemReques
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "item updated",
+		slog.Uint64("item_id", uint64(item.ID)),
+		slog.String("item_title", item.Title),
+	)
+
 	endSpanOk(span)
 	return result, nil
 }
@@ -393,6 +418,12 @@ func (s *ItemServer) SetItemDone(ctx context.Context, req *proto.SetItemDoneRequ
 	if err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "item done state changed",
+		slog.Uint64("item_id", uint64(item.ID)),
+		slog.String("item_title", item.Title),
+		slog.Bool("done", req.GetDone()),
+	)
 
 	endSpanOk(span)
 

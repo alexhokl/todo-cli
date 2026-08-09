@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/alexhokl/todo-cli/database"
 	"github.com/alexhokl/todo-cli/proto"
@@ -57,6 +58,11 @@ func (s *ItemServer) CreateEffort(ctx context.Context, req *proto.CreateEffortRe
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "effort created",
+		slog.Uint64("effort_id", uint64(effort.ID)),
+		slog.String("effort_name", effort.Name),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -86,6 +92,11 @@ func (s *ItemServer) RenameEffort(ctx context.Context, req *proto.RenameEffortRe
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "effort renamed",
+		slog.Uint64("effort_id", uint64(effort.ID)),
+		slog.String("effort_name", effort.Name),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -108,6 +119,10 @@ func (s *ItemServer) DeleteEffort(ctx context.Context, req *proto.DeleteEffortRe
 	if err := database.DeleteEffort(s.DB.WithContext(ctx), userID, uint(req.GetId())); err != nil {
 		return nil, mapDatabaseError(err)
 	}
+
+	slog.InfoContext(ctx, "effort deleted",
+		slog.Uint64("effort_id", uint64(req.GetId())),
+	)
 
 	endSpanOk(span)
 
@@ -138,6 +153,12 @@ func (s *ItemServer) SetItemEffort(ctx context.Context, req *proto.SetItemEffort
 	if err != nil {
 		return nil, err
 	}
+
+	slog.InfoContext(ctx, "item effort set",
+		slog.Uint64("item_id", uint64(item.ID)),
+		slog.String("item_title", item.Title),
+		slog.String("effort", req.GetEffort()),
+	)
 
 	endSpanOk(span)
 

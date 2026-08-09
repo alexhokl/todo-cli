@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/alexhokl/todo-cli/database"
 	"github.com/alexhokl/todo-cli/proto"
@@ -65,6 +66,12 @@ func (s *ItemServer) CreateBlocker(ctx context.Context, req *proto.CreateBlocker
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "blocker created",
+		slog.Uint64("blocker_id", uint64(blocker.ID)),
+		slog.Uint64("item_id", uint64(req.GetItemId())),
+		slog.String("description", blocker.Description),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -94,6 +101,11 @@ func (s *ItemServer) UpdateBlocker(ctx context.Context, req *proto.UpdateBlocker
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "blocker updated",
+		slog.Uint64("blocker_id", uint64(blocker.ID)),
+		slog.String("description", blocker.Description),
+	)
+
 	endSpanOk(span)
 
 	return result, nil
@@ -116,6 +128,10 @@ func (s *ItemServer) DeleteBlocker(ctx context.Context, req *proto.DeleteBlocker
 	if err := database.DeleteBlocker(s.DB.WithContext(ctx), userID, uint(req.GetId())); err != nil {
 		return nil, mapDatabaseError(err)
 	}
+
+	slog.InfoContext(ctx, "blocker deleted",
+		slog.Uint64("blocker_id", uint64(req.GetId())),
+	)
 
 	endSpanOk(span)
 
