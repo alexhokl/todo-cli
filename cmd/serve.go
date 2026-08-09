@@ -121,9 +121,11 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Initialise OpenTelemetry (TracerProvider + MeterProvider + LoggerProvider
-	// + default slog). This must happen before any slog calls so all log output
-	// is routed through the OTLP log exporter and carries trace correlation
-	// fields.
+	// + default slog + application metrics). This must happen before any slog
+	// calls so all log output is routed through the OTLP log exporter and
+	// carries trace correlation fields. Telemetry is exported to GCP's
+	// managed collector (telemetry.googleapis.com) authenticated via
+	// Application Default Credentials; see internal.SetupOTel.
 	ctx := cmd.Context()
 	if ctx == nil {
 		ctx = context.Background()

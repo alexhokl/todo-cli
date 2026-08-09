@@ -2,9 +2,8 @@ package internal
 
 import (
 	"context"
-	"log/slog"
 
-	"go.opentelemetry.io/otel/trace"
+	"github.com/alexhokl/helper/telemetry"
 	"google.golang.org/grpc"
 )
 
@@ -17,16 +16,5 @@ func ErrorLoggingInterceptor(
 	info *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (any, error) {
-	// Call the actual RPC handler
-	resp, err := handler(ctx, req)
-	if err != nil {
-		recordSpanError(trace.SpanFromContext(ctx), err)
-		slog.ErrorContext(
-			ctx,
-			"gRPC error",
-			slog.String("method", info.FullMethod),
-			slog.String("error", err.Error()),
-		)
-	}
-	return resp, err
+	return telemetry.ErrorLoggingUnaryInterceptor(ctx, req, info, handler)
 }

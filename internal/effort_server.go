@@ -32,6 +32,8 @@ func (s *ItemServer) ListEfforts(ctx context.Context, _ *proto.ListEffortsReques
 
 	endSpanOk(span)
 
+	recordRecordsReturned(ctx, "item.ItemService/ListEfforts", "effort", len(result))
+
 	return &proto.ListEffortsResponse{Efforts: result}, nil
 }
 

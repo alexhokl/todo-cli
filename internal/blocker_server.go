@@ -36,6 +36,8 @@ func (s *ItemServer) ListBlockers(ctx context.Context, req *proto.ListBlockersRe
 
 	endSpanOk(span)
 
+	recordRecordsReturned(ctx, "item.ItemService/ListBlockers", "blocker", len(result))
+
 	return &proto.ListBlockersResponse{Blockers: result}, nil
 }
 

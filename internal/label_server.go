@@ -32,6 +32,8 @@ func (s *ItemServer) ListLabels(ctx context.Context, _ *proto.ListLabelsRequest)
 
 	endSpanOk(span)
 
+	recordRecordsReturned(ctx, "item.ItemService/ListLabels", "label", len(result))
+
 	return &proto.ListLabelsResponse{Labels: result}, nil
 }
 

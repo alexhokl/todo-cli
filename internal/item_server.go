@@ -77,6 +77,8 @@ func (s *ItemServer) ListItems(ctx context.Context, req *proto.ListItemsRequest)
 
 		endSpanOk(span)
 
+		recordRecordsReturned(ctx, "item.ItemService/ListItems", "item", len(activeItems)+len(completedItems))
+
 		return &proto.ListItemsResponse{
 			Active:    activeItems,
 			Completed: completedItems,
@@ -93,6 +95,8 @@ func (s *ItemServer) ListItems(ctx context.Context, req *proto.ListItemsRequest)
 	}
 
 	endSpanOk(span)
+
+	recordRecordsReturned(ctx, "item.ItemService/ListItems", "item", len(activeItems))
 
 	return &proto.ListItemsResponse{Active: activeItems}, nil
 }

@@ -37,6 +37,8 @@ func (s *ItemServer) ListComments(ctx context.Context, req *proto.ListCommentsRe
 
 	endSpanOk(span)
 
+	recordRecordsReturned(ctx, "item.ItemService/ListComments", "comment", len(result))
+
 	return &proto.ListCommentsResponse{Comments: result}, nil
 }
 

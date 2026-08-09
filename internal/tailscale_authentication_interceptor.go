@@ -50,6 +50,7 @@ func (i *TailscaleAuthenticationInterceptor) Intercept(
 	p, ok := peer.FromContext(ctx)
 	if !ok {
 		slog.ErrorContext(ctx, "could not get peer from context")
+		recordAuthAttempt(ctx, "tailscale", "failure")
 		return nil, status.Errorf(codes.Internal, "an issue with tailscale")
 	}
 
@@ -61,16 +62,24 @@ func (i *TailscaleAuthenticationInterceptor) Intercept(
 			slog.String("addr", p.Addr.String()),
 			slog.String("error", err.Error()),
 		)
+		recordAuthAttempt(ctx, "tailscale", "failure")
 		return nil, status.Errorf(codes.Internal, "an issue with tailscale")
 	}
 
 	userID, err := i.resolveUserID(ctx, ipAddress)
 	if err != nil {
+		recordAuthAttempt(ctx, "tailscale", "failure")
 		return nil, err
 	}
 
 	ctx = context.WithValue(ctx, contextKeyUser{}, userID)
-	return handler(ctx, req)
+	resp, err := handler(ctx, req)
+	if err != nil {
+		recordAuthAttempt(ctx, "tailscale", "failure")
+	} else {
+		recordAuthAttempt(ctx, "tailscale", "success")
+	}
+	return resp, err
 }
 
 // InterceptStream is a streaming interceptor that authenticates requests using
@@ -86,6 +95,7 @@ func (i *TailscaleAuthenticationInterceptor) InterceptStream(
 	p, ok := peer.FromContext(ctx)
 	if !ok {
 		slog.ErrorContext(ctx, "could not get peer from context")
+		recordAuthAttempt(ctx, "tailscale", "failure")
 		return status.Errorf(codes.Internal, "an issue with tailscale")
 	}
 
@@ -97,17 +107,25 @@ func (i *TailscaleAuthenticationInterceptor) InterceptStream(
 			slog.String("addr", p.Addr.String()),
 			slog.String("error", err.Error()),
 		)
+		recordAuthAttempt(ctx, "tailscale", "failure")
 		return status.Errorf(codes.Internal, "an issue with tailscale")
 	}
 
 	userID, err := i.resolveUserID(ctx, ipAddress)
 	if err != nil {
+		recordAuthAttempt(ctx, "tailscale", "failure")
 		return err
 	}
 
 	ctx = context.WithValue(ctx, contextKeyUser{}, userID)
 	wrapped := &wrappedServerStream{ServerStream: ss, ctx: ctx}
-	return handler(srv, wrapped)
+	err = handler(srv, wrapped)
+	if err != nil {
+		recordAuthAttempt(ctx, "tailscale", "failure")
+	} else {
+		recordAuthAttempt(ctx, "tailscale", "success")
+	}
+	return err
 }
 
 // resolveUserID maps a caller's IP address to a database.User ID, either from
