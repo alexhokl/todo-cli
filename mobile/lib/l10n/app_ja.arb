@@ -134,5 +134,8 @@
   "madeLowPriority": "優先度リストの末尾に移動しました",
   "failedToMakeTopPriority": "最優先への設定に失敗しました: {error}",
   "failedToMakeLowPriority": "最低優先への設定に失敗しました: {error}",
-  "refresh": "更新"
+  "refresh": "更新",
+  "display": "表示",
+  "showLabelsInItemList": "アイテム一覧にラベルを表示",
+  "showLabelsInItemListDescription": "オフにすると、アイテム一覧のラベルチップが非表示になります。"
 }

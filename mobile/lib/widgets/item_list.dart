@@ -14,10 +14,17 @@ import 'package:todo/widgets/status_icon.dart';
 /// the page builds one lazily from the persisted backend configuration
 /// (the same seam used by [LabelsPage] and [CommentsPage]). Tests inject a
 /// fake service so they never touch the network or shared preferences.
+///
+/// [showLabels] overrides the persisted "show labels in item list" setting
+/// for tests; when null (production) the value is loaded from
+/// [SettingsPage.loadShowLabels]. [refreshShowLabels] re-reads the persisted
+/// value so changes made on [SettingsPage] take effect immediately on the
+/// already-mounted list.
 class ItemList extends StatefulWidget {
-  const ItemList({super.key, this.service});
+  const ItemList({super.key, this.service, this.showLabels});
 
   final ItemService? service;
+  final bool? showLabels;
 
   @override
   State<ItemList> createState() => ItemListState();
@@ -35,6 +42,11 @@ class ItemListState extends State<ItemList> {
   bool _isLoading = true;
   ItemService? _service;
 
+  /// Whether to render label chips under each item. Loaded from the
+  /// persisted setting on init; tests inject [widget.showLabels] to avoid
+  /// touching shared preferences.
+  bool _showLabels = SettingsPage.defaultShowLabels;
+
   /// All known labels (for the label filter bar), loaded alongside the items.
   List<Label> _allLabels = const [];
 
@@ -51,8 +63,46 @@ class ItemListState extends State<ItemList> {
   void initState() {
     super.initState();
     _service = widget.service;
+    _loadShowLabels();
     _load();
     _loadLabels();
+  }
+
+  /// Resolves the label-visibility setting: the injected [widget.showLabels]
+  /// wins (tests), otherwise the persisted value is read. A failure reading
+  /// the persisted value falls back to the default rather than surfacing an
+  /// error, since label visibility is non-critical. Runs in [initState]
+  /// before the first build so the default is correct without a frame of
+  /// flicker.
+  Future<void> _loadShowLabels() async {
+    if (widget.showLabels != null) {
+      _showLabels = widget.showLabels!;
+      return;
+    }
+    try {
+      final value = await SettingsPage.loadShowLabels();
+      if (mounted) setState(() => _showLabels = value);
+    } catch (_) {
+      // Keep the field default if the persisted setting can't be read.
+    }
+  }
+
+  /// Re-reads the persisted label-visibility setting and rebuilds. Public so
+  /// [HomePage] can drive it via a [GlobalKey] after the user returns from
+  /// [SettingsPage], giving the toggle an immediate effect on the mounted
+  /// list without a full reload.
+  Future<void> refreshShowLabels() async {
+    if (widget.showLabels != null) {
+      // Tests inject an explicit value; ignore persisted changes so the
+      // harness stays deterministic.
+      return;
+    }
+    try {
+      final value = await SettingsPage.loadShowLabels();
+      if (mounted) setState(() => _showLabels = value);
+    } catch (_) {
+      // Keep the current value if the persisted setting can't be read.
+    }
   }
 
   Future<void> _load() async {
@@ -384,7 +434,7 @@ class ItemListState extends State<ItemList> {
     required bool reorderable,
   }) {
     final statusIcon = statusIconFor(item);
-    final labelChips = item.labels.isEmpty
+    final labelChips = (!_showLabels || item.labels.isEmpty)
         ? null
         : Wrap(
             spacing: 4,

@@ -78,7 +78,7 @@ class _HomePageState extends State<HomePage> {
             ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'labels') {
                 Navigator.push(
                   context,
@@ -90,10 +90,14 @@ class _HomePageState extends State<HomePage> {
                   MaterialPageRoute(builder: (_) => const EffortsPage()),
                 );
               } else if (value == 'settings') {
-                Navigator.push(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SettingsPage()),
                 );
+                // Re-read the persisted label-visibility setting so a toggle
+                // made on the settings page takes effect on the already-mounted
+                // list without a manual refresh.
+                _itemListKey.currentState?.refreshShowLabels();
               }
             },
             itemBuilder: (context) => [

@@ -1,6 +1,8 @@
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
@@ -96,15 +98,24 @@ class _FakeItemService extends ItemService {
   Future<void> dispose() async {}
 }
 
-Widget _harness({required _FakeItemService service}) {
+Widget _harness({required _FakeItemService service, bool? showLabels}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(body: ItemList(service: service)),
+    home: Scaffold(body: ItemList(service: service, showLabels: showLabels)),
   );
 }
 
 void main() {
+  // The item list reads the persisted label-visibility setting in initState
+  // when no override is injected, so install an in-memory
+  // SharedPreferencesAsync backend for every test (defaults to the
+  // SettingsPage default of true).
+  setUp(() async {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+  });
+
   group('ItemList chip bar', () {
     testWidgets('shows the collapsed triaged chip by default and lists triaged items', (tester) async {
       final service = _FakeItemService(
@@ -392,6 +403,26 @@ void main() {
       // present on the same row.
       expect(find.widgetWithText(InputChip, 'work'), findsOneWidget);
       expect(find.byIcon(Icons.timer), findsOneWidget);
+    });
+
+    testWidgets('hides label chips when the showLabels setting is off',
+        (tester) async {
+      final item = Item(
+        id: 1,
+        title: 'labelled but hidden',
+        labels: [
+          Label(id: 1, name: 'work', colour: '#FF0000'),
+          Label(id: 2, name: 'urgent'),
+        ],
+      );
+      final service = _FakeItemService(triaged: [item]);
+
+      await tester.pumpWidget(_harness(service: service, showLabels: false));
+      await tester.pumpAndSettle();
+
+      // The item title is still shown, but no label chips render.
+      expect(find.text('labelled but hidden'), findsOneWidget);
+      expect(find.byType(InputChip), findsNothing);
     });
   });
 

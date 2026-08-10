@@ -725,5 +725,17 @@
   "refresh": "Refresh",
   "@refresh": {
     "description": "AppBar button tooltip to refresh the item list (desktop)"
+  },
+  "display": "Display",
+  "@display": {
+    "description": "Settings section title for display preferences"
+  },
+  "showLabelsInItemList": "Show labels in item list",
+  "@showLabelsInItemList": {
+    "description": "Toggle label for showing label chips under each item in the item list"
+  },
+  "showLabelsInItemListDescription": "When off, label chips are hidden in the item list.",
+  "@showLabelsInItemListDescription": {
+    "description": "Subtitle for the show labels in item list toggle"
   }
 }
