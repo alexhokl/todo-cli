@@ -412,13 +412,26 @@ class ItemListState extends State<ItemList> {
                 : null,
           )
         : null;
+    final epicIcon =
+        (item.hasEffort() && item.effort.name.toLowerCase() == 'epic')
+            ? const Icon(Icons.all_inclusive)
+            : null;
+    final trailing = (epicIcon != null || dueDateIcon != null)
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (epicIcon != null) ...[epicIcon, const SizedBox(width: 4)],
+              if (dueDateIcon != null) dueDateIcon,
+            ],
+          )
+        : null;
 
     if (!reorderable) {
       return ListTile(
         leading: statusIcon,
         title: Text(item.title),
         subtitle: labelChips,
-        trailing: dueDateIcon,
+        trailing: trailing,
         onTap: () => _openDetail(context, item),
       );
     }
@@ -441,7 +454,7 @@ class ItemListState extends State<ItemList> {
         ),
         title: Text(item.title),
         subtitle: labelChips,
-        trailing: dueDateIcon,
+        trailing: trailing,
         onTap: () => _openDetail(context, item),
       ),
     );
