@@ -5,6 +5,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/main.dart';
 import 'package:todo/proto/item.pb.dart';
+import 'package:todo/services/intent_service.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/edit_item_page.dart';
 
@@ -49,11 +50,39 @@ class _FakeItemService extends ItemService {
   Future<void> dispose() async {}
 }
 
-Widget _harness({required _FakeItemService service}) {
+/// Stand-in for [IntentService] that returns [initial] as the launch intent
+/// and lets a test deliver later intents through [deliver], without the
+/// Android method channel.
+class _FakeIntentService extends IntentService {
+  _FakeIntentService({this.initial});
+
+  final AppIntent? initial;
+  void Function(AppIntent)? _onIntent;
+
+  void deliver(AppIntent intent) => _onIntent?.call(intent);
+
+  @override
+  Future<AppIntent?> getInitialIntent() async => initial;
+
+  @override
+  void listen(void Function(AppIntent) onIntent) => _onIntent = onIntent;
+
+  @override
+  void dispose() => _onIntent = null;
+}
+
+Widget _harness({
+  required _FakeItemService service,
+  _FakeIntentService? intentService,
+}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: HomePage(title: 'Todo', service: service),
+    home: HomePage(
+      title: 'Todo',
+      service: service,
+      intentService: intentService ?? _FakeIntentService(),
+    ),
   );
 }
 
@@ -133,6 +162,49 @@ void main() {
       final actionChip = tester.widget<ActionChip>(find.byType(ActionChip));
       final label = actionChip.label as Text;
       expect(label.data, 'Untriaged');
+    });
+  });
+
+  group('HomePage intents', () {
+    testWidgets('a create-item launch intent opens a pre-filled EditItemPage',
+        (tester) async {
+      final service = _FakeItemService();
+      final intents = _FakeIntentService(
+        initial: const CreateItemIntent(
+          title: 'Buy milk',
+          description: '2L',
+        ),
+      );
+
+      await tester.pumpWidget(
+        _harness(service: service, intentService: intents),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EditItemPage), findsOneWidget);
+      expect(find.text('Buy milk'), findsOneWidget);
+      expect(find.text('2L'), findsOneWidget);
+    });
+
+    testWidgets('an open-view intent switches the list view', (tester) async {
+      final service = _FakeItemService(
+        untriaged: [Item(id: 2, title: 'inbox item')],
+      );
+      final intents = _FakeIntentService();
+
+      await tester.pumpWidget(
+        _harness(service: service, intentService: intents),
+      );
+      await tester.pumpAndSettle();
+
+      intents.deliver(const OpenViewIntent(ItemView.ITEM_VIEW_UNTRIAGED));
+      await tester.pumpAndSettle();
+
+      expect(
+        service.viewsCalled,
+        [ItemView.ITEM_VIEW_TRIAGED, ItemView.ITEM_VIEW_UNTRIAGED],
+      );
+      expect(find.text('inbox item'), findsOneWidget);
     });
   });
 

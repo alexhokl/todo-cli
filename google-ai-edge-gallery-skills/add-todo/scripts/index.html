@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+</head>
+
+<body>
+    <script>
+        // Mirrors mobile/lib/services/intent_service.dart
+        const MAX_TITLE_LENGTH = 120;
+
+        function normaliseText(value) {
+            if (value === undefined || value === null) return null;
+            const text = String(value).trim();
+            return text === '' ? null : text;
+        }
+
+        function normaliseTitle(value) {
+            const title = normaliseText(value);
+            if (!title) {
+                throw new Error('title is required');
+            }
+            return title.replace(/\s+/g, ' ');
+        }
+
+        // Accepts an array or a comma-separated string, and returns unique,
+        // non-blank label names joined by commas, or null when there are none.
+        function normaliseLabels(value) {
+            if (value === undefined || value === null) return null;
+            const names = Array.isArray(value) ? value : String(value).split(',');
+            const unique = [...new Set(
+                names.map((name) => String(name).replace(/,/g, ' ').trim())
+                    .filter((name) => name !== ''),
+            )];
+            return unique.length ? unique.join(',') : null;
+        }
+
+        function buildLink(input) {
+            let title = normaliseTitle(input.title);
+            let description = normaliseText(input.description);
+            if (title.length > MAX_TITLE_LENGTH) {
+                let cut = title.lastIndexOf(' ', MAX_TITLE_LENGTH);
+                if (cut <= 0) cut = MAX_TITLE_LENGTH;
+                const overflow = title.substring(cut).trim();
+                title = title.substring(0, cut).trim();
+                description = description ? `${overflow}\n\n${description}` : overflow;
+            }
+            const params = [
+                ['title', title],
+                ['description', description],
+                ['labels', normaliseLabels(input.labels)],
+            ].filter(([, value]) => value);
+            const query = params
+                .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+                .join('&');
+            return `todo://item/new?${query}`;
+        }
+
+        window['ai_edge_gallery_get_result'] = async (data) => {
+            try {
+                const input = JSON.parse(data || '{}');
+                return JSON.stringify({
+                    result: buildLink(input),
+                });
+            } catch (e) {
+                console.error(e);
+                return JSON.stringify({
+                    error: `Failed to build item link: ${e.message}`,
+                });
+            }
+        };
+    </script>
+</body>
+
+</html>

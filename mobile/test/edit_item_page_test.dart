@@ -94,6 +94,7 @@ Widget _harness({
   int? itemId,
   String initialTitle = '',
   String initialDescription = '',
+  List<String> initialLabels = const [],
 }) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -102,6 +103,7 @@ Widget _harness({
       itemId: itemId,
       initialTitle: initialTitle,
       initialDescription: initialDescription,
+      initialLabels: initialLabels,
       service: service,
     ),
   );
@@ -109,6 +111,38 @@ Widget _harness({
 
 void main() {
   group('EditItemPage', () {
+    testWidgets('initialLabels are pre-selected and passed to createItem',
+        (tester) async {
+      final service = _FakeItemService(
+        labels: [Label(id: 1, name: 'home', colour: '#ff0000')],
+      );
+
+      await tester.pumpWidget(_harness(
+        service: service,
+        initialTitle: 'Buy milk',
+        initialLabels: const ['home', 'errand'],
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(InputChip, 'home'), findsOneWidget);
+      expect(find.widgetWithText(InputChip, 'errand'), findsOneWidget);
+      // The catalogue entry replaces the name-only label so its colour shows.
+      expect(
+        find.descendant(
+          of: find.widgetWithText(InputChip, 'home'),
+          matching: find.byType(CircleAvatar),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+
+      expect(service.createItemCalls, hasLength(1));
+      expect(service.createItemCalls.single.title, 'Buy milk');
+      expect(service.createItemCalls.single.labels, ['home', 'errand']);
+    });
+
     testWidgets('pre-populates the title and description fields',
         (tester) async {
       final service = _FakeItemService();

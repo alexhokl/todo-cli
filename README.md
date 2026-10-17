@@ -258,6 +258,62 @@ If upgrading an existing installation signed with the same key, use the `-r` fla
 adb install -r mobile/build/app/outputs/flutter-apk/app-release.apk
 ```
 
+## Android Intents
+
+The Android app can be opened from other apps and the launcher to capture
+items quickly.
+
+| Intent | How to use | Result |
+|--------|------------|--------|
+| App shortcuts | Long-press the app icon | **New item**, **Untriaged** or **Time sensitive** |
+| `PROCESS_TEXT` | Select text in any app and choose **Add todo** | Create form pre-filled from the selected text |
+| `SEND` (`text/plain`) | Share text or a web page to **todo** | Create form pre-filled from the shared text |
+| `VIEW` deep link | Open a `todo://` link (e.g. from Tasker or an NFC tag) | See below |
+
+### Pre-filling from text
+
+- When the share carries a subject (browsers share a page as subject = page
+  title, text = URL), the subject becomes the title and the text the
+  description.
+- Otherwise the first non-blank line becomes the title and the remaining lines
+  the description. A title longer than 120 characters is cut at a word
+  boundary and the rest moves to the description.
+- A lone URL becomes the description, with its host as the title.
+
+Nothing is saved until **Save** is tapped.
+
+### Deep links
+
+| Link | Opens |
+|------|-------|
+| `todo://item/new?title=&description=&labels=` | Create form; all parameters are optional and `labels` is comma-separated (unknown labels are created on save) |
+| `todo://items?view=` | Item list in the `untriaged`, `triaged` (default), `time-sensitive` or `done` view |
+| `todo://item/<id>` | Item details |
+
+### Testing intents with adb
+
+```sh
+# deep link (quote the whole command so the device shell does not treat & as a separator)
+adb shell "am start -a android.intent.action.VIEW \
+  -d 'todo://item/new?title=Buy%20milk&labels=home,errand'"
+
+# share text
+adb shell am start -a android.intent.action.SEND -t text/plain \
+  --es android.intent.extra.TEXT "Call\ plumber" \
+  -n com.alexhokl.todo/.MainActivity
+```
+
+The shortcuts in `mobile/android/app/src/main/res/xml/shortcuts.xml` refer to
+the application ID `com.alexhokl.todo` and the activity
+`com.alexhokl.todo.MainActivity`; update them if either changes.
+
+### Google AI Edge Gallery skills
+
+[`google-ai-edge-gallery-skills/`](google-ai-edge-gallery-skills) contains
+[Agent Skills](https://github.com/google-ai-edge/gallery/blob/main/skills/README.md)
+for the Google AI Edge Gallery app, so an on-device model can open the create
+form from a sentence or photo, or schedule a reminder that opens it.
+
 ## Development
 
 ```sh

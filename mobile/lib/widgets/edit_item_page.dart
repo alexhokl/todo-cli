@@ -27,6 +27,9 @@ import 'package:todo/widgets/settings_page.dart';
 /// in edit mode is left to [ItemDetailPage], which has the full add/remove
 /// flow.
 ///
+/// [initialLabels] pre-selects labels by name in create mode, e.g. when the
+/// page is opened from a `todo://item/new?labels=` deep link.
+///
 /// When [service] is null the page builds one lazily from the persisted
 /// backend configuration (the same seam used by [ItemDetailPage] and
 /// [CommentsPage]). Tests inject a fake service so they never touch the
@@ -37,12 +40,14 @@ class EditItemPage extends StatefulWidget {
     this.itemId,
     this.initialTitle = '',
     this.initialDescription = '',
+    this.initialLabels = const [],
     this.service,
   });
 
   final int? itemId;
   final String initialTitle;
   final String initialDescription;
+  final List<String> initialLabels;
   final ItemService? service;
 
   @override
@@ -85,6 +90,7 @@ class _EditItemPageState extends State<EditItemPage> {
     _service = widget.service;
     _ownsService = widget.service == null;
     if (widget.itemId == null) {
+      _selectedLabels.addAll(widget.initialLabels.map((n) => Label(name: n)));
       unawaited(_loadLabels());
       unawaited(_loadEfforts());
     }
@@ -118,6 +124,13 @@ class _EditItemPageState extends State<EditItemPage> {
       if (!mounted) return;
       setState(() {
         _allLabels = labels;
+        // Swap name-only labels from initialLabels for catalogue entries so
+        // their colours render; unknown names are created by the server.
+        final byName = {for (final l in labels) l.name: l};
+        for (var i = 0; i < _selectedLabels.length; i++) {
+          final known = byName[_selectedLabels[i].name];
+          if (known != null) _selectedLabels[i] = known;
+        }
       });
     } on ItemException catch (e) {
       if (!mounted) return;

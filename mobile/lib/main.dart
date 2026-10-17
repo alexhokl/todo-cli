@@ -4,9 +4,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
+import 'package:todo/services/intent_service.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/efforts_page.dart';
 import 'package:todo/widgets/edit_item_page.dart';
+import 'package:todo/widgets/item_detail_page.dart';
 import 'package:todo/widgets/item_list.dart';
 import 'package:todo/widgets/labels_page.dart';
 import 'package:todo/widgets/settings_page.dart';
@@ -31,7 +33,12 @@ class TodoApp extends StatelessWidget {
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title, this.service});
+  const HomePage({
+    super.key,
+    required this.title,
+    this.service,
+    this.intentService,
+  });
 
   final String title;
 
@@ -40,20 +47,74 @@ class HomePage extends StatefulWidget {
   /// configuration (production behaviour).
   final ItemService? service;
 
+  /// Optional [IntentService] injected by tests. When null, a real one
+  /// receives Android shortcuts, deep links and shared text.
+  final IntentService? intentService;
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ItemListState> _itemListKey = GlobalKey<ItemListState>();
+  late final IntentService _intentService;
 
-  /// Opens [EditItemPage] in create mode. On a successful create, switches the
-  /// list to the untriaged view (where new items land) and reloads it.
-  Future<void> _createItem(BuildContext context) async {
+  @override
+  void initState() {
+    super.initState();
+    _intentService = widget.intentService ?? IntentService();
+    // Handle shortcuts, deep links and shared text from other apps
+    _intentService.listen(_handleIntent);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final intent = await _intentService.getInitialIntent();
+      if (intent != null && mounted) {
+        _handleIntent(intent);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _intentService.dispose();
+    super.dispose();
+  }
+
+  void _handleIntent(AppIntent intent) {
+    switch (intent) {
+      case CreateItemIntent():
+        _createItem(context, prefill: intent);
+      case OpenViewIntent(:final view):
+        _itemListKey.currentState?.selectView(view);
+      case OpenItemIntent(:final id):
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ItemDetailPage(
+              itemId: id,
+              service: widget.service,
+              onItemChanged: () => _itemListKey.currentState?.retryLoading(),
+            ),
+          ),
+        );
+    }
+  }
+
+  /// Opens [EditItemPage] in create mode, optionally pre-filled from
+  /// [prefill]. On a successful create, switches the list to the untriaged
+  /// view (where new items land) and reloads it.
+  Future<void> _createItem(
+    BuildContext context, {
+    CreateItemIntent? prefill,
+  }) async {
     final created = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => EditItemPage(service: widget.service),
+        builder: (_) => EditItemPage(
+          service: widget.service,
+          initialTitle: prefill?.title ?? '',
+          initialDescription: prefill?.description ?? '',
+          initialLabels: prefill?.labels ?? const [],
+        ),
       ),
     );
     if (created == true) {

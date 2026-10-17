@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="process_text_label">Add todo</string>
+    <string name="shortcut_new_item_short">New item</string>
+    <string name="shortcut_new_item_long">Add a new item</string>
+    <string name="shortcut_untriaged_short">Untriaged</string>
+    <string name="shortcut_untriaged_long">View untriaged items</string>
+    <string name="shortcut_time_sensitive_short">Time sensitive</string>
+    <string name="shortcut_time_sensitive_long">View time-sensitive items</string>
+</resources>
