@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_helper/ui.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/intent_service.dart';
@@ -24,7 +25,7 @@ class TodoApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Todo',
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.cyan)),
+      theme: themesFromSeed(Colors.cyan).light,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: HomePage(title: 'Todo'),

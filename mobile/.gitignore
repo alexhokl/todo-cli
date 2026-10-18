@@ -49,3 +49,6 @@ app.*.map.json
 
 # Generated localisation files (regenerated from *.arb via flutter gen-l10n)
 lib/l10n/app_localizations*.dart
+
+# Local path override for developing against ../../flutter-helper
+pubspec_overrides.yaml

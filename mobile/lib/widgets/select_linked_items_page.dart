@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
-import 'package:todo/widgets/settings_page.dart';
 import 'package:todo/widgets/status_icon.dart';
 
 /// Full-page selector for choosing items to link to a source item.
@@ -77,18 +76,13 @@ class _SelectLinkedItemsPageState extends State<SelectLinkedItemsPage> {
     super.dispose();
   }
 
-  Future<ItemService> _buildService() async {
-    final config = await BackendConfig.load();
-    return ItemService(host: config.host, port: config.port);
-  }
-
   Future<void> _load() async {
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       final result = await _service!.listItems();
       final excluded = <int>{widget.itemId};
       for (final linked in widget.alreadyLinked) {
@@ -149,7 +143,7 @@ class _SelectLinkedItemsPageState extends State<SelectLinkedItemsPage> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _saving = true);
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       await _service!.updateItemLinks(
         id: widget.itemId,
         add: _selected.toList(),

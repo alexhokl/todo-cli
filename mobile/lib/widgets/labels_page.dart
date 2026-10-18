@@ -3,7 +3,6 @@ import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/colour.dart';
-import 'package:todo/widgets/settings_page.dart';
 
 /// Page that lists every label and lets the user create, rename, and delete
 /// labels. Each label is shown with a colour swatch derived from its
@@ -40,7 +39,7 @@ class _LabelsPageState extends State<LabelsPage> {
       _error = null;
     });
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       final labels = await _service!.listLabels();
       setState(() {
         _labels = labels;
@@ -57,11 +56,6 @@ class _LabelsPageState extends State<LabelsPage> {
         _isLoading = false;
       });
     }
-  }
-
-  Future<ItemService> _buildService() async {
-    final config = await BackendConfig.load();
-    return ItemService(host: config.host, port: config.port);
   }
 
   Future<void> _showCreateDialog() async {

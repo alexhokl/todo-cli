@@ -7,7 +7,6 @@ import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
 import 'package:todo/widgets/effort_picker.dart';
 import 'package:todo/widgets/label_picker.dart';
-import 'package:todo/widgets/settings_page.dart';
 
 /// Page that creates or edits an item's title and description.
 ///
@@ -106,11 +105,6 @@ class _EditItemPageState extends State<EditItemPage> {
     super.dispose();
   }
 
-  Future<ItemService> _buildService() async {
-    final config = await BackendConfig.load();
-    return ItemService(host: config.host, port: config.port);
-  }
-
   /// Loads the catalogue of all known labels for the add-label picker. A
   /// failure is isolated so the rest of the page stays usable; the add-label
   /// button surfaces the error when tapped.
@@ -119,7 +113,7 @@ class _EditItemPageState extends State<EditItemPage> {
       _labelsError = null;
     });
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       final labels = await _service!.listLabels();
       if (!mounted) return;
       setState(() {
@@ -163,7 +157,7 @@ class _EditItemPageState extends State<EditItemPage> {
       _effortsError = null;
     });
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       final efforts = await _service!.listEfforts();
       if (!mounted) return;
       setState(() {
@@ -227,7 +221,7 @@ class _EditItemPageState extends State<EditItemPage> {
       _titleError = null;
     });
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       if (widget.itemId == null) {
         await _service!.createItem(
           title: title,

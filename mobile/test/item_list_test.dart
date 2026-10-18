@@ -1,8 +1,7 @@
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_helper/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
-import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
@@ -111,10 +110,7 @@ void main() {
   // when no override is injected, so install an in-memory
   // SharedPreferencesAsync backend for every test (defaults to the
   // SettingsPage default of true).
-  setUp(() async {
-    SharedPreferencesAsyncPlatform.instance =
-        InMemorySharedPreferencesAsync.empty();
-  });
+  setUp(setUpInMemoryPrefs);
 
   group('ItemList chip bar', () {
     testWidgets('shows the collapsed triaged chip by default and lists triaged items', (tester) async {

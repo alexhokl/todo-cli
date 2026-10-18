@@ -55,14 +55,14 @@ dependencies:
   # For localisation (generated AppLocalizations)
   flutter_localizations:
     sdk: flutter
+  flutter_helper:
+    git:
+      url: https://github.com/alexhokl/flutter-helper.git
+      ref: v0.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  mocktail: ^1.0.4
-
-  # Provides the in-memory SharedPreferencesAsync backend used in widget tests.
-  shared_preferences_platform_interface: ^2.4.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

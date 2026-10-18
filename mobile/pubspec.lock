@@ -102,6 +102,15 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_helper:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "v0.1.0"
+      resolved-ref: "7dc62b6d29f07680c767e83b43acc822044f5570"
+      url: "https://github.com/alexhokl/flutter-helper.git"
+    source: git
+    version: "0.1.0"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -261,14 +270,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.18.3"
-  mocktail:
-    dependency: "direct dev"
-    description:
-      name: mocktail
-      sha256: "5e1bf53cc7baa8062a33b84424deb61513858ea05c601b8509e683815b5914aa"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.5"
   path:
     dependency: transitive
     description:
@@ -358,7 +359,7 @@ packages:
     source: hosted
     version: "2.4.1"
   shared_preferences_platform_interface:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: shared_preferences_platform_interface
       sha256: "649dc798a33931919ea356c4305c2d1f81619ea6e92244070b520187b5140ef9"

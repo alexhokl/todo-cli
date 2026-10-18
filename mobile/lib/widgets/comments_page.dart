@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_helper/format.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
-import 'package:todo/widgets/settings_page.dart';
 
 /// Page that lists every comment on an item and lets the user add, edit, and
 /// delete comments.
@@ -45,7 +45,7 @@ class _CommentsPageState extends State<CommentsPage> {
       _error = null;
     });
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       final comments = await _service!.listComments(widget.itemId);
       setState(() {
         _comments = comments;
@@ -62,11 +62,6 @@ class _CommentsPageState extends State<CommentsPage> {
         _isLoading = false;
       });
     }
-  }
-
-  Future<ItemService> _buildService() async {
-    final config = await BackendConfig.load();
-    return ItemService(host: config.host, port: config.port);
   }
 
   Future<void> _showCreateDialog() async {
@@ -225,14 +220,10 @@ class _CommentsPageState extends State<CommentsPage> {
     final author = comment.author.isEmpty ? '-' : comment.author;
     if (comment.hasCreatedAt()) {
       final ts = comment.createdAt.toDateTime().toLocal();
-      final formatted = '${ts.year}-${_two(ts.month)}-${_two(ts.day)} '
-          '${_two(ts.hour)}:${_two(ts.minute)}';
-      return '$author · $formatted';
+      return '$author · ${formatDateTime(ts)}';
     }
     return author;
   }
-
-  static String _two(int value) => value.toString().padLeft(2, '0');
 }
 
 /// Dialog used for both creating and editing a comment. Validates the body is

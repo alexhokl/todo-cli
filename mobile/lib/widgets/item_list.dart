@@ -111,7 +111,7 @@ class ItemListState extends State<ItemList> {
       _error = null;
     });
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       final result = await _service!.listItems(
         view: _view,
         labels: _selectedLabels.isEmpty ? null : _selectedLabels.toList(),
@@ -138,17 +138,12 @@ class ItemListState extends State<ItemList> {
   /// without surfacing a SnackBar on every refresh.
   Future<void> _loadLabels() async {
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       final labels = await _service!.listLabels();
       if (mounted) setState(() => _allLabels = labels);
     } catch (_) {
       if (mounted) setState(() => _allLabels = const []);
     }
-  }
-
-  Future<ItemService> _buildService() async {
-    final config = await BackendConfig.load();
-    return ItemService(host: config.host, port: config.port);
   }
 
   Future<void> retryLoading() async {

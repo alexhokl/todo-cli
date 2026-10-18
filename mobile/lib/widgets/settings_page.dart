@@ -1,50 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:todo/app_config.dart';
+import 'package:flutter_helper/config.dart';
+import 'package:flutter_helper/ui.dart';
 import 'package:todo/l10n/app_localizations.dart';
-
-/// Parsed backend URL configuration.
-class BackendConfig {
-  final String host;
-  final int port;
-  final String scheme;
-
-  const BackendConfig({
-    required this.host,
-    required this.port,
-    this.scheme = 'http',
-  });
-
-  /// Parse a URL string into host and port. Defaults to port 443 for https,
-  /// 80 for http when not specified.
-  factory BackendConfig.fromUrl(String url) {
-    final uri = Uri.parse(url);
-    final host = uri.host;
-    final scheme = uri.scheme.isEmpty ? 'http' : uri.scheme;
-    int port;
-    if (uri.hasPort) {
-      port = uri.port;
-    } else {
-      port = scheme == 'https' ? 443 : 80;
-    }
-    return BackendConfig(host: host, port: port, scheme: scheme);
-  }
-
-  /// Load backend configuration from shared preferences.
-  static Future<BackendConfig> load() async {
-    final prefs = SharedPreferencesAsync();
-    final url = await prefs.getString(SettingsPage.backendUrlKey) ??
-        SettingsPage.defaultBackendUrl;
-    return BackendConfig.fromUrl(url);
-  }
-}
+import 'package:todo/services/item_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
-  static const String backendUrlKey = 'backend_url';
-  static const String defaultBackendUrl = 'http://localhost:8080';
+  static const String backendUrlKey = BackendConfig.storageKey;
+  static const String defaultBackendUrl = ItemService.defaultBackendUrl;
 
   /// Storage key and default for the "show labels in item list" toggle.
   static const String showLabelsKey = 'show_labels_in_item_list';
@@ -87,7 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _saveBackendUrl(String url) async {
-    await _prefs.setString(SettingsPage.backendUrlKey, url);
+    await BackendConfig.save(url);
   }
 
   Future<void> _saveShowLabels(bool value) async {
@@ -154,29 +119,10 @@ class _SettingsPageState extends State<SettingsPage> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: TextEditingController(text: AppConfig.gitCommit),
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)!.gitCommit,
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.commit),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.copy),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: AppConfig.gitCommit));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context)!.gitCommitCopied,
-                        ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  tooltip: AppLocalizations.of(context)!.copyToClipboard,
-                ),
-              ),
+            GitCommitField(
+              label: AppLocalizations.of(context)!.gitCommit,
+              copiedMessage: AppLocalizations.of(context)!.gitCommitCopied,
+              copyTooltip: AppLocalizations.of(context)!.copyToClipboard,
             ),
           ],
         ),

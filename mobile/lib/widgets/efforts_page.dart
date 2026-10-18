@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/proto/item.pb.dart';
 import 'package:todo/services/item_service.dart';
-import 'package:todo/widgets/settings_page.dart';
 
 /// Page that lists every effort and lets the user create, rename, and delete
 /// efforts. An effort is a per-user named level of effort (e.g. "low",
@@ -40,7 +39,7 @@ class _EffortsPageState extends State<EffortsPage> {
       _error = null;
     });
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       final efforts = await _service!.listEfforts();
       setState(() {
         _efforts = efforts;
@@ -57,11 +56,6 @@ class _EffortsPageState extends State<EffortsPage> {
         _isLoading = false;
       });
     }
-  }
-
-  Future<ItemService> _buildService() async {
-    final config = await BackendConfig.load();
-    return ItemService(host: config.host, port: config.port);
   }
 
   Future<void> _showCreateDialog() async {

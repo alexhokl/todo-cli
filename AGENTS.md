@@ -66,6 +66,16 @@ task mac                      # flutter build macos
 task apk                      # flutter build apk
 ```
 
+Shared infrastructure comes from the `flutter_helper` package
+(github.com/alexhokl/flutter-helper, pinned by tag in `mobile/pubspec.yaml`):
+the gRPC channel (`GrpcChannelHolder`, used by `ItemService`), the
+`backend_url` setting (`BackendConfig`), the intent method channel
+(`IntentChannel`), `GitCommitField`, formatting helpers, `setUpInMemoryPrefs`
+for tests and the lint configuration. Fix or extend those there rather than
+copying code into this app. The `mac`, `apk`, signing key and `tag` tasks are
+included from `../flutter-helper/taskfiles/flutter.yml`, which needs a sibling
+checkout of flutter-helper.
+
 ## Configuration
 
 Configuration is resolved by Viper in this precedence order: command-line flag,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_helper/format.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart';
@@ -13,7 +14,6 @@ import 'package:todo/widgets/edit_item_page.dart';
 import 'package:todo/widgets/effort_picker.dart';
 import 'package:todo/widgets/label_picker.dart';
 import 'package:todo/widgets/select_linked_items_page.dart';
-import 'package:todo/widgets/settings_page.dart';
 import 'package:todo/widgets/status_icon.dart';
 
 /// Read-only details for a single todo item, with an inline comments list.
@@ -97,7 +97,7 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
       _error = null;
     });
     try {
-      _service ??= await _buildService();
+      _service ??= await ItemService.fromSettings();
       final item = await _service!.getItem(widget.itemId);
       setState(() {
         _item = item;
@@ -396,11 +396,6 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
-  }
-
-  Future<ItemService> _buildService() async {
-    final config = await BackendConfig.load();
-    return ItemService(host: config.host, port: config.port);
   }
 
   /// Opens the edit page for the item. On return with `true`, reloads the
@@ -1240,22 +1235,17 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
 
   /// Formats a [Timestamp] as a date-only string (`yyyy-MM-dd`) in local time.
   String _formatDate(Timestamp ts) {
-    final dt = ts.toDateTime().toLocal();
-    return '${dt.year}-${_two(dt.month)}-${_two(dt.day)}';
+    return formatIsoDate(ts.toDateTime().toLocal());
   }
 
   String _formatAuthorLine(Comment comment) {
     final author = comment.author.isEmpty ? '-' : comment.author;
     if (comment.hasCreatedAt()) {
       final ts = comment.createdAt.toDateTime().toLocal();
-      final formatted = '${ts.year}-${_two(ts.month)}-${_two(ts.day)} '
-          '${_two(ts.hour)}:${_two(ts.minute)}';
-      return '$author · $formatted';
+      return '$author · ${formatDateTime(ts)}';
     }
     return author;
   }
-
-  static String _two(int value) => value.toString().padLeft(2, '0');
 
   /// Opens a markdown link in the system browser. Failures (bad URI or a
   /// rejected launch) are surfaced as a SnackBar rather than crashing.

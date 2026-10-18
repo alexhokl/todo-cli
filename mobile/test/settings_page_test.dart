@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_helper/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
-import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:todo/l10n/app_localizations.dart';
 import 'package:todo/widgets/settings_page.dart';
 
@@ -18,10 +17,7 @@ void main() {
   // Install a fresh in-memory SharedPreferencesAsync backend per test so each
   // starts from a clean slate (every key reads as null, which the SettingsPage
   // maps to its declared defaults).
-  setUp(() async {
-    SharedPreferencesAsyncPlatform.instance =
-        InMemorySharedPreferencesAsync.empty();
-  });
+  setUp(setUpInMemoryPrefs);
 
   group('SettingsPage show labels toggle', () {
     testWidgets('defaults to on and shows the toggle', (tester) async {

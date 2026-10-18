@@ -3,6 +3,14 @@ version: "3"
 env:
   APP_NAME: todo-cli
 
+includes:
+  flutter:
+    taskfile: ../flutter-helper/taskfiles/flutter.yml
+    flatten: true
+    vars:
+      APP: todo-cli
+      MAC_APP: todo.app
+
 tasks:
   build:
     desc: Build
@@ -72,60 +80,3 @@ tasks:
     cmds:
       - curl -o google/protobuf/empty.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/empty.proto
       - curl -o google/protobuf/timestamp.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/timestamp.proto
-
-  mac:
-    desc: Build macOS
-    cmds:
-      - cd mobile && flutter build macos --dart-define=GIT_COMMIT=$(git rev-parse --short HEAD)
-      - cp -r mobile/build/macos/Build/Products/Release/todo.app /Applications/
-
-  apk:
-    desc: Build Android APK
-    cmds:
-      - cd mobile && flutter build apk --dart-define=GIT_COMMIT=$(git rev-parse --short HEAD)
-
-  generate-apk-signing-key:
-    desc: Generate a release keystore for APK signing
-    vars:
-      KEYSTORE_FILE: /tmp/todo-cli_release.jks
-      KEY_ALIAS: todo-cli
-    cmds:
-      - |
-        STORE_PASSWORD=$(gum input --password --prompt "Enter keystore password: ")
-        keytool -genkey -v \
-          -keystore {{.KEYSTORE_FILE}} \
-          -keyalg RSA -keysize 2048 -validity 10000 \
-          -alias {{.KEY_ALIAS}} \
-          -dname "CN=todo-cli, OU=Mobile, O=alexho, L=HK, S=HK, C=HK" \
-          -storepass "$STORE_PASSWORD" \
-          -keypass "$STORE_PASSWORD"
-        base64 -i {{.KEYSTORE_FILE}} -o {{.KEYSTORE_FILE}}.b64
-        printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=release.jks\n' \
-          "$STORE_PASSWORD" "$STORE_PASSWORD" {{.KEY_ALIAS}} \
-          > /tmp/todo-cli_key.properties
-        echo "Keystore generated at {{.KEYSTORE_FILE}}"
-        echo "key.properties generated at /tmp/todo-cli_key.properties"
-        echo "Run 'task upload-apk-signing-secrets' to upload to Secret Manager"
-
-  upload-apk-signing-secrets:
-    desc: Upload APK signing keystore and key.properties to GCP Secret Manager
-    vars:
-      KEYSTORE_FILE: /tmp/todo-cli_release.jks
-      GCP_PROJECT: craffy
-    cmds:
-      - gcloud secrets versions add todo-cli-keystore --data-file={{.KEYSTORE_FILE}}.b64 --project={{.GCP_PROJECT}}
-      - gcloud secrets versions add todo-cli-key-properties --data-file=/tmp/todo-cli_key.properties --project={{.GCP_PROJECT}}
-      - rm {{.KEYSTORE_FILE}} {{.KEYSTORE_FILE}}.b64 /tmp/todo-cli_key.properties
-      - echo "Secrets uploaded and local files removed"
-
-  tag:
-    desc: Create a new git tag with incremented patch version (0.1.x)
-    silent: true
-    cmds:
-      - |
-        LATEST=$(git tag --sort=-version:refname | grep -E '^0\.1\.[0-9]+$' | head -1)
-        PATCH=$(echo "$LATEST" | cut -d. -f3)
-        if [ -z "$PATCH" ]; then PATCH=-1; fi
-        NEW_TAG="0.1.$((PATCH + 1))"
-        git tag "$NEW_TAG"
-        echo "Created tag $NEW_TAG"

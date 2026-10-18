@@ -1,3 +1,5 @@
+import 'package:flutter_helper/config.dart';
+import 'package:flutter_helper/grpc.dart';
 import 'package:grpc/grpc.dart';
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart';
 import 'package:todo/proto/item.pbgrpc.dart';
@@ -15,46 +17,32 @@ class ItemService {
   static const String _defaultHost = 'localhost';
   static const int _defaultPort = 8080;
 
-  ClientChannel? _channel;
-  ItemServiceClient? _client;
-
   final String host;
   final int port;
+  final GrpcChannelHolder _channel;
+  ItemServiceClient? _cachedClient;
 
-  ItemService({this.host = _defaultHost, this.port = _defaultPort});
+  ItemService({this.host = _defaultHost, this.port = _defaultPort})
+    : _channel = GrpcChannelHolder(host: host, port: port);
 
-  /// Determine whether a secure (TLS) connection is required based on the host.
-  /// Returns false for localhost/loopback addresses, true otherwise. This
-  /// mirrors the client-side logic in cmd/security.go of the photos project.
-  bool requireSecureConnection() {
-    if (host.isEmpty ||
-        host == 'localhost' ||
-        host == '127.0.0.1' ||
-        host == '::1') {
-      return false;
-    }
-    return true;
+  /// The backend address used until one is saved on the settings page.
+  static const String defaultBackendUrl = 'http://localhost:8080';
+
+  /// Builds a service for the backend saved on the settings page. Pages call
+  /// this rather than holding a long-lived client, so changing the address
+  /// takes effect on the next screen without a restart.
+  static Future<ItemService> fromSettings() async {
+    final config = await BackendConfig.load(defaultUrl: defaultBackendUrl);
+    return ItemService(host: config.host, port: config.port);
   }
 
-  /// Get the appropriate channel credentials based on the host.
-  ChannelCredentials _getCredentials() {
-    if (requireSecureConnection()) {
-      return const ChannelCredentials.secure();
-    }
-    return const ChannelCredentials.insecure();
-  }
+  /// Whether a secure (TLS) connection is used: false for localhost/loopback
+  /// addresses, true otherwise.
+  bool requireSecureConnection() => _channel.useTls;
 
-  /// Initialise the gRPC channel and client lazily.
-  void _ensureInitialized() {
-    if (_channel == null) {
-      _channel = ClientChannel(
-        host,
-        port: port,
-        options: ChannelOptions(credentials: _getCredentials()),
-      );
-      _client = ItemServiceClient(_channel!);
-    }
-  }
+  /// The gRPC client, created with the channel on first use.
+  ItemServiceClient get _client =>
+      _cachedClient ??= ItemServiceClient(_channel.channel);
 
   /// List items, optionally filtered by label names and/or narrowed to a
   /// single bucket via [view]. When [view] is null the server returns both
@@ -65,8 +53,6 @@ class ItemService {
     List<String>? labels,
     ItemView? view,
   }) async {
-    _ensureInitialized();
-
     final request = ListItemsRequest();
     if (labels != null && labels.isNotEmpty) {
       request.labels.addAll(labels);
@@ -76,7 +62,7 @@ class ItemService {
     }
 
     try {
-      final response = await _client!.listItems(request);
+      final response = await _client.listItems(request);
       return ListItemsResult(
         active: response.active.toList(),
         completed: response.completed.toList(),
@@ -95,8 +81,6 @@ class ItemService {
     List<String>? labels,
     String? effort,
   }) async {
-    _ensureInitialized();
-
     final request = CreateItemRequest(title: title, description: description);
     if (labels != null && labels.isNotEmpty) {
       request.labels.addAll(labels);
@@ -106,7 +90,7 @@ class ItemService {
     }
 
     try {
-      return await _client!.createItem(request);
+      return await _client.createItem(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -114,12 +98,10 @@ class ItemService {
 
   /// Mark an item as done or reopen it.
   Future<Item> setItemDone(int id, bool done) async {
-    _ensureInitialized();
-
     final request = SetItemDoneRequest(id: id, done: done);
 
     try {
-      return await _client!.setItemDone(request);
+      return await _client.setItemDone(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -127,12 +109,10 @@ class ItemService {
 
   /// Fetch a single item by id.
   Future<Item> getItem(int id) async {
-    _ensureInitialized();
-
     final request = GetItemRequest(id: id);
 
     try {
-      return await _client!.getItem(request);
+      return await _client.getItem(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -142,12 +122,10 @@ class ItemService {
   /// priority may be deleted; items with linked items must be unlinked first.
   /// Attached blockers and comments are removed in the same operation.
   Future<void> deleteItem(int id) async {
-    _ensureInitialized();
-
     final request = DeleteItemRequest(id: id);
 
     try {
-      await _client!.deleteItem(request);
+      await _client.deleteItem(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -160,12 +138,10 @@ class ItemService {
     required String title,
     required String description,
   }) async {
-    _ensureInitialized();
-
     final request = UpdateItemRequest(id: id, title: title, description: description);
 
     try {
-      return await _client!.updateItem(request);
+      return await _client.updateItem(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -187,8 +163,6 @@ class ItemService {
     bool changeList = false,
     int? listId,
   }) async {
-    _ensureInitialized();
-
     final request = MoveItemRequest(id: id, changeList: changeList);
     if (beforeId != null) request.beforeId = beforeId;
     if (afterId != null) request.afterId = afterId;
@@ -197,7 +171,7 @@ class ItemService {
     if (changeList && listId != null) request.listId = listId;
 
     try {
-      return await _client!.moveItem(request);
+      return await _client.moveItem(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -210,14 +184,12 @@ class ItemService {
     List<String>? add,
     List<String>? remove,
   }) async {
-    _ensureInitialized();
-
     final request = UpdateItemLabelsRequest(id: id);
     if (add != null) request.add.addAll(add);
     if (remove != null) request.remove.addAll(remove);
 
     try {
-      return await _client!.updateItemLabels(request);
+      return await _client.updateItemLabels(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -231,14 +203,12 @@ class ItemService {
     List<int>? add,
     List<int>? remove,
   }) async {
-    _ensureInitialized();
-
     final request = UpdateItemLinksRequest(id: id);
     if (add != null) request.add.addAll(add);
     if (remove != null) request.remove.addAll(remove);
 
     try {
-      return await _client!.updateItemLinks(request);
+      return await _client.updateItemLinks(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -252,12 +222,10 @@ class ItemService {
     required int itemId,
     required String description,
   }) async {
-    _ensureInitialized();
-
     final request = CreateBlockerRequest(itemId: itemId, description: description);
 
     try {
-      return await _client!.createBlocker(request);
+      return await _client.createBlocker(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -266,12 +234,10 @@ class ItemService {
   /// Removes a blocker by id. The server returns Empty, so callers must
   /// reload the item to reflect the updated blockers list.
   Future<void> deleteBlocker({required int id}) async {
-    _ensureInitialized();
-
     final request = DeleteBlockerRequest(id: id);
 
     try {
-      await _client!.deleteBlocker(request);
+      await _client.deleteBlocker(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -281,12 +247,10 @@ class ItemService {
   /// The effort must already exist; unknown names are reported by the server
   /// rather than being created on the fly.
   Future<Item> setEffort({required int id, required String effort}) async {
-    _ensureInitialized();
-
     final request = SetItemEffortRequest(id: id, effort: effort);
 
     try {
-      return await _client!.setItemEffort(request);
+      return await _client.setItemEffort(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -297,15 +261,13 @@ class ItemService {
   /// the caller (see `_editDueDate` on the details page); the server stores
   /// the resulting [Timestamp] as-is.
   Future<Item> updateItemDueDate({required int id, DateTime? dueDate}) async {
-    _ensureInitialized();
-
     final request = UpdateItemDueDateRequest(id: id);
     if (dueDate != null) {
       request.dueDate = Timestamp.fromDateTime(dueDate);
     }
 
     try {
-      return await _client!.updateItemDueDate(request);
+      return await _client.updateItemDueDate(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -313,12 +275,10 @@ class ItemService {
 
   /// List every known label ordered by name.
   Future<List<Label>> listLabels() async {
-    _ensureInitialized();
-
     final request = ListLabelsRequest();
 
     try {
-      final response = await _client!.listLabels(request);
+      final response = await _client.listLabels(request);
       return response.labels.toList();
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
@@ -347,8 +307,6 @@ class ItemService {
   /// server applies its default (#FFFF00); otherwise it must already be in
   /// canonical #RRGGBB form or the server rejects the request.
   Future<Label> createLabel(String name, {String? colour}) async {
-    _ensureInitialized();
-
     final request = CreateLabelRequest(name: name);
     final normalised = normaliseColour(colour);
     if (normalised != null) {
@@ -356,7 +314,7 @@ class ItemService {
     }
 
     try {
-      return await _client!.createLabel(request);
+      return await _client.createLabel(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -368,8 +326,6 @@ class ItemService {
   /// the server (the `colour` field is `optional` on `RenameLabelRequest`);
   /// when it is non-null it must be a canonical #RRGGBB value.
   Future<Label> renameLabel(int id, {String? name, String? colour}) async {
-    _ensureInitialized();
-
     final request = RenameLabelRequest(id: id);
     if (name != null) {
       request.name = name;
@@ -380,7 +336,7 @@ class ItemService {
     }
 
     try {
-      return await _client!.renameLabel(request);
+      return await _client.renameLabel(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -388,12 +344,10 @@ class ItemService {
 
   /// Remove a label that is no longer attached to any item.
   Future<void> deleteLabel(int id) async {
-    _ensureInitialized();
-
     final request = DeleteLabelRequest(id: id);
 
     try {
-      await _client!.deleteLabel(request);
+      await _client.deleteLabel(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -403,12 +357,10 @@ class ItemService {
   /// colour field and an item carries at most one effort via a belongs-to
   /// foreign key rather than a many-to-many join table.
   Future<List<Effort>> listEfforts() async {
-    _ensureInitialized();
-
     final request = ListEffortsRequest();
 
     try {
-      final response = await _client!.listEfforts(request);
+      final response = await _client.listEfforts(request);
       return response.efforts.toList();
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
@@ -418,12 +370,10 @@ class ItemService {
   /// Create an effort explicitly. Reports a name that is already taken rather
   /// than returning the existing effort. The server rejects an empty name.
   Future<Effort> createEffort(String name) async {
-    _ensureInitialized();
-
     final request = CreateEffortRequest(name: name);
 
     try {
-      return await _client!.createEffort(request);
+      return await _client.createEffort(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -432,12 +382,10 @@ class ItemService {
   /// Change the name of an existing effort. The server rejects a duplicate or
   /// empty name.
   Future<Effort> renameEffort(int id, {required String name}) async {
-    _ensureInitialized();
-
     final request = RenameEffortRequest(id: id, name: name);
 
     try {
-      return await _client!.renameEffort(request);
+      return await _client.renameEffort(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -447,12 +395,10 @@ class ItemService {
   /// referenced by any item; in that case the error message is surfaced to the
   /// caller as an [ItemException].
   Future<void> deleteEffort(int id) async {
-    _ensureInitialized();
-
     final request = DeleteEffortRequest(id: id);
 
     try {
-      await _client!.deleteEffort(request);
+      await _client.deleteEffort(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -460,12 +406,10 @@ class ItemService {
 
   /// List every comment attached to an item, ordered by creation.
   Future<List<Comment>> listComments(int itemId) async {
-    _ensureInitialized();
-
     final request = ListCommentsRequest(itemId: itemId);
 
     try {
-      final response = await _client!.listComments(request);
+      final response = await _client.listComments(request);
       return response.comments.toList();
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
@@ -475,12 +419,10 @@ class ItemService {
   /// Attach a new comment to an item. The body must be non-empty after
   /// trimming; the server rejects an empty body.
   Future<Comment> createComment({required int itemId, required String body}) async {
-    _ensureInitialized();
-
     final request = CreateCommentRequest(itemId: itemId, body: body);
 
     try {
-      return await _client!.createComment(request);
+      return await _client.createComment(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -489,12 +431,10 @@ class ItemService {
   /// Edit the body of an existing comment. The body must be non-empty after
   /// trimming; the server rejects an empty body.
   Future<Comment> updateComment({required int id, required String body}) async {
-    _ensureInitialized();
-
     final request = UpdateCommentRequest(id: id, body: body);
 
     try {
-      return await _client!.updateComment(request);
+      return await _client.updateComment(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -502,12 +442,10 @@ class ItemService {
 
   /// Remove a comment.
   Future<void> deleteComment(int id) async {
-    _ensureInitialized();
-
     final request = DeleteCommentRequest(id: id);
 
     try {
-      await _client!.deleteComment(request);
+      await _client.deleteComment(request);
     } on GrpcError catch (e) {
       throw ItemException('gRPC error: ${e.message}', grpcError: e);
     }
@@ -515,18 +453,14 @@ class ItemService {
 
   /// Close the gRPC channel.
   Future<void> dispose() async {
-    await _channel?.shutdown();
-    _channel = null;
-    _client = null;
+    _cachedClient = null;
+    await _channel.shutdown();
   }
 }
 
 /// Exception thrown when an item operation fails.
-class ItemException implements Exception {
-  final String message;
-  final GrpcError? grpcError;
-
-  ItemException(this.message, {this.grpcError});
+class ItemException extends ServiceException {
+  ItemException(super.message, {super.grpcError});
 
   @override
   String toString() => 'ItemException: $message';

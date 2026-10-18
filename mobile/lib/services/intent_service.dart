@@ -1,5 +1,4 @@
-import 'package:flutter/services.dart';
-
+import 'package:flutter_helper/intents.dart';
 import 'package:todo/proto/item.pb.dart';
 
 /// An action requested by another app through an Android intent
@@ -38,8 +37,11 @@ class OpenItemIntent extends AppIntent {
 /// Receives intents forwarded by MainActivity over a method channel.
 class IntentService {
   static const String deepLinkScheme = 'todo';
-  static const MethodChannel _channel = MethodChannel(
-    'com.alexhokl.todo/intents',
+  static const String channelName = 'com.alexhokl.todo/intents';
+
+  final IntentChannel<AppIntent> _channel = IntentChannel(
+    channelName,
+    toAppIntent,
   );
 
   /// Titles longer than this are cut at a word boundary; the rest of the
@@ -54,33 +56,12 @@ class IntentService {
   };
 
   /// Returns the intent that launched the app, if any.
-  Future<AppIntent?> getInitialIntent() async {
-    try {
-      final raw = await _channel.invokeMapMethod<String, String?>(
-        'getInitialIntent',
-      );
-      return raw == null ? null : toAppIntent(raw);
-    } on MissingPluginException {
-      // Not running on Android
-      return null;
-    }
-  }
+  Future<AppIntent?> getInitialIntent() => _channel.getInitialIntent();
 
   /// Calls [onIntent] for every intent received while the app is running.
-  void listen(void Function(AppIntent) onIntent) {
-    _channel.setMethodCallHandler((call) async {
-      if (call.method != 'onIntent' || call.arguments is! Map) return;
-      final raw = Map<String, String?>.from(call.arguments as Map);
-      final intent = toAppIntent(raw);
-      if (intent != null) {
-        onIntent(intent);
-      }
-    });
-  }
+  void listen(void Function(AppIntent) onIntent) => _channel.listen(onIntent);
 
-  void dispose() {
-    _channel.setMethodCallHandler(null);
-  }
+  void dispose() => _channel.dispose();
 
   /// Converts the map sent by MainActivity into an [AppIntent].
   static AppIntent? toAppIntent(Map<String, String?> raw) {
@@ -109,9 +90,9 @@ class IntentService {
         if (segments.first == 'new') {
           final params = uri.queryParameters;
           return CreateItemIntent(
-            title: _nonEmpty(params['title']),
-            description: _nonEmpty(params['description']),
-            labels: _splitLabels(params['labels']),
+            title: nonEmpty(params['title']),
+            description: nonEmpty(params['description']),
+            labels: splitList(params['labels']),
           );
         }
         final id = int.tryParse(segments.first);
@@ -134,12 +115,12 @@ class IntentService {
   /// title.
   static CreateItemIntent parseSharedText(String text, {String? subject}) {
     final trimmed = text.trim();
-    final subjectTitle = _nonEmpty(subject);
+    final subjectTitle = nonEmpty(subject);
     if (subjectTitle != null) {
-      final (title, overflow) = _splitTitle(_collapse(subjectTitle));
+      final (title, overflow) = _splitTitle(squashWhitespace(subjectTitle));
       return CreateItemIntent(
         title: title,
-        description: _nonEmpty(
+        description: nonEmpty(
           [?overflow, if (trimmed.isNotEmpty) trimmed].join('\n\n'),
         ),
       );
@@ -157,10 +138,10 @@ class IntentService {
     final newline = trimmed.indexOf('\n');
     final firstLine = newline < 0 ? trimmed : trimmed.substring(0, newline);
     final rest = newline < 0 ? '' : trimmed.substring(newline + 1).trim();
-    final (title, overflow) = _splitTitle(_collapse(firstLine));
+    final (title, overflow) = _splitTitle(squashWhitespace(firstLine));
     return CreateItemIntent(
       title: title,
-      description: _nonEmpty(
+      description: nonEmpty(
         [?overflow, if (rest.isNotEmpty) rest].join('\n\n'),
       ),
     );
@@ -173,23 +154,5 @@ class IntentService {
     var cut = line.lastIndexOf(' ', maxTitleLength);
     if (cut <= 0) cut = maxTitleLength;
     return (line.substring(0, cut).trim(), line.substring(cut).trim());
-  }
-
-  static String _collapse(String value) =>
-      value.replaceAll(RegExp(r'\s+'), ' ').trim();
-
-  static String? _nonEmpty(String? value) {
-    final trimmed = value?.trim();
-    return trimmed == null || trimmed.isEmpty ? null : trimmed;
-  }
-
-  /// Splits a comma-separated label list, dropping blanks and duplicates.
-  static List<String> _splitLabels(String? value) {
-    if (value == null) return const [];
-    final seen = <String>{};
-    return [
-      for (final name in value.split(','))
-        if (name.trim() case final n when n.isNotEmpty && seen.add(n)) n,
-    ];
   }
 }
