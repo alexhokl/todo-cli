@@ -84,7 +84,7 @@ The server is per-user: every record is scoped to the caller. Dates use
 
 | Command                        | Flags                                                                                                                          |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `update item [id]`             | `--title` and `--description` (given together; empty description clears it), `--add-label`, `--remove-label`, `--add-link ID`, `--remove-link ID`, `--due-date`, `--clear-due-date` |
+| `update item [id]`             | `--title` and `--description` (empty description clears it), `-e/--edit-description` (opens `$EDITOR`; interactive, so agents should use `--description` instead), `--add-label`, `--remove-label`, `--add-link ID`, `--remove-link ID`, `--due-date`, `--clear-due-date` |
 | `update done [id]`             | `--undo` reopens (appended to end of the order)                                                                                |
 | `update priority [id]`         | One of `--before ID`, `--after ID`, `--top`, `--bottom` (mutually exclusive); optional `--list ID` or `--clear-list`           |
 | `update todo [id]`             | `--effort NAME` or `--clear-effort`                                                                                            |

@@ -18,6 +18,8 @@ type updateItemOptions struct {
 	ClearDueDate bool
 	Title        string
 	Description  string
+
+	EditDescription bool
 }
 
 var updateItemOpts updateItemOptions
@@ -45,7 +47,11 @@ linking A to B also links B to A. Self-links and unknown or cross-user ids are
 rejected. --remove-link detaches the link on both sides.
 
 The title must be non-empty; an empty title is rejected. The description is
-optional and stored verbatim; an empty string clears it.`,
+optional and stored verbatim; an empty string clears it.
+
+--edit-description opens the current description in $VISUAL (or $EDITOR, or
+vi) and saves the result when it changed. It cannot be combined with
+--description.`,
 		Example: `  todo update item 7 --add-label urgent
   todo update item 7 --add-label urgent --add-label work
   todo update item 7 --remove-label later
@@ -56,7 +62,8 @@ optional and stored verbatim; an empty string clears it.`,
   todo update item 7 --clear-due-date
   todo update item 7 --title "new title"
   todo update item 7 --description "new details"
-  todo update item 7 --title "renamed" --description ""`,
+  todo update item 7 --title "renamed" --description ""
+  todo update item 7 --edit-description`,
 		Args:        cobra.ExactArgs(1),
 		Annotations: map[string]string{annotationRequiresService: "true"},
 		RunE:        runUpdateItem,
@@ -72,9 +79,12 @@ optional and stored verbatim; an empty string clears it.`,
 	flags.StringVar(&updateItemOpts.Title, "title", "", "New title of the item")
 	flags.StringVar(&updateItemOpts.Description, "description", "", "New description of the item (empty string clears it)")
 
+	flags.BoolVarP(&updateItemOpts.EditDescription, "edit-description", "e", false, "Edit the description in $VISUAL or $EDITOR")
+
 	// Without at least one of these the command would have nothing to do.
-	cmd.MarkFlagsOneRequired("add-label", "remove-label", "add-link", "remove-link", "due-date", "clear-due-date", "title", "description")
+	cmd.MarkFlagsOneRequired("add-label", "remove-label", "add-link", "remove-link", "due-date", "clear-due-date", "title", "description", "edit-description")
 	cmd.MarkFlagsMutuallyExclusive("due-date", "clear-due-date")
+	cmd.MarkFlagsMutuallyExclusive("description", "edit-description")
 
 	return cmd
 }
@@ -101,11 +111,12 @@ func runUpdateItem(cmd *cobra.Command, args []string) error {
 
 	// Title/description runs first so later mutations (labels, links) operate
 	// on the renamed item and their returned item carries the new title.
-	if cmd.Flags().Changed("title") || cmd.Flags().Changed("description") {
+	if cmd.Flags().Changed("title") || cmd.Flags().Changed("description") || updateItemOpts.EditDescription {
 		req := &proto.UpdateItemRequest{Id: id}
 		// The server requires a non-empty title and stores description
 		// verbatim. When only one of the two flags is set, fetch the current
-		// value of the other so the update leaves it unchanged.
+		// value of the other so the update leaves it unchanged. Editing the
+		// description in an editor also needs the current value as its seed.
 		if !cmd.Flags().Changed("title") || !cmd.Flags().Changed("description") {
 			current, err := client.GetItem(ctx, &proto.GetItemRequest{Id: id})
 			if err != nil {
@@ -117,16 +128,34 @@ func runUpdateItem(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("description") {
 				req.Description = current.GetDescription()
 			}
+			if updateItemOpts.EditDescription {
+				edited, err := editInEditor(current.GetDescription())
+				if err != nil {
+					return err
+				}
+				req.Description = edited
+				// Nothing to send when the editor left the text alone and no
+				// title change was requested.
+				if edited == current.GetDescription() && !cmd.Flags().Changed("title") {
+					if !hasOtherItemUpdates(cmd) {
+						return writeItemLine(cmd.OutOrStdout(), current)
+					}
+					req = nil
+					item = current
+				}
+			}
 		}
-		if cmd.Flags().Changed("title") {
-			req.Title = updateItemOpts.Title
-		}
-		if cmd.Flags().Changed("description") {
-			req.Description = updateItemOpts.Description
-		}
-		item, err = client.UpdateItem(ctx, req)
-		if err != nil {
-			return fmt.Errorf("failed to update the item: %w", err)
+		if req != nil {
+			if cmd.Flags().Changed("title") {
+				req.Title = updateItemOpts.Title
+			}
+			if cmd.Flags().Changed("description") {
+				req.Description = updateItemOpts.Description
+			}
+			item, err = client.UpdateItem(ctx, req)
+			if err != nil {
+				return fmt.Errorf("failed to update the item: %w", err)
+			}
 		}
 	}
 
@@ -173,6 +202,17 @@ func runUpdateItem(cmd *cobra.Command, args []string) error {
 	}
 
 	return writeItemLine(cmd.OutOrStdout(), item)
+}
+
+// hasOtherItemUpdates reports whether any flag other than the title and
+// description ones was given.
+func hasOtherItemUpdates(cmd *cobra.Command) bool {
+	for _, name := range []string{"add-label", "remove-label", "add-link", "remove-link", "due-date", "clear-due-date"} {
+		if cmd.Flags().Changed(name) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseDueDate(value string) (time.Time, error) {
