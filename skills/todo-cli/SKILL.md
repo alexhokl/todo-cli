@@ -5,9 +5,9 @@ description: Use when the user asks to list, create, update, complete, prioritis
 
 # todo-cli
 
-`todo` is a Go (Cobra) command-line client for the todo gRPC server. This
+`todo-cli` is a Go (Cobra) command-line client for the todo gRPC server. This
 skill explains how to drive the client to manage items, labels, efforts,
-blockers and comments. It does **not** cover starting the server (`todo serve`
+blockers and comments. It does **not** cover starting the server (`todo-cli serve`
 is out of scope).
 
 ## Mode safety: mutating vs read-only commands
@@ -26,19 +26,19 @@ Every client command needs the service URI, via flag or config:
 | ------------------ | ---------------------------------------------------- |
 | `-s, --service`    | `host:port` of the server (required)                 |
 | `-i, --insecure`   | Allow an insecure connection                         |
-| `--config`         | Config file (default `$HOME/.todo.yaml`)             |
+| `--config`         | Config file (default `$HOME/.todo-cli.yaml`)             |
 | `-v, --verbose`    | Verbose output                                       |
 
-Resolution order: flag, then environment variable (`TODO_` prefix, e.g.
-`TODO_SERVICE`, `TODO_INSECURE`), then `$HOME/.todo.yaml`.
+Resolution order: flag, then environment variable (`TODO_CLI_` prefix, e.g.
+`TODO_CLI_SERVICE`, `TODO_CLI_INSECURE`), then `$HOME/.todo-cli.yaml`.
 
 ```bash
-export TODO_SERVICE=localhost:8080
-todo list items
+export TODO_CLI_SERVICE=localhost:8080
+todo-cli list items
 ```
 
 The server is per-user: every record is scoped to the caller. Dates use
-`YYYY-MM-DD`. Confirm any command's flags with `todo <command> --help`.
+`YYYY-MM-DD`. Confirm any command's flags with `todo-cli <command> --help`.
 
 ## Concepts
 
@@ -117,18 +117,18 @@ The server is per-user: every record is scoped to the caller. Dates use
 
 ```bash
 # Capture and triage a task
-todo create item "buy milk" --due 2026-11-01 --label errands
-todo list items --untriaged
-todo update priority 12 --top
+todo-cli create item "buy milk" --due 2026-11-01 --label errands
+todo-cli list items --untriaged
+todo-cli update priority 12 --top
 
 # Re-order
-todo update priority 12 --after 3
+todo-cli update priority 12 --after 3
 
 # Track a blockage, then finish
-todo create blocker 12 --description "waiting on supplier"
-todo update done 12
+todo-cli create blocker 12 --description "waiting on supplier"
+todo-cli update done 12
 
 # Review
-todo list items --time-sensitive
-todo list items --label errands --search milk
+todo-cli list items --time-sensitive
+todo-cli list items --label errands --search milk
 ```
