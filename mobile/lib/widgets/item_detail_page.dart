@@ -500,11 +500,14 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
             Expanded(child: Text(item.title)),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openEdit(context, item),
-        tooltip: l10n.editItem,
-        child: const Icon(Icons.edit),
+        actions: [
+          IconButton(
+            key: const Key('edit-title-button'),
+            icon: const Icon(Icons.edit),
+            tooltip: l10n.editItem,
+            onPressed: () => _openEdit(context, item),
+          ),
+        ],
       ),
       bottomNavigationBar: (showComplete || showReopen || showTriage)
           ? Padding(
@@ -606,13 +609,21 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
           Text('${item.id}'),
           const SizedBox(height: 16),
           if (item.description.isEmpty) ...[
-            _sectionLabel(context, l10n.descriptionLabel),
+            _sectionLabelWithAction(
+              context,
+              text: l10n.descriptionLabel,
+              icon: Icons.edit,
+              tooltip: l10n.editItem,
+              buttonKey: const Key('edit-description-button'),
+              onPressed: () => _openEdit(context, item),
+            ),
             _mutedHint(context, l10n.noDescription),
           ] else
             _MarkdownBlock(
               data: item.description,
               label: l10n.descriptionLabel,
               onCopied: () => _showSnackbar(l10n.copiedToClipboard),
+              onEdit: () => _openEdit(context, item),
               onTapLink: _onTapLink,
             ),
           const SizedBox(height: 16),
@@ -1277,18 +1288,21 @@ class _ItemDetailPageState extends State<ItemDetailPage> {
 /// rendered above the body with the label on the left and a copy-to-clipboard
 /// button on the right (used for the description section); otherwise no
 /// header/button is rendered here (used for comments, whose copy button is
-/// rendered inline with the author line instead).
+/// rendered inline with the author line instead). When [onEdit] is provided an
+/// edit button is rendered next to the copy button.
 class _MarkdownBlock extends StatelessWidget {
   const _MarkdownBlock({
     required this.data,
     required this.onTapLink,
     this.label,
     this.onCopied,
+    this.onEdit,
   });
 
   final String data;
   final String? label;
   final VoidCallback? onCopied;
+  final VoidCallback? onEdit;
   final void Function(String text, String? href, String title) onTapLink;
 
   @override
@@ -1319,6 +1333,13 @@ class _MarkdownBlock extends StatelessWidget {
                   onCopied();
                 },
               ),
+              if (onEdit != null)
+                IconButton(
+                  key: const Key('edit-description-button'),
+                  icon: const Icon(Icons.edit, size: 18),
+                  tooltip: l10n.editItem,
+                  onPressed: onEdit,
+                ),
             ],
           ),
         MarkdownBody(

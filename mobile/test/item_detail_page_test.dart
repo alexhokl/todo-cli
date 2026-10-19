@@ -1676,22 +1676,31 @@ void main() {
   });
 
   group('ItemDetailPage edit item', () {
-    testWidgets('shows a FloatingActionButton with the edit tooltip',
+    testWidgets('has no FloatingActionButton and shows title and description edit buttons',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Editable', description: 'Some text'),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byKey(const Key('edit-title-button')), findsOneWidget);
+      expect(find.byKey(const Key('edit-description-button')), findsOneWidget);
+    });
+
+    testWidgets('shows the description edit button when the description is empty',
         (tester) async {
       final service = _FakeItemService(item: Item(id: 1, title: 'Editable'));
 
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      final fab = find.byType(FloatingActionButton);
-      expect(fab, findsOneWidget);
-      // The FAB carries the edit icon. (An Edit-effort TextButton on the
-      // page also uses Icons.edit, so scope the assertion to the FAB.)
-      expect(find.descendant(of: fab, matching: find.byIcon(Icons.edit)),
-          findsOneWidget);
+      expect(find.byKey(const Key('edit-description-button')), findsOneWidget);
     });
 
-    testWidgets('tapping the FAB pushes EditItemPage pre-populated',
+    testWidgets('tapping the description edit button pushes EditItemPage',
         (tester) async {
       final service = _FakeItemService(
         item: Item(id: 1, title: 'Old title', description: 'Old description'),
@@ -1700,7 +1709,22 @@ void main() {
       await tester.pumpWidget(_harness(service: service, itemId: 1));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(FloatingActionButton));
+      await tester.tap(find.byKey(const Key('edit-description-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EditItemPage), findsOneWidget);
+    });
+
+    testWidgets('tapping the title edit button pushes EditItemPage pre-populated',
+        (tester) async {
+      final service = _FakeItemService(
+        item: Item(id: 1, title: 'Old title', description: 'Old description'),
+      );
+
+      await tester.pumpWidget(_harness(service: service, itemId: 1));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('edit-title-button')));
       await tester.pumpAndSettle();
 
       // The edit page is on stage with the current values pre-populated.
@@ -1719,7 +1743,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open the edit page.
-      await tester.tap(find.byType(FloatingActionButton));
+      await tester.tap(find.byKey(const Key('edit-title-button')));
       await tester.pumpAndSettle();
 
       // Replace the title and save.
