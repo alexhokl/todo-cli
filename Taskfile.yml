@@ -80,3 +80,7 @@ tasks:
     cmds:
       - curl -o google/protobuf/empty.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/empty.proto
       - curl -o google/protobuf/timestamp.proto --create-dirs -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/refs/heads/main/src/google/protobuf/timestamp.proto
+
+  install-skill:
+    desc: Install the skill to the local system
+    cmd: ln -s "$PWD/skills/todo-cli" ~/.agents/skills/todo-cli

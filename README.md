@@ -314,6 +314,13 @@ the application ID `com.alexhokl.todo` and the activity
 for the Google AI Edge Gallery app, so an on-device model can open the create
 form from a sentence or photo, or schedule a reminder that opens it.
 
+### Agent skill
+
+[`skills/todo-cli/`](skills/todo-cli) is an Agent Skill that teaches a coding
+agent to drive the `todo` CLI (items, labels, efforts, blockers and comments).
+Symlink it into the agent's skills directory, e.g.
+`ln -s "$PWD/skills/todo-cli" ~/.agent/skills/todo-cli`.
+
 ## Development
 
 ```sh
