@@ -83,4 +83,7 @@ tasks:
 
   install-skill:
     desc: Install the skill to the local system
-    cmd: ln -s "$PWD/skills/todo-cli" ~/.agents/skills/todo-cli
+    cmds:
+      - mkdir -p ~/.agents/skills ~/.claude/skills
+      - ln -snf "{{.TASKFILE_DIR}}/skills/todo-cli" ~/.agents/skills/todo-cli
+      - ln -snf "{{.TASKFILE_DIR}}/skills/todo-cli" ~/.claude/skills/todo-cli
