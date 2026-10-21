@@ -336,6 +336,58 @@ void main() {
     });
   });
 
+  group('ItemList effort indicator', () {
+    testWidgets('renders the epic icon instead of the name for an epic effort',
+        (tester) async {
+      final item = Item(id: 1, title: 'big')..effort = Effort(name: 'epic');
+      final service = _FakeItemService(triaged: [item]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.all_inclusive), findsOneWidget);
+      expect(find.text('epic'), findsNothing);
+    });
+
+    testWidgets('renders the effort name for a non-epic effort',
+        (tester) async {
+      final item = Item(id: 1, title: 'small')..effort = Effort(name: 'medium');
+      final service = _FakeItemService(triaged: [item]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      expect(find.text('medium'), findsOneWidget);
+      expect(find.byIcon(Icons.all_inclusive), findsNothing);
+    });
+
+    testWidgets('renders no effort indicator for an item without an effort',
+        (tester) async {
+      final service = _FakeItemService(triaged: [Item(id: 1, title: 'none')]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.all_inclusive), findsNothing);
+      final tile = tester.widget<ListTile>(find.byType(ListTile));
+      expect(tile.trailing, isNull);
+    });
+
+    testWidgets('renders the effort name alongside the timer icon',
+        (tester) async {
+      final item = Item(id: 1, title: 'both')
+        ..effort = Effort(name: 'low')
+        ..dueDate = Timestamp(seconds: Int64(100));
+      final service = _FakeItemService(triaged: [item]);
+
+      await tester.pumpWidget(_harness(service: service));
+      await tester.pumpAndSettle();
+
+      expect(find.text('low'), findsOneWidget);
+      expect(find.byIcon(Icons.timer), findsOneWidget);
+    });
+  });
+
   group('ItemList label chips', () {
     testWidgets('renders a chip per label with the label colour as the avatar',
         (tester) async {

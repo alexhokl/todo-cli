@@ -457,15 +457,26 @@ class ItemListState extends State<ItemList> {
                 : null,
           )
         : null;
-    final epicIcon =
-        (item.hasEffort() && item.effort.name.toLowerCase() == 'epic')
+    // Epic keeps its dedicated icon; any other effort shows its name.
+    final effortName = item.hasEffort() ? item.effort.name : '';
+    final Widget? effortIndicator = effortName.isEmpty
+        ? null
+        : effortName.toLowerCase() == 'epic'
             ? const Icon(Icons.all_inclusive)
-            : null;
-    final trailing = (epicIcon != null || dueDateIcon != null)
+            : Text(
+                effortName,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              );
+    final trailing = (effortIndicator != null || dueDateIcon != null)
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (epicIcon != null) ...[epicIcon, const SizedBox(width: 4)],
+              if (effortIndicator != null) ...[
+                effortIndicator,
+                const SizedBox(width: 4),
+              ],
               if (dueDateIcon != null) dueDateIcon,
             ],
           )
